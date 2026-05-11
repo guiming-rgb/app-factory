@@ -7,7 +7,7 @@ export default function HomePage() {
       <section className="mx-auto flex max-w-5xl flex-col items-center text-center">
         <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
           <div className="rounded-full bg-black px-4 py-1 text-sm text-white">
-            App 生产工厂 MVP v1.1
+            App 生产工厂 MVP v1.2
           </div>
           <Link
             href="/projects"

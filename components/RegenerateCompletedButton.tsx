@@ -53,7 +53,7 @@ export function RegenerateCompletedButton({ projectId }: { projectId: string }) 
         disabled={loading}
         className="rounded-xl border border-amber-600 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-900 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "重新生成中..." : "重新生成报告"}
+        {loading ? "任务已提交..." : "重新生成报告"}
       </button>
       {error && (
         <p className="max-w-xs text-right text-xs text-red-600">{error}</p>

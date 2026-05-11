@@ -3,20 +3,31 @@ import { agentConfigs } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
 
-/** 与 API 层对齐：重复启动 running 项目时返回 409，便于前端/监控识别 */
+/** 与 API 层对齐：重复启动 running 项目时返回 409 */
 export const WORKFLOW_ERROR_ALREADY_RUNNING =
   "项目正在生成中，请勿重复启动";
 
+/** 已完成且未带 forceRegenerate 时拒绝入队 */
+export const WORKFLOW_ERROR_COMPLETED_SKIP =
+  "项目已经生成完成；如需重新生成请传入 forceRegenerate: true";
+
 export type RunWorkflowOptions = {
-  /** 仅当项目已为 completed 时有效：为 true 时清空旧结果并重新跑全流程 */
   forceRegenerate?: boolean;
 };
 
-export async function runProjectWorkflow(
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "未知错误";
+}
+
+/**
+ * 由 HTTP API 调用：校验、清理、将项目置为 running，**不**执行 LLM。
+ * 成功后由 Inngest 调用 executeProjectWorkflow。
+ */
+export async function prepareProjectWorkflow(
   projectId: string,
-  options?: RunWorkflowOptions
+  options: RunWorkflowOptions = {}
 ) {
-  const forceRegenerate = Boolean(options?.forceRegenerate);
+  const forceRegenerate = Boolean(options.forceRegenerate);
 
   const { data: project, error: projectError } = await supabaseAdmin
     .from("projects")
@@ -25,43 +36,72 @@ export async function runProjectWorkflow(
     .single();
 
   if (projectError || !project) {
-    throw new Error("Project not found");
+    throw new Error("项目不存在");
   }
 
-  // running 时禁止任何清理或重复启动，避免并发删除 agent_runs
   if (project.status === "running") {
-    return {
-      success: false,
-      projectId,
-      error: WORKFLOW_ERROR_ALREADY_RUNNING
-    };
+    throw new Error(WORKFLOW_ERROR_ALREADY_RUNNING);
   }
 
   if (project.status === "completed" && !forceRegenerate) {
-    return {
-      success: true,
-      projectId,
-      message: "项目已经生成完成"
-    };
+    throw new Error(WORKFLOW_ERROR_COMPLETED_SKIP);
   }
 
-  // 失败重试，或已完成且用户明确要求重新生成：清空旧执行记录
   if (
     project.status === "failed" ||
     (project.status === "completed" && forceRegenerate)
   ) {
-    await supabaseAdmin.from("agent_runs").delete().eq("project_id", projectId);
+    const { error: deleteError } = await supabaseAdmin
+      .from("agent_runs")
+      .delete()
+      .eq("project_id", projectId);
+
+    if (deleteError) {
+      throw new Error(`清理旧 Agent 记录失败：${deleteError.message}`);
+    }
   }
 
-  await supabaseAdmin
+  const { error: updateError } = await supabaseAdmin
     .from("projects")
     .update({
       status: "running",
-      error_message: null,
       final_report: null,
+      error_message: null,
       updated_at: new Date().toISOString()
     })
     .eq("id", projectId);
+
+  if (updateError) {
+    throw new Error(`更新项目状态失败：${updateError.message}`);
+  }
+
+  return { projectId };
+}
+
+/**
+ * 由 Inngest 后台调用：假定项目已为 running，串行跑 8 个 Agent。
+ * 不在此处因 status===running 而短路（与 prepare 分工）。
+ */
+export async function executeProjectWorkflow(projectId: string) {
+  const { data: project, error: projectError } = await supabaseAdmin
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .single();
+
+  if (projectError || !project) {
+    throw new Error("项目不存在");
+  }
+
+  if (project.status === "completed") {
+    return { projectId, skipped: true as const };
+  }
+
+  if (project.status !== "running") {
+    throw new Error(
+      `项目状态为 ${project.status}，无法执行后台生成（预期为 running）`
+    );
+  }
 
   const contextOutputs: string[] = [];
 
@@ -86,7 +126,9 @@ export async function runProjectWorkflow(
         .single();
 
       if (runCreateError || !run) {
-        throw new Error(`Failed to create agent run: ${agent.name}`);
+        throw new Error(
+          `创建 Agent 运行记录失败：${runCreateError?.message || agent.name}`
+        );
       }
 
       try {
@@ -107,8 +149,7 @@ export async function runProjectWorkflow(
 
         contextOutputs.push(`## ${agent.name}\n\n${output}`);
       } catch (agentError: unknown) {
-        const message =
-          agentError instanceof Error ? agentError.message : "Agent failed";
+        const message = getErrorMessage(agentError);
         await supabaseAdmin
           .from("agent_runs")
           .update({
@@ -128,22 +169,23 @@ export async function runProjectWorkflow(
       sections: contextOutputs
     });
 
-    await supabaseAdmin
+    const { error: completeError } = await supabaseAdmin
       .from("projects")
       .update({
         status: "completed",
         final_report: finalReport,
+        error_message: null,
         updated_at: new Date().toISOString()
       })
       .eq("id", projectId);
 
-    return {
-      success: true,
-      projectId
-    };
+    if (completeError) {
+      throw new Error(`更新最终报告失败：${completeError.message}`);
+    }
+
+    return { projectId, status: "completed" as const };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Workflow failed";
+    const message = getErrorMessage(error);
     await supabaseAdmin
       .from("projects")
       .update({
@@ -153,12 +195,19 @@ export async function runProjectWorkflow(
       })
       .eq("id", projectId);
 
-    return {
-      success: false,
-      projectId,
-      error: message
-    };
+    throw error;
   }
+}
+
+export async function markProjectFailed(projectId: string, message: string) {
+  await supabaseAdmin
+    .from("projects")
+    .update({
+      status: "failed",
+      error_message: message,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", projectId);
 }
 
 function buildAgentInput(params: {

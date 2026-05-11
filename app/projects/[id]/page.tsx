@@ -156,7 +156,8 @@ export default async function ProjectPage({
 
           {project.status === "running" && (
             <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-700">
-              AI 正在生产中。页面每约 5 秒自动刷新一次；也可点击「刷新状态」。
+              AI 正在后台生产中（Inngest）。页面每约 5 秒自动刷新；也可点「刷新状态」。本地请同时运行
+              Inngest Dev Server，否则任务不会执行。
             </div>
           )}
         </div>

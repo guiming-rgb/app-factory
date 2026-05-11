@@ -1,46 +1,81 @@
 import { NextRequest, NextResponse } from "next/server";
+import { inngest } from "@/lib/inngest/client";
 import {
-  runProjectWorkflow,
+  markProjectFailed,
+  prepareProjectWorkflow,
   WORKFLOW_ERROR_ALREADY_RUNNING
 } from "@/lib/workflow";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "启动 AI 生产失败";
+}
+
+async function parseJsonBody(req: NextRequest) {
+  try {
+    const text = await req.text();
+    if (!text.trim()) {
+      return {};
+    }
+    return JSON.parse(text) as { forceRegenerate?: unknown };
+  } catch {
+    return {};
+  }
+}
 
 /**
- * MVP 阶段同步执行 8 个 Agent。
- * 本地开发可接受；Vercel 需注意函数超时（已尽量放宽 maxDuration，仍以套餐为准）。
- * 正式版应改为队列 Worker。
+ * v1.2：仅做 prepare + 投递 Inngest 事件，立即返回；实际 8 Agent 在后台执行。
  */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const projectId = params.id;
+
   try {
-    const projectId = params.id;
+    const body = await parseJsonBody(req);
+    const forceRegenerate = Boolean(body.forceRegenerate);
 
-    let forceRegenerate = false;
+    await prepareProjectWorkflow(projectId, { forceRegenerate });
+
     try {
-      const text = await req.text();
-      if (text.trim()) {
-        const body = JSON.parse(text) as { forceRegenerate?: unknown };
-        forceRegenerate = Boolean(body?.forceRegenerate);
-      }
-    } catch {
-      forceRegenerate = false;
+      await inngest.send({
+        name: "project/generate.requested",
+        data: {
+          projectId,
+          forceRegenerate
+        }
+      });
+    } catch (eventError: unknown) {
+      const message = getErrorMessage(eventError);
+      await markProjectFailed(
+        projectId,
+        `后台任务投递失败：${message}`
+      );
+      throw new Error(`后台任务投递失败：${message}`);
     }
 
-    const result = await runProjectWorkflow(projectId, { forceRegenerate });
-
-    if (!result.success) {
-      const status =
-        result.error === WORKFLOW_ERROR_ALREADY_RUNNING ? 409 : 400;
-      return NextResponse.json(result, { status });
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      success: true,
+      mode: "async",
+      projectId,
+      message: "AI 生产任务已进入后台队列"
+    });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "生成失败";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = getErrorMessage(error);
+
+    let status = 400;
+    if (message === WORKFLOW_ERROR_ALREADY_RUNNING) {
+      status = 409;
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: message
+      },
+      { status }
+    );
   }
 }

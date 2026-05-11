@@ -59,7 +59,7 @@ export function GenerateProjectButton({
         disabled={loading}
         className="rounded-xl bg-black px-5 py-3 text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "AI 生产中，请等待..." : "开始 AI 生产"}
+        {loading ? "任务已提交，启动中..." : "启动 AI 后台生产"}
       </button>
 
       {error && (
