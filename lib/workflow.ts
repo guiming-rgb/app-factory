@@ -79,8 +79,9 @@ export async function prepareProjectWorkflow(
 }
 
 /**
- * 由 Inngest 后台调用：假定项目已为 running，串行跑 8 个 Agent。
- * 不在此处因 status===running 而短路（与 prepare 分工）。
+ * 由 Inngest 后台调用：仅当 projects.status === running 时执行 8 Agent。
+ * - completed：幂等跳过（防延迟/重复事件误跑）。
+ * - pending / failed / 其它：拒绝执行（避免过期事件在用户已改状态后继续写库）。
  */
 export async function executeProjectWorkflow(projectId: string) {
   const { data: project, error: projectError } = await supabaseAdmin
@@ -94,12 +95,16 @@ export async function executeProjectWorkflow(projectId: string) {
   }
 
   if (project.status === "completed") {
-    return { projectId, skipped: true as const };
+    return {
+      projectId,
+      status: "skipped" as const,
+      reason: "项目已完成，跳过重复执行（幂等）"
+    };
   }
 
   if (project.status !== "running") {
     throw new Error(
-      `项目状态为 ${project.status}，无法执行后台生成（预期为 running）`
+      `项目当前状态为 ${project.status}，后台任务拒绝执行（仅允许 running；若为延迟的过期事件应忽略）`
     );
   }
 
