@@ -23,7 +23,7 @@ AI 原生软件生产平台：输入 App 想法，经 8 个智能体串行生成
 1. 安装依赖：`npm install`
 2. Supabase：执行 `sql/schema.sql`、`sql/seed.sql`
 3. `cp .env.local.example .env.local`，填入 Supabase、OpenAI；`INNGEST_*` 本地可留空
-4. **终端 A**：`npm run dev`（若端口非 3000，改 `NEXT_PUBLIC_APP_URL`）
+4. **终端 A**：`npm run dev`；联调建议 **`npm run dev:3000`** 固定端口，与下方 Inngest 默认 URL 一致（否则改 `NEXT_PUBLIC_APP_URL` 与 Inngest `-u`）
 5. **终端 B**：`npx inngest-cli@latest dev -u http://localhost:3000/api/inngest`（端口按实际修改）
 6. 浏览器打开 Inngest 本地控制台（CLI 会打印地址，常见 `http://localhost:8288`）确认已连上 App
 7. 打开 `http://localhost:3000` 创建项目并「启动 AI 后台生产」→ 应快速返回 → 后台跑完后页面轮询到 `completed`
