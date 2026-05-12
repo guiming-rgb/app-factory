@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 
+/** 大模型调用模块：仅允许服务端导入（与 API Route / workflow 同进程）。 */
+
 const apiKey = process.env.OPENAI_API_KEY;
 const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
 const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
