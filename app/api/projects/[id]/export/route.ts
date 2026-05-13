@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ export async function GET(
   try {
     const projectId = params.id;
 
-    const { data: project, error } = await supabaseAdmin
+    const { data: project, error } = await getSupabaseAdmin()
       .from("projects")
       .select("title, final_report, status")
       .eq("id", projectId)

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase";
+import { getSupabaseAdmin } from "./supabase";
 import { agentConfigs } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
@@ -29,7 +29,7 @@ export async function prepareProjectWorkflow(
 ) {
   const forceRegenerate = Boolean(options.forceRegenerate);
 
-  const { data: project, error: projectError } = await supabaseAdmin
+  const { data: project, error: projectError } = await getSupabaseAdmin()
     .from("projects")
     .select("*")
     .eq("id", projectId)
@@ -51,7 +51,7 @@ export async function prepareProjectWorkflow(
     project.status === "failed" ||
     (project.status === "completed" && forceRegenerate)
   ) {
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError } = await getSupabaseAdmin()
       .from("agent_runs")
       .delete()
       .eq("project_id", projectId);
@@ -61,7 +61,7 @@ export async function prepareProjectWorkflow(
     }
   }
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await getSupabaseAdmin()
     .from("projects")
     .update({
       status: "running",
@@ -84,7 +84,7 @@ export async function prepareProjectWorkflow(
  * - pending / failed / 其它非 running：skipped 且不改库，避免过期事件被外层 catch 误标为 projects.failed。
  */
 export async function executeProjectWorkflow(projectId: string) {
-  const { data: project, error: projectError } = await supabaseAdmin
+  const { data: project, error: projectError } = await getSupabaseAdmin()
     .from("projects")
     .select("*")
     .eq("id", projectId)
@@ -119,7 +119,7 @@ export async function executeProjectWorkflow(projectId: string) {
         previousOutputs: contextOutputs
       });
 
-      const { data: run, error: runCreateError } = await supabaseAdmin
+      const { data: run, error: runCreateError } = await getSupabaseAdmin()
         .from("agent_runs")
         .insert({
           project_id: projectId,
@@ -145,7 +145,7 @@ export async function executeProjectWorkflow(projectId: string) {
           temperature: 0.35
         });
 
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("agent_runs")
           .update({
             output,
@@ -157,7 +157,7 @@ export async function executeProjectWorkflow(projectId: string) {
         contextOutputs.push(`## ${agent.name}\n\n${output}`);
       } catch (agentError: unknown) {
         const message = getErrorMessage(agentError);
-        await supabaseAdmin
+        await getSupabaseAdmin()
           .from("agent_runs")
           .update({
             status: "failed",
@@ -176,7 +176,7 @@ export async function executeProjectWorkflow(projectId: string) {
       sections: contextOutputs
     });
 
-    const { error: completeError } = await supabaseAdmin
+    const { error: completeError } = await getSupabaseAdmin()
       .from("projects")
       .update({
         status: "completed",
@@ -193,7 +193,7 @@ export async function executeProjectWorkflow(projectId: string) {
     return { projectId, status: "completed" as const };
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("projects")
       .update({
         status: "failed",
@@ -207,7 +207,7 @@ export async function executeProjectWorkflow(projectId: string) {
 }
 
 export async function markProjectFailed(projectId: string, message: string) {
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("projects")
     .update({
       status: "failed",

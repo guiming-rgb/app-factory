@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -7,7 +7,7 @@ const LIST_LIMIT = 50;
 
 export async function GET() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const title = buildProjectTitle(idea);
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from("projects")
       .insert({
         title,

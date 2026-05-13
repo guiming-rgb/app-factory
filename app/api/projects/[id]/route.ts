@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ export async function GET(
   try {
     const projectId = params.id;
 
-    const { data: project, error: projectError } = await supabaseAdmin
+    const { data: project, error: projectError } = await getSupabaseAdmin()
       .from("projects")
       .select("*")
       .eq("id", projectId)
@@ -20,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: "项目不存在" }, { status: 404 });
     }
 
-    const { data: runs, error: runsError } = await supabaseAdmin
+    const { data: runs, error: runsError } = await getSupabaseAdmin()
       .from("agent_runs")
       .select("*")
       .eq("project_id", projectId)
