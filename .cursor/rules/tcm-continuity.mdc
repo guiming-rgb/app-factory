@@ -10,17 +10,17 @@ alwaysApply: false
 
 - **真相源**：跨会话、跨天、换机器以 **Git + 仓库内接力文档** 为准；不默认聊天上下文在别处仍成立。
 - **多项目**：一 App 一仓库 + 一接力单（如 `docs/HANDOFF.md`）+ 一聊天主题；跨项目靠 **Git / 接口 / 契约**，不靠一条对话串多仓。
-- **缺上下文**：先读 [ONE_PAGER.md](../../docs/ONE_PAGER.md)、[CONTINUOUS_DELIVERY_OUTLINE.md](../../docs/CONTINUOUS_DELIVERY_OUTLINE.md)、[HANDOFF.md](../../docs/HANDOFF.md)，或使用 [SESSION_START_TEMPLATE.md](../../docs/SESSION_START_TEMPLATE.md)。
+- **缺上下文**：先读 `docs/ONE_PAGER.md`、`docs/CONTINUOUS_DELIVERY_OUTLINE.md`、`docs/HANDOFF.md`，或使用 `docs/SESSION_START_TEMPLATE.md`。
 
 ## 二、开工（建议顺序）
 
-1. [ONE_PAGER.md](../../docs/ONE_PAGER.md)（约 1 分钟）
-2. [CONTINUOUS_DELIVERY_OUTLINE.md](../../docs/CONTINUOUS_DELIVERY_OUTLINE.md) **§2 本批并行线** + **§3 最近收工**
-3. [HANDOFF.md](../../docs/HANDOFF.md)
+1. `docs/ONE_PAGER.md`（约 1 分钟）
+2. `docs/CONTINUOUS_DELIVERY_OUTLINE.md` **§2 本批并行线** + **§3 最近收工**
+3. `docs/HANDOFF.md`
 4. `git pull` / `git log`（可选）
 5. 再执行用户口头任务
 
-涉及支付、敏感数据、对用户 AI 输出、导出、上线等：**先对照** [安全审计与清单.md](../../docs/安全审计与清单.md) 与 [开发纲要.md](../../docs/开发纲要.md)，**不得绕过**已写明门禁。
+涉及支付、敏感数据、对用户 AI 输出、导出、上线等：**先对照** `docs/安全审计与清单.md` 与 `docs/开发纲要.md`，**不得绕过**已写明门禁。
 
 ## 三、收工（必做）
 
