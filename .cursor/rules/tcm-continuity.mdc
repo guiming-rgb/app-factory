@@ -1,0 +1,35 @@
+---
+description: 跨会话接力总则 + 开工/收工策略（TCM 连续性）；与 docs/CONTINUOUS_DELIVERY_OUTLINE.md 配套。
+globs: docs/**,.cursor/**
+alwaysApply: false
+---
+
+# 连续性（TCM）— Cursor 规则摘要
+
+## 一、总则
+
+- **真相源**：跨会话、跨天、换机器以 **Git + 仓库内接力文档** 为准；不默认聊天上下文在别处仍成立。
+- **多项目**：一 App 一仓库 + 一接力单（如 `docs/HANDOFF.md`）+ 一聊天主题；跨项目靠 **Git / 接口 / 契约**，不靠一条对话串多仓。
+- **缺上下文**：先读 [ONE_PAGER.md](../../docs/ONE_PAGER.md)、[CONTINUOUS_DELIVERY_OUTLINE.md](../../docs/CONTINUOUS_DELIVERY_OUTLINE.md)、[HANDOFF.md](../../docs/HANDOFF.md)，或使用 [SESSION_START_TEMPLATE.md](../../docs/SESSION_START_TEMPLATE.md)。
+
+## 二、开工（建议顺序）
+
+1. [ONE_PAGER.md](../../docs/ONE_PAGER.md)（约 1 分钟）
+2. [CONTINUOUS_DELIVERY_OUTLINE.md](../../docs/CONTINUOUS_DELIVERY_OUTLINE.md) **§2 本批并行线** + **§3 最近收工**
+3. [HANDOFF.md](../../docs/HANDOFF.md)
+4. `git pull` / `git log`（可选）
+5. 再执行用户口头任务
+
+涉及支付、敏感数据、对用户 AI 输出、导出、上线等：**先对照** [安全审计与清单.md](../../docs/安全审计与清单.md) 与 [开发纲要.md](../../docs/开发纲要.md)，**不得绕过**已写明门禁。
+
+## 三、收工（必做）
+
+1. 更新 `docs/HANDOFF.md`（进度、待办、日期）
+2. 更新 `docs/ONE_PAGER.md`（事实与待办）
+3. 更新 `docs/CONTINUOUS_DELIVERY_OUTLINE.md`：**§3 表格最上方新一行** + **重写 §2**；必要时改 **§1**
+4. `git commit`：信息含 `收工` 或 `chore(收工)` 便于 `git log` 检索
+5. 重大决策：单独文档并在 §3 给链接
+
+## 四、计划粒度
+
+- 主单位是 **一批并行任务包**（§2 常设 **5～8 条线 A～H**），标 **依赖/互斥**；半天/上下午仅作 **收工锚点**，不等于单条耗时。

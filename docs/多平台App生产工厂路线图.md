@@ -13,7 +13,10 @@
    - **Flutter 栈**：iPhone、iPad、Android 手机、Android 平板（同一套 Flutter 工程，多 `Target`/`Flavor` 与布局适配）。  
    - **鸿蒙栈**：鸿蒙手机、鸿蒙平板 → **独立** **ArkTS / ArkUI** 工程（不强行与 Flutter 同源）。  
    - **后端栈**：**现阶段优先 Supabase**（与现有工程一致）；长期可抽象 **BackendTarget**（如 NestJS + PostgreSQL），由 Spec 驱动选型。  
-3. **第一阶段**在 v1.2 稳定后增量交付：**App Spec v0.1** → **Schema** → **表结构草案** → **Inngest 事件规划** → **Flutter 最小模板 + Generator**，**不**推翻现有 `projects` / Agent 流水线，而是**并行延伸**。
+3. **交付战略（拍板）**：  
+   - **主交付**：可独立安装、可真机调试的 **客户端工程**（Flutter / 鸿蒙等），与产品初衷一致。  
+   - **微信小程序：必选交付物（非可选项）**：与主交付**并行**规划与生成；用于 **微信生态内登录、获客、分享与轻量化使用**，不得以「先做 App、小程序以后再说」弱化——工厂成熟后应能产出 **「可安装 App + 微信原生小程序」** 组合（具体生成顺序可分阶段，但 **小程序不在「可选」之列**）。  
+4. **第一阶段**在 v1.2 稳定后增量交付：**App Spec v0.1** → **Schema** → **表结构草案** → **Inngest 事件规划** → **Flutter 最小模板 + Generator**，**不**推翻现有 `projects` / Agent 流水线，而是**并行延伸**；**微信小程序 Generator / 模板**在路线中紧随或与 Flutter 最小闭环交错落地（见阶段 B/C）。
 
 ---
 
@@ -21,7 +24,8 @@
 
 - **苹果 + 安卓四形态**：用 **Flutter** 覆盖成本与维护最优；平板多为 **布局与断点**，而非四套业务代码。  
 - **鸿蒙**：生态与 UI 体系与 Flutter 不同，**单独 ArkTS 工程**更现实，避免「假跨端」与高失败率。  
-- **后端**：与 **Supabase** 对齐可降低首版复杂度；Spec 里预留 **api / auth** 抽象即可后续换栈。
+- **后端**：与 **Supabase** 对齐可降低首版复杂度；Spec 里预留 **api / auth** 抽象即可后续换栈。  
+- **微信原生小程序**：**必选形态**；与 App 工程共享 **同一套业务与数据契约（App Spec）**，但为 **独立小程序工程**（微信登录、审核与发布流程与 App Store/应用市场不同，须在 Spec 与模板矩阵中单列能力边界）。
 
 ---
 
@@ -32,16 +36,19 @@
         ↓
   App Spec IR（校验 + 模板能力对照）
         ↓
-  ┌─────────────┬──────────────────┬─────────────────┐
-  ↓             ↓                  ↓                 ↓
-Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
-        ↓             ↓                  ↓
-  构建与分析    构建与分析        Migration / RLS 建议
-        ↓             ↓                  ↓
-  有限次自动修复（patch + 日志 + 原因）
-        ↓
-  产物：ZIP / Git 分支 / Artifact 元数据
+  ┌─────────────┬─────────────┬─────────────┬────────────────────────┐
+  ↓             ↓             ↓             ↓                        ↓
+Flutter Gen  Harmony Gen  Backend Gen  微信小程序 Gen（必选，非 Web 替代）
+        ↓             ↓             ↓             ↓
+  构建与分析   构建与分析  Migration/RLS  微信开发者工具构建 / 上传
+        └─────────────┴─────────────┴─────────────┴────────────────────────┘
+                                ↓
+                    有限次自动修复（patch + 日志 + 原因）
+                                ↓
+                    产物：ZIP / Git 分支 / Artifact 元数据
 ```
+
+（**可选**）**Web / PWA** 与工厂主站（Next）不同，仅作补充渠道；**不得**用「有 Web」来弱化 **微信小程序必选**。
 
 当前仓库已实现的是 **「方案文档」** 阶段；下一阶段是 **Spec IR** 与 **代码生成 + 构建**，仍复用 **Inngest** 做长任务与步骤编排。
 
@@ -51,7 +58,7 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 
 - **不是** Prompt 堆砌，而是 **机器可读、可校验、可版本化** 的结构（JSON / YAML + JSON Schema）。  
 - **作用**：  
-  - 驱动 Flutter / 鸿蒙 / 后端生成器输入；  
+  - 驱动 Flutter / 鸿蒙 / **微信原生小程序** / 后端生成器输入；  
   - 与 **Template Capability Matrix** 对照，超出能力则 **降级为 MVP + 人工清单**；  
   - 作为 **评测与回归** 的稳定锚点。
 
@@ -69,6 +76,8 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 | Tab + 列表 + 详情 + 表单 | 复杂地图、蓝牙、AR |
 | 基础 CRUD + Supabase 查询 | 应用内支付（需资质与 SDK 深度接入） |
 | 响应式布局（手机 / 平板断点） | 大型离线同步、复杂音视频 |
+
+**微信原生小程序（必选）**：须维护 **与 Flutter 并列** 的「小程序模板能力矩阵」条目（如：`wx.login` / 云托管或自建 HTTPS API、分包、审核类目、敏感词与 UGC 合规）；**不得**将小程序列为「可选 Web」的附属；无小程序生成能力的阶段须在对外说明中标注为 **能力未就绪**，而非「不需要」。
 
 **规则**：用户描述明显超出矩阵 → Spec 中 **`complianceFlags.templateLimited: true`**，并生成 **「需人工开发」** 章节，禁止硬编不可靠原生插件。
 
@@ -97,7 +106,7 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 
 - **用户配额**、**任务超时**、**并发上限**；  
 - **build_jobs** 状态机、**artifacts** 生命周期（过期清理）；  
-- Inngest **分步函数**（`spec.generate` → `codegen.flutter` → `build.flutter` → `artifact.upload`），与现有 `project/generate.requested` **并存、命名空间清晰**。
+- Inngest **分步函数**（如 `spec.generate` → `codegen.flutter` → `build.flutter` → **`codegen.wechat_miniprogram` → `build.wechat_miniprogram`** → `artifact.upload`），与现有 `project/generate.requested` **并存、命名空间清晰**（事件名以最终实现为准）。
 
 本节不在 v1.2 联调前实现，仅作路线锁定。
 
@@ -128,15 +137,17 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 2. **JSON Schema** 仓库内版本化（`schemas/app-spec-v0.1.json`）。  
 3. **表设计**：`app_specs`、`build_jobs`、`artifacts`（及与 `projects` 外键关系）。  
 4. **Inngest 事件与步骤**白皮书（不与现有事件冲突）。  
-5. **Flutter Generator 最小模板**：单模块（如登录 + 列表 + 详情）+ 一次 `analyze` 通过。
+5. **Flutter Generator 最小模板**：单模块（如登录 + 列表 + 详情）+ 一次 `analyze` 通过。  
+6. **微信原生小程序最小模板 + Generator（与 Flutter 同为路线必选）**：可导入微信开发者工具、可连接同一后端契约；构建/上传步骤纳入 `build_jobs` 规划。
 
 **阶段 B 验收目标（建议）**：
 
-> 一句话需求（或从现有项目 idea 转换）→ **有效 App Spec JSON** → **Flutter 手机端基础工程** → **`dart analyze` / `flutter build` 在 CI 或沙箱中通过** → **输出 ZIP 或 Git 分支引用**。
+> 一句话需求（或从现有项目 idea 转换）→ **有效 App Spec JSON** → **Flutter 手机端基础工程** → **`dart analyze` / `flutter build` 在 CI 或沙箱中通过** → **输出 ZIP 或 Git 分支引用**；**并**规划或交付 **小程序最小工程**（可与 Flutter 分两个里程碑，但 **小程序不得标为可选**）。
 
 ### 阶段 C
 
 - 鸿蒙 ArkTS 最小模板 + Generator。  
+- **微信原生小程序**：从「最小模板」扩展为与业务 Spec 对齐的完整生成链路（登录、分包、环境区分）。  
 - Backend 从「仅 Supabase」扩展到 **BackendTarget** 抽象（可选）。
 
 ---
@@ -144,7 +155,7 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 ## 十、对外产品表述建议
 
 - **内部/技术**：「三栈、多形态」+ App Spec IR。  
-- **对外营销**：「一次描述，多端产出（iOS / Android / 鸿蒙可分期）」—— **避免**承诺首版即全功能六端parity。
+- **对外营销**：「一次描述，多端产出：**可安装 App（iOS / Android / 鸿蒙可分期）+ 微信原生小程序（必选）**」—— **避免**承诺首版即全功能六端 parity；**不**将小程序描述为「可有可无」。
 
 ---
 
@@ -162,4 +173,4 @@ Flutter Gen   Harmony Gen     Backend Gen      （可选）Web
 
 ---
 
-**最关键的一句**：**先把 v1.2 联调完成，再落 App Spec IR 与生成器；不要跳过 Spec 直接跳六端代码生成。**
+**最关键的一句**：**先把 v1.2 联调完成，再落 App Spec IR 与生成器；不要跳过 Spec 直接跳多端代码生成。工厂成熟后的交付组合应明确包含「可安装 App + 微信原生小程序（必选）」。**

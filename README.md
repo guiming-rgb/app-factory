@@ -8,9 +8,8 @@ AI 原生软件生产平台：输入 App 想法，经 8 个智能体串行生成
 - **功能表、架构、路径与交接备忘**： [docs/项目功能与架构交接.md](./docs/项目功能与架构交接.md)  
 - **版本 / 分支 / 标签 / 同步版回退**： [docs/版本与分支.md](./docs/版本与分支.md)  
 - **多平台长期路线（三栈 + App Spec IR）**： [docs/多平台App生产工厂路线图.md](./docs/多平台App生产工厂路线图.md)  
-- **App Spec IR v0.1 草案**： [docs/App-Spec-v0.1-草案.md](./docs/App-Spec-v0.1-草案.md)
-
-## v1.2（当前）：Inngest 异步队列
+- **App Spec IR v0.1 草案**： [docs/App-Spec-v0.1-草案.md](./docs/App-Spec-v0.1-草案.md)  
+- **跨会话接力（TCM）**： [docs/ONE_PAGER.md](./docs/ONE_PAGER.md)（一页简报）· [docs/CONTINUOUS_DELIVERY_OUTLINE.md](./docs/CONTINUOUS_DELIVERY_OUTLINE.md) · [docs/HANDOFF.md](./docs/HANDOFF.md) · [docs/SESSION_START_TEMPLATE.md](./docs/SESSION_START_TEMPLATE.md) · `.cursor/rules/tcm-continuity.mdc`
 
 - **`POST /api/projects/[id]/generate`**：只做 `prepareProjectWorkflow`（校验、清理、`status=running`）+ `inngest.send`，**立即返回** `{ success: true, mode: "async" }`。
 - **后台执行**：`lib/inngest/functions.ts` 中函数监听 `project/generate.requested`，调用 `executeProjectWorkflow` 跑 8 个 Agent。
