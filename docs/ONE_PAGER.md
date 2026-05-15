@@ -11,7 +11,7 @@
 ## 近期待办（压缩）
 
 1. 双进程：`npm run dev:3000` + `npm run inngest:dev`；打开 `http://localhost:3000` 跑通一次生成。
-2. 按 [执行计划.md](./执行计划.md) 第二节「收工备忘」中的 SQL 做 **数据检疫**。
+2. 打开 [验收记录.md](./验收记录.md) 逐项勾选；按其中 **§五 SQL** 在 Supabase 做数据检疫。
 3. 通过后更新 [HANDOFF.md](./HANDOFF.md) + [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) §3，并 `git commit`。
 
 ## 本地入口（默认端口）
