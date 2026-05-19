@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "inngest:dev": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest"
+    "inngest:dev": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
+    "inngest:dev:3001": "npx inngest-cli@latest dev -u http://localhost:3001/api/inngest"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",

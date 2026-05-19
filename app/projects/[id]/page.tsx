@@ -7,27 +7,17 @@ import { GenerateProjectButton } from "@/components/GenerateProjectButton";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
 import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButton";
 import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
+import { getProjectDetailForPage } from "@/lib/projects-server";
 
-async function getProject(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-  const res = await fetch(`${baseUrl}/api/projects/${id}`, {
-    cache: "no-store"
-  });
-
-  if (!res.ok) {
-    return null;
-  }
-
-  return res.json();
-}
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ProjectPage({
   params
 }: {
   params: { id: string };
 }) {
-  const data = await getProject(params.id);
+  const data = await getProjectDetailForPage(params.id);
 
   if (!data) {
     return (

@@ -2,24 +2,26 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至文档更新）
+## 当前事实（截至 2026-05-19）
 
-- **产品**：Next + Supabase + Inngest，8 Agent 异步生成方案（MVP v1.2 架构）。
-- **代码阶段**：v1.2 **联调候选**；**验收 A**（真机双进程 + DB/产品验收）仍为队列项（以 Supabase 实测为准）。
-- **路线文档**：小程序 **必选**；里程碑 **MVP v2 / v2a / v2b** 已写入 [执行计划.md](./执行计划.md)。
+- **产品**：Next + Supabase + Inngest，8 Agent 异步生成方案（MVP v1.2）。
+- **验收 A**：**已通过**（真机双进程、completed + 8×`agent_runs`；详见 [验收记录.md](./验收记录.md)）。
+- **分支**：`feature/v1.2-inngest`（合并 `main` 待议事）。
+- **路线**：微信原生小程序 **必选**；里程碑 **MVP v2 / v2a / v2b** 见 [执行计划.md](./执行计划.md)。
 
 ## 近期待办（压缩）
 
-1. 双进程：`npm run dev:3000` + `npm run inngest:dev`；打开 `http://localhost:3000` 跑通一次生成。
-2. 打开 [验收记录.md](./验收记录.md) 逐项勾选；按其中 **§五 SQL** 在 Supabase 做数据检疫。
-3. 通过后更新 [HANDOFF.md](./HANDOFF.md) + [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) §3，并 `git commit`。
+1. 议事：是否合并 **`feature/v1.2-inngest` → `main`**。
+2. **MVP v1.3** 可观测与成本，或 **v2a** 调研（见 TCM 大纲 §2 下一批）。
+3. 每次生成前：**终端 A（3001 网站）+ 终端 B（`inngest:dev:3001`）** 同时运行。
 
-## 本地入口（默认端口）
+## 本地入口（本机常用：3001）
 
-| 用途 | URL |
-|------|-----|
-| 工厂 Web | `http://localhost:3000` |
-| Inngest 端点 | `http://localhost:3000/api/inngest` |
+| 用途 | URL / 命令 |
+|------|------------|
+| 工厂 Web | `http://localhost:3001` |
+| 终端 A | `npm run build && npm run start -- -p 3001` |
+| 终端 B | `npm run inngest:dev:3001` |
 | Inngest 本地 UI（常见） | `http://localhost:8288` |
 
 ## 必读安全 / 合规

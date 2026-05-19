@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-14  
+> **最后更新**：2026-05-19  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -9,22 +9,34 @@
 - [x] MVP v1.2 代码侧：Inngest 异步 + 文档（README、`INNGEST_DEV`、收工备忘）
 - [x] 路线图：小程序必选；里程碑 MVP v2 / v2a / v2b + 虚拟汇总行
 - [x] TCM 连续性资产：`.cursor/rules/tcm-continuity.mdc`、本 HANDOFF、`CONTINUOUS_DELIVERY_OUTLINE`、`SESSION_START_TEMPLATE`、`ONE_PAGER`
-- [ ] **验收 A**：双进程 + 一次完整生成 + Supabase / 产品侧验收（见 [执行计划.md](./执行计划.md) §二备忘 §4）
-- [ ] `feature/v1.2-inngest` 合并 `main` 议事（验收 A 通过后）
+- [x] **验收 A**：真机双进程 + 完整生成 + 产品/库侧确认（见 [验收记录.md](./验收记录.md)；样本项目见下）
+- [ ] `feature/v1.2-inngest` 合并 `main` 议事（验收 A 已通过，待决策）
 - [ ] MVP v1.3 可观测与成本
+
+## 验收 A 样本项目（2026-05-19，勿贴密钥）
+
+| 项目 | `projects.id` | 结果 |
+|------|---------------|------|
+| 海洋生态切西瓜小游戏 | `58266242-359b-4ae0-a726-fb34929b38a4` | ✅ completed，8/8 |
+| 踢足球小游戏 | `c4dc7d7a-7b33-42d8-af8f-09f5350c4de2` | ✅ completed，8/8 |
+
+**本地联调约定（本机）**：因 **3000 被其他 App 占用**，工厂使用 **`http://localhost:3001`**；终端 A：`npm run start -- -p 3001`（或 build 后 start）；终端 B：`npm run inngest:dev:3001`。
 
 ## 待办列表（执行顺序建议）
 
-1. 跑通验收 A → 更新本 HANDOFF 勾选 + [执行计划.md](./执行计划.md) 第二节。
-2. 每阶段收工：§5 清单 + `git commit`（`收工` / `chore(收工)`）。
-3. 重大决策：单页文档 + 链到 `CONTINUOUS_DELIVERY_OUTLINE` §3。
+1. 议事：**是否合并 `feature/v1.2-inngest` → `main`**（参考 [安全审计与清单.md](./安全审计与清单.md)）。
+2. 启动 **MVP v1.3**（可观测与成本）或 v2a/v2b 调研（见 [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) §2 下一批）。
+3. 每阶段收工：§5 清单 + `git commit`（`收工` / `chore(收工)`）。
 
 ## 阻塞 / 风险（简）
 
-- 无登记阻塞；Inngest 见 `PUT /api/inngest` 500 时先查 **`INNGEST_DEV=1`**。
+- **Inngest 未开** → `后台任务投递失败：fetch failed`；须保持 **终端 B** 运行。
+- **详情页缓存**（已修）：生产模式曾缓存旧 `pending`；已对项目页/API 加 `force-dynamic`（见 2026-05-19 提交）。
+- 联调：`PUT /api/inngest` 500 时查 **`INNGEST_DEV=1`**。
 
 ## 变更记录
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-19 | **验收 A 通过**；HANDOFF/验收记录/执行计划/TCM 大纲/简报同步；样本：海洋生态 + 踢足球 |
 | 2026-05-14 | 初版 HANDOFF；与 TCM 大纲同日建立 |

@@ -1,22 +1,11 @@
 import Link from "next/link";
+import { listProjectsForPage } from "@/lib/projects-server";
 
-async function getProjects() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/projects`, { cache: "no-store" });
-  if (!res.ok) return null;
-  return res.json() as Promise<{
-    projects: Array<{
-      id: string;
-      title: string;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    }>;
-  }>;
-}
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ProjectsListPage() {
-  const data = await getProjects();
+  const projects = await listProjectsForPage();
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
@@ -36,17 +25,17 @@ export default async function ProjectsListPage() {
           </Link>
         </div>
 
-        {!data ? (
+        {projects === null ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
-            无法加载项目列表，请检查 NEXT_PUBLIC_APP_URL 与 Supabase 配置。
+            无法加载项目列表，请检查 Supabase 环境变量（NEXT_PUBLIC_SUPABASE_URL、SUPABASE_SERVICE_ROLE_KEY）与数据库表是否已初始化。
           </div>
-        ) : data.projects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">
             暂无项目，请从首页创建。
           </div>
         ) : (
           <ul className="space-y-3">
-            {data.projects.map((p) => (
+            {projects.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/projects/${p.id}`}
