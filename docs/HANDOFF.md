@@ -10,7 +10,7 @@
 - [x] 路线图：小程序必选；里程碑 MVP v2 / v2a / v2b + 虚拟汇总行
 - [x] TCM 连续性资产：`.cursor/rules/tcm-continuity.mdc`、本 HANDOFF、`CONTINUOUS_DELIVERY_OUTLINE`、`SESSION_START_TEMPLATE`、`ONE_PAGER`
 - [x] **验收 A**：真机双进程 + 完整生成 + 产品/库侧确认（见 [验收记录.md](./验收记录.md)；样本项目见下）
-- [ ] `feature/v1.2-inngest` 合并 `main` 议事（验收 A 已通过，待决策）
+- [x] `feature/v1.2-inngest` 合并 `main`（2026-05-19；见 [合并main-议事记录.md](./合并main-议事记录.md)）
 - [ ] MVP v1.3 可观测与成本
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
@@ -24,8 +24,8 @@
 
 ## 待办列表（执行顺序建议）
 
-1. 议事：**是否合并 `feature/v1.2-inngest` → `main`**（参考 [安全审计与清单.md](./安全审计与清单.md)）。
-2. 启动 **MVP v1.3**（可观测与成本）或 v2a/v2b 调研（见 [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) §2 下一批）。
+1. **MVP v1.3**：Supabase 迁移 + 真机验收（见 [MVP-v1.3-usage_logs.md](./MVP-v1.3-usage_logs.md)）。
+2. v2a/v2b 调研（见 [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) §2）。
 3. 每阶段收工：§5 清单 + `git commit`（`收工` / `chore(收工)`）。
 
 ## 阻塞 / 风险（简）
@@ -38,5 +38,6 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-19 | **`feature/v1.2-inngest` 合并 `main`**（fast-forward）；`mvp-v1.2` 标签；议事记录落盘 |
 | 2026-05-19 | **验收 A 通过**；HANDOFF/验收记录/执行计划/TCM 大纲/简报同步；样本：海洋生态 + 踢足球 |
 | 2026-05-14 | 初版 HANDOFF；与 TCM 大纲同日建立 |
