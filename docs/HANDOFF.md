@@ -11,7 +11,7 @@
 - [x] TCM 连续性资产：`.cursor/rules/tcm-continuity.mdc`、本 HANDOFF、`CONTINUOUS_DELIVERY_OUTLINE`、`SESSION_START_TEMPLATE`、`ONE_PAGER`
 - [x] **验收 A**：真机双进程 + 完整生成 + 产品/库侧确认（见 [验收记录.md](./验收记录.md)；样本项目见下）
 - [x] `feature/v1.2-inngest` 合并 `main`（2026-05-19；见 [合并main-议事记录.md](./合并main-议事记录.md)）
-- [ ] MVP v1.3 可观测与成本
+- [ ] MVP v1.3 可观测与成本（代码已起步：见 [MVP-v1.3-usage_logs.md](./MVP-v1.3-usage_logs.md)，待 Supabase 迁移 + 验收）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 

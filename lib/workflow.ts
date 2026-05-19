@@ -2,6 +2,10 @@ import { getSupabaseAdmin } from "./supabase";
 import { agentConfigs } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
+import {
+  deleteUsageLogsForProject,
+  insertUsageLog
+} from "./usage-logs";
 
 /** 与 API 层对齐：重复启动 running 项目时返回 409 */
 export const WORKFLOW_ERROR_ALREADY_RUNNING =
@@ -59,6 +63,8 @@ export async function prepareProjectWorkflow(
     if (deleteError) {
       throw new Error(`清理旧 Agent 记录失败：${deleteError.message}`);
     }
+
+    await deleteUsageLogsForProject(projectId);
   }
 
   const { error: updateError } = await getSupabaseAdmin()
@@ -139,22 +145,35 @@ export async function executeProjectWorkflow(projectId: string) {
       }
 
       try {
-        const output = await callLLM({
+        const llmStartedAt = Date.now();
+        const llmResult = await callLLM({
           systemPrompt: agent.systemPrompt,
           userPrompt: runInput,
           temperature: 0.35
+        });
+        const durationMs = Date.now() - llmStartedAt;
+
+        await insertUsageLog({
+          projectId,
+          agentRunId: run.id,
+          agentCode: agent.code,
+          durationMs,
+          promptTokens: llmResult.usage.promptTokens,
+          completionTokens: llmResult.usage.completionTokens,
+          totalTokens: llmResult.usage.totalTokens,
+          modelName: llmResult.model
         });
 
         await getSupabaseAdmin()
           .from("agent_runs")
           .update({
-            output,
+            output: llmResult.content,
             status: "completed",
             finished_at: new Date().toISOString()
           })
           .eq("id", run.id);
 
-        contextOutputs.push(`## ${agent.name}\n\n${output}`);
+        contextOutputs.push(`## ${agent.name}\n\n${llmResult.content}`);
       } catch (agentError: unknown) {
         const message = getErrorMessage(agentError);
         await getSupabaseAdmin()

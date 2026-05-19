@@ -94,7 +94,24 @@ create table if not exists evals (
   created_at timestamptz default now()
 );
 
+create table if not exists usage_logs (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  agent_run_id uuid references agent_runs(id) on delete set null,
+  agent_code text,
+  event_type text not null default 'llm_call',
+  duration_ms int,
+  prompt_tokens int,
+  completion_tokens int,
+  total_tokens int,
+  model_name text,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
 create index if not exists idx_projects_status on projects(status);
 create index if not exists idx_agent_runs_project_id on agent_runs(project_id);
 create index if not exists idx_agent_runs_status on agent_runs(status);
 create index if not exists idx_memories_project_id on memories(project_id);
+create index if not exists idx_usage_logs_project_id on usage_logs(project_id);
+create index if not exists idx_usage_logs_agent_run_id on usage_logs(agent_run_id);

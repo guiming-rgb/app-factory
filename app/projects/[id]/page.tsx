@@ -32,7 +32,7 @@ export default async function ProjectPage({
     );
   }
 
-  const { project, runs } = data as {
+  const { project, runs, usage } = data as {
     project: {
       id: string;
       title: string;
@@ -49,6 +49,16 @@ export default async function ProjectPage({
       output: string | null;
       error_message: string | null;
     }>;
+    usage: {
+      llmCallCount: number;
+      totalDurationMs: number;
+      totalTokens: number;
+      byAgent: Array<{
+        agentCode: string;
+        durationMs: number;
+        totalTokens: number;
+      }>;
+    } | null;
   };
 
   const completedAgentCount = runs.filter((r) => r.status === "completed")
@@ -87,6 +97,17 @@ export default async function ProjectPage({
               <p className="mt-2 text-xs text-gray-500">
                 项目 ID：{project.id}
               </p>
+
+              {usage && usage.llmCallCount > 0 && (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <p className="font-medium text-slate-900">生成用量（v1.3）</p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    LLM 调用 {usage.llmCallCount} 次 · 总耗时{" "}
+                    {formatDurationMs(usage.totalDurationMs)} · Token 合计{" "}
+                    {usage.totalTokens.toLocaleString()}
+                  </p>
+                </div>
+              )}
 
               {(project.status === "running" ||
                 runs.length > 0 ||
@@ -202,4 +223,17 @@ function formatProjectStatus(status: string) {
   };
 
   return map[status] || status;
+}
+
+function formatDurationMs(ms: number) {
+  if (ms < 1000) {
+    return `${ms} ms`;
+  }
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) {
+    return `${seconds} 秒`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest > 0 ? `${minutes} 分 ${rest} 秒` : `${minutes} 分`;
 }

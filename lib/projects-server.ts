@@ -1,4 +1,8 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  getProjectUsageSummary,
+  type ProjectUsageSummary
+} from "@/lib/usage-logs";
 
 const LIST_LIMIT = 50;
 
@@ -53,9 +57,13 @@ export async function getProjectDetailForPage(projectId: string) {
       return null;
     }
 
-    return { project, runs: runs ?? [] };
+    const usage = await getProjectUsageSummary(projectId);
+
+    return { project, runs: runs ?? [], usage };
   } catch (e) {
     console.error("[getProjectDetailForPage]", e);
     return null;
   }
 }
+
+export type { ProjectUsageSummary };

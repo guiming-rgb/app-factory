@@ -15,11 +15,23 @@ export const openai = new OpenAI({
   baseURL
 });
 
+export type LlmUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
+export type LlmCallResult = {
+  content: string;
+  model: string;
+  usage: LlmUsage;
+};
+
 export async function callLLM(params: {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
-}) {
+}): Promise<LlmCallResult> {
   const completion = await openai.chat.completions.create({
     model,
     temperature: params.temperature ?? 0.4,
@@ -41,5 +53,15 @@ export async function callLLM(params: {
     throw new Error("LLM 返回内容为空");
   }
 
-  return content;
+  const usage = completion.usage;
+
+  return {
+    content,
+    model: completion.model ?? model,
+    usage: {
+      promptTokens: usage?.prompt_tokens ?? 0,
+      completionTokens: usage?.completion_tokens ?? 0,
+      totalTokens: usage?.total_tokens ?? 0
+    }
+  };
 }
