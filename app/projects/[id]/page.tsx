@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AgentResultCard } from "@/components/AgentResultCard";
 import { AutoRefreshWhenRunning } from "@/components/AutoRefreshWhenRunning";
 import { CopyReportButton } from "@/components/CopyReportButton";
+import { DownloadFlutterButton } from "@/components/DownloadFlutterButton";
 import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { GenerateProjectButton } from "@/components/GenerateProjectButton";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
@@ -169,6 +170,8 @@ export default async function ProjectPage({
                 project.status === "completed") && (
                 <RefreshProjectButton />
               )}
+
+              <DownloadFlutterButton projectId={project.id} />
             </div>
           </div>
 
