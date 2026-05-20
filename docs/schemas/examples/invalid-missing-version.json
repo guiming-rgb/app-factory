@@ -1,0 +1,14 @@
+{
+  "appName": "bad_spec",
+  "displayName": "缺少 specVersion",
+  "targets": {
+    "flutter": {
+      "enabled": true,
+      "platforms": ["ios"],
+      "formFactors": ["phone"]
+    },
+    "backend": { "provider": "supabase" }
+  },
+  "screens": [{ "id": "home", "title": "首页", "type": "list" }],
+  "limitations": []
+}

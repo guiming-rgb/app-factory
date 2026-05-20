@@ -1,0 +1,8 @@
+{
+  "templateVersion": "minimal-0.1.0",
+  "generator": "app-factory-v2a-pending",
+  "managedPaths": [
+    "lib/router/app_router.dart",
+    "lib/features/"
+  ]
+}

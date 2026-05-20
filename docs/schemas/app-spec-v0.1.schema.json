@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://app-factory.local/schemas/app-spec-v0.1.schema.json",
+  "title": "App Spec IR v0.1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "specVersion",
+    "appName",
+    "displayName",
+    "targets",
+    "screens",
+    "limitations"
+  ],
+  "properties": {
+    "specVersion": {
+      "type": "string",
+      "pattern": "^0\\.1\\.[0-9]+$"
+    },
+    "appName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "sourceProjectId": {
+      "type": ["string", "null"],
+      "format": "uuid"
+    },
+    "targets": {
+      "type": "object",
+      "required": ["flutter", "backend"],
+      "properties": {
+        "flutter": {
+          "type": "object",
+          "required": ["enabled", "platforms", "formFactors"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "platforms": {
+              "type": "array",
+              "items": { "enum": ["ios", "android"] },
+              "minItems": 1
+            },
+            "formFactors": {
+              "type": "array",
+              "items": { "enum": ["phone", "tablet"] }
+            }
+          },
+          "additionalProperties": true
+        },
+        "harmony": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "formFactors": {
+              "type": "array",
+              "items": { "enum": ["phone", "tablet"] }
+            }
+          },
+          "additionalProperties": true
+        },
+        "backend": {
+          "type": "object",
+          "required": ["provider"],
+          "properties": {
+            "provider": {
+              "enum": ["supabase", "nest", "custom"]
+            },
+            "regionHint": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "entities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entity" }
+    },
+    "screens": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/screen" }
+    },
+    "navigation": { "type": "object" },
+    "roles": { "type": "array" },
+    "auth": { "type": "object" },
+    "api": { "type": "array" },
+    "layoutRules": { "type": "object" },
+    "complianceFlags": { "type": "object" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "metadata": { "type": "object" }
+  },
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "required": ["name", "fields"],
+      "properties": {
+        "name": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": {
+                "enum": [
+                  "uuid",
+                  "string",
+                  "int",
+                  "float",
+                  "bool",
+                  "datetime",
+                  "json"
+                ]
+              },
+              "primary": { "type": "boolean" },
+              "required": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "relations": { "type": "array" }
+      },
+      "additionalProperties": true
+    },
+    "screen": {
+      "type": "object",
+      "required": ["id", "title", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "title": { "type": "string" },
+        "type": {
+          "enum": ["tabRoot", "list", "detail", "form", "placeholder"]
+        },
+        "children": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "entity": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

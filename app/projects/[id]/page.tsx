@@ -7,6 +7,7 @@ import { GenerateProjectButton } from "@/components/GenerateProjectButton";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
 import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButton";
 import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
+import { APP_FEATURES } from "@/lib/app-features";
 import { getProjectDetailForPage } from "@/lib/projects-server";
 
 export const dynamic = "force-dynamic";
@@ -97,6 +98,12 @@ export default async function ProjectPage({
               <p className="mt-2 text-xs text-gray-500">
                 项目 ID：{project.id}
               </p>
+              <p className="mt-1 text-xs text-gray-400">
+                当前构建：{APP_FEATURES.displayLabel}
+                {APP_FEATURES.usageV13
+                  ? " · 验收自检：/api/projects/" + project.id + "/usage"
+                  : null}
+              </p>
 
               {usage && usage.llmCallCount > 0 && (
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
@@ -108,6 +115,19 @@ export default async function ProjectPage({
                   </p>
                 </div>
               )}
+
+              {project.status === "completed" &&
+                (!usage || usage.llmCallCount === 0) && (
+                  <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                    未记录生成用量：请先在 Supabase 执行{" "}
+                    <code className="rounded bg-amber-100 px-1">
+                      sql/migrations/20260519_usage_logs.sql
+                    </code>
+                    ，在本机执行{" "}
+                    <code className="rounded bg-amber-100 px-1">npm run build</code>{" "}
+                    并重启 3001 + Inngest 后，对本项目点「重新生成报告」再验收 v1.3。
+                  </p>
+                )}
 
               {(project.status === "running" ||
                 runs.length > 0 ||

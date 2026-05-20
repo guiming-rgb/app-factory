@@ -201,10 +201,11 @@
 
 ## 五、后续工作项（非本文实现）
 
-- [ ] 发布 `schemas/app-spec-v0.1.json`（JSON Schema Draft 2020-12 或团队选定版本）。  
-- [ ] Spec Validator：与 **模板能力矩阵** 交叉校验。  
-- [ ] 从现有 8-Agent Markdown 报告 **抽取 / 生成** Spec 的 Prompt 与流水线（Inngest 新事件）。  
-- [ ] `app_specs` 表：存 `spec_json`、`schema_version`、`validation_errors`。
+- [x] JSON Schema 草案落盘：`docs/schemas/app-spec-v0.1.schema.json`（见 [v2a-App-Spec-JSON-Schema-落盘计划.md](./v2a-App-Spec-JSON-Schema-落盘计划.md)）  
+- [x] v2a 调研文档：[v2a-调研报告.md](./v2a-调研报告.md)、[v2a-Flutter-最小模板-目录结构.md](./v2a-Flutter-最小模板-目录结构.md)、[模板能力矩阵.md](./模板能力矩阵.md)  
+- [ ] Spec Validator CLI：`npm run validate:spec`（与 **模板能力矩阵** 交叉校验）  
+- [ ] 从现有 8-Agent Markdown 报告 **抽取 / 生成** Spec 的 Prompt 与流水线（Inngest 新事件）  
+- [ ] `app_specs` 表：存 `spec_json`、`schema_version`、`validation_errors`（**须评审** `sql/schema.sql`）
 
 ---
 

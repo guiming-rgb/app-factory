@@ -9,7 +9,11 @@
     "start": "next start",
     "lint": "next lint",
     "inngest:dev": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
-    "inngest:dev:3001": "npx inngest-cli@latest dev -u http://localhost:3001/api/inngest"
+    "inngest:dev:3001": "npx inngest-cli@latest dev -u http://localhost:3001/api/inngest",
+    "verify:v13": "node scripts/verify-v13.mjs",
+    "accept": "node scripts/accept.mjs",
+    "validate:spec": "node scripts/validate-app-spec.mjs",
+    "validate:spec:examples": "node scripts/validate-app-spec.mjs docs/schemas/examples/valid-minimal.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
@@ -23,6 +27,8 @@
     "@types/node": "^20.17.10",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.23",
