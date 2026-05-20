@@ -34,9 +34,8 @@
 
 ## 待办列表（执行顺序建议）
 
-1. **v2a/v2b 增强**（可选）：报告→Spec Agent、Inngest codegen 事件、`codegen_runs` 表、微信开发者工具 GUI 签收。
-2. 可选打标签 **`mvp-v2`**；下一主线 **v2.1 沙箱** 或安全中期。
-3. 安全中期（Auth/RLS 草案）或 v2.1 沙箱。
+1. **v2a/v2b 增强**（可选）：报告→Spec Agent、Inngest codegen 事件、`codegen_runs` 表。
+2. 下一主线 **v2.1 沙箱** 或 **同步执行计划/ONE_PAGER** 或安全中期。
 
 ## 阻塞 / 风险（简）
 
@@ -48,7 +47,8 @@
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-20 | **MVP v2 虚拟汇总验收通过**（G6 Flutter + G8 小程序；Spec 样本 `valid-minimal.json`） |
+| 2026-05-20 | **章程**：测试验收 Agent 先跑、测前告知（`agent-testing-minimal-human.mdc`、纲要 §二点七） |
+| 2026-05-20 | **MVP v2 虚拟汇总验收通过**；代码已推 `guiming-rgb/app-factory` |
 | 2026-05-20 | **v2b 实现-2**：小程序 Generator + `export-wechat` + G8（见 [v2b-实现-2-小程序Generator-PoC.md](./v2b-实现-2-小程序Generator-PoC.md)） |
 | 2026-05-20 | **v2b 实现-1**：`templates/wechat-miniprogram-minimal` + `verify:wechat` / G7 |
 | 2026-05-20 | **v2a 实现-3**：Generator PoC + `export-flutter` API + `npm run codegen:flutter` / `verify:codegen`（见 [v2a-实现-3-Generator-PoC.md](./v2a-实现-3-Generator-PoC.md)） |

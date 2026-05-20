@@ -38,6 +38,7 @@ alwaysApply: false
 
 - **原因**：维护者自己点网页验收 **费时间、易错**（错库、漏 build、双终端、手敲 ID）；优先消除这类工作。
 - **默认**：Agent 跑 **`npm run accept`**（或阶段 `verify:*`），并负责 `build`、3001 + Inngest、必要时 `curl` 触发生成；通过后更新 `验收记录.md` / HANDOFF，粘贴终端 ✅/❌。
+- **测前告知**：见 `.cursor/rules/agent-testing-minimal-human.mdc` 与 [开发纲要.md](../docs/开发纲要.md) §二点七 — 先说明 Agent 将跑哪些 G/verify、仅维护者需配合项（如首次 PAT），禁止反复让人手测 Agent 能跑的门禁。
 - **维护者仅当**（见 `docs/维护者最小参与清单.md`）：① 填 `.env.local` 密钥；② Dashboard **首次** SQL 迁移；③ 可选 UI/签字。
 - **禁止**：让维护者反复开终端调试、手点详情页找「v1.3」、仅以浏览器为验收依据；失败由 Agent 重试并汇报，不甩长步骤清单给维护者。
 
