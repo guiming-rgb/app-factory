@@ -13,6 +13,9 @@
 - [x] `feature/v1.2-inngest` 合并 `main`（2026-05-19；见 [合并main-议事记录.md](./合并main-议事记录.md)）
 - [x] MVP v1.3 可观测与成本（`usage_logs` 8/8；样本 `833ad678-f204-40d7-a47c-5b76e803f64f`；检验 `npm run verify:v13`）
 - [x] **v2a 实现-3**：Generator PoC（`codegen:flutter` / `export-flutter` / G6）
+- [x] **v2b 实现-1**：`templates/wechat-miniprogram-minimal`（`npm run verify:wechat` / G7）
+- [x] **v2b 实现-2**：小程序 Generator PoC（`codegen:wechat` / `export-wechat` / G8）
+- [x] **MVP v2（虚拟汇总）**：G6 + G8 双轨终端验收（2026-05-20，见 [验收记录.md](./验收记录.md) §十一）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -31,8 +34,8 @@
 
 ## 待办列表（执行顺序建议）
 
-1. **v2b 实现-1**：`templates/wechat-miniprogram-minimal/`（见 [v2b-调研报告.md](./v2b-调研报告.md)）。
-2. **v2a 增强**（可选）：报告→Spec Agent、Inngest `codegen_runs`、完整 `flutter build` 门禁。
+1. **v2a/v2b 增强**（可选）：报告→Spec Agent、Inngest codegen 事件、`codegen_runs` 表、微信开发者工具 GUI 签收。
+2. 可选打标签 **`mvp-v2`**；下一主线 **v2.1 沙箱** 或安全中期。
 3. 安全中期（Auth/RLS 草案）或 v2.1 沙箱。
 
 ## 阻塞 / 风险（简）
@@ -45,6 +48,9 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-20 | **MVP v2 虚拟汇总验收通过**（G6 Flutter + G8 小程序；Spec 样本 `valid-minimal.json`） |
+| 2026-05-20 | **v2b 实现-2**：小程序 Generator + `export-wechat` + G8（见 [v2b-实现-2-小程序Generator-PoC.md](./v2b-实现-2-小程序Generator-PoC.md)） |
+| 2026-05-20 | **v2b 实现-1**：`templates/wechat-miniprogram-minimal` + `verify:wechat` / G7 |
 | 2026-05-20 | **v2a 实现-3**：Generator PoC + `export-flutter` API + `npm run codegen:flutter` / `verify:codegen`（见 [v2a-实现-3-Generator-PoC.md](./v2a-实现-3-Generator-PoC.md)） |
 | 2026-05-20 | **v2a 实现-1/2**：`templates/flutter-minimal` + `npm run validate:spec`；**v2b 线 B 调研** |
 | 2026-05-20 | **v2a 线 A 调研完成**（App Spec Schema 草案 + Flutter 目录结构 + 能力矩阵） |

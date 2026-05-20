@@ -1,0 +1,8 @@
+<view class="page">
+  <privacy-popup show="{{showPrivacy}}" bind:accept="onPrivacyAccept" />
+
+  <view class="card">
+    <view class="empty">列表页占位。Generator 将按 App Spec 接入 Supabase 查询。</view>
+    <view class="muted">模板：wechat-miniprogram-minimal v0.1</view>
+  </view>
+</view>

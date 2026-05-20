@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="card">
+    <view>个人页占位</view>
+    <view class="muted">登录：wx.login 占位（见 utils/auth.js）</view>
+  </view>
+
+  <button class="btn-login" type="primary" bindtap="onLoginTap">wx.login 占位</button>
+</view>

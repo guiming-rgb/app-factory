@@ -3,6 +3,7 @@ import { AgentResultCard } from "@/components/AgentResultCard";
 import { AutoRefreshWhenRunning } from "@/components/AutoRefreshWhenRunning";
 import { CopyReportButton } from "@/components/CopyReportButton";
 import { DownloadFlutterButton } from "@/components/DownloadFlutterButton";
+import { DownloadWechatButton } from "@/components/DownloadWechatButton";
 import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { GenerateProjectButton } from "@/components/GenerateProjectButton";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
@@ -172,6 +173,7 @@ export default async function ProjectPage({
               )}
 
               <DownloadFlutterButton projectId={project.id} />
+              <DownloadWechatButton projectId={project.id} />
             </div>
           </div>
 

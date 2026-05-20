@@ -31,7 +31,11 @@ export function buildMinimalSpecFromProject(project: {
         formFactors: ["phone"]
       },
       harmony: { enabled: false, formFactors: ["phone"] },
-      backend: { provider: "supabase" }
+      backend: { provider: "supabase" },
+      wechatMiniProgram: {
+        enabled: true,
+        tabBar: ["main_list", "profile"]
+      }
     },
     entities: [],
     screens: [
@@ -71,7 +75,8 @@ export function buildMinimalSpecFromProject(project: {
     metadata: {
       locale: "zh-CN",
       generatedBy: "app-factory-codegen-poc",
-      flutterTemplateVersion: "minimal-0.1.0"
+      flutterTemplateVersion: "minimal-0.1.0",
+      wechatTemplateVersion: "minimal-0.1.0"
     }
   };
 }
