@@ -18,6 +18,8 @@
 - [x] **MVP v2（虚拟汇总）**：G6 + G8 双轨终端验收（2026-05-20，见 [验收记录.md](./验收记录.md) §十一）
 - [x] **v2a 增强 PoC**：报告→Spec（[v2a-增强-报告到Spec.md](./v2a-增强-报告到Spec.md)）
 - [x] **v2.1 沙箱 PoC**：`npm run sandbox:flutter`（[v2.1-沙箱-PoC.md](./v2.1-沙箱-PoC.md)）
+- [x] **v2.1 Docker 沙箱**：`npm run sandbox:flutter:docker`（[v2.1-沙箱-Docker.md](./v2.1-沙箱-Docker.md)）
+- [x] **Inngest codegen**：`codegen_runs` + 事件 + API（[v2-Inngest-codegen.md](./v2-Inngest-codegen.md)）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -36,8 +38,9 @@
 
 ## 待办列表（执行顺序建议）
 
-1. **v2.1 完整**：Docker 沙箱、自动修错、小程序构建 CLI。
-2. Inngest codegen 事件 + `codegen_runs` 表（单独立项评审 schema）。
+1. **维护者首次 SQL**：`sql/migrations/20260520_codegen_runs.sql`（Inngest codegen 依赖）。
+2. v2.1 增强：codegen 流水线接 Docker analyze、自动修错、小程序构建 CLI。
+3. 产物持久化：Supabase Storage（当前 ZIP 在 Next 进程 `/tmp`）。
 
 ## 阻塞 / 风险（简）
 
@@ -49,6 +52,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-20 | **v2.1 Docker 沙箱 + Inngest codegen**（`codegen_runs`、flutter/wechat 事件与 API） |
 | 2026-05-20 | **v2a 增强 + v2.1 沙箱 PoC + 执行计划/ONE_PAGER 同步** |
 | 2026-05-20 | **章程**：测试验收 Agent 先跑、测前告知（`agent-testing-minimal-human.mdc`、纲要 §二点七） |
 | 2026-05-20 | **MVP v2 虚拟汇总验收通过**；代码已推 `guiming-rgb/app-factory` |

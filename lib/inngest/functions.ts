@@ -1,4 +1,5 @@
 import { inngest } from "@/lib/inngest/client";
+import { codegenInngestFunctions } from "@/lib/inngest/codegen-functions";
 
 /**
  * 整段流水线放在一个 step 内，避免 Inngest 默认「函数级重试」导致 agent_runs 重复插入。
@@ -31,4 +32,7 @@ export const generateProjectReport = inngest.createFunction(
   }
 );
 
-export const inngestFunctions = [generateProjectReport];
+export const inngestFunctions = [
+  generateProjectReport,
+  ...codegenInngestFunctions
+];

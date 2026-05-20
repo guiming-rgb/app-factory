@@ -1,0 +1,114 @@
+import { getSupabaseAdmin } from "@/lib/supabase";
+
+export type CodegenTarget = "flutter" | "wechat";
+export type CodegenRunStatus = "queued" | "running" | "completed" | "failed";
+
+export type CodegenRunRow = {
+  id: string;
+  project_id: string;
+  target: CodegenTarget;
+  status: CodegenRunStatus;
+  artifact_path: string | null;
+  log: string | null;
+  spec_source: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function createCodegenRun(input: {
+  projectId: string;
+  target: CodegenTarget;
+}): Promise<CodegenRunRow> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("codegen_runs")
+    .insert({
+      project_id: input.projectId,
+      target: input.target,
+      status: "queued"
+    })
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(`创建 codegen_runs 失败：${error?.message ?? "unknown"}`);
+  }
+  return data as CodegenRunRow;
+}
+
+export async function getCodegenRun(
+  runId: string
+): Promise<CodegenRunRow | null> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("codegen_runs")
+    .select("*")
+    .eq("id", runId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as CodegenRunRow | null) ?? null;
+}
+
+export async function listCodegenRuns(
+  projectId: string,
+  limit = 20
+): Promise<CodegenRunRow[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from("codegen_runs")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CodegenRunRow[];
+}
+
+export async function updateCodegenRun(
+  runId: string,
+  patch: Partial<{
+    status: CodegenRunStatus;
+    artifact_path: string | null;
+    log: string | null;
+    spec_source: string | null;
+    metadata: Record<string, unknown>;
+  }>
+): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from("codegen_runs")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", runId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function markCodegenRunRunning(runId: string): Promise<void> {
+  await updateCodegenRun(runId, { status: "running" });
+}
+
+export async function markCodegenRunCompleted(
+  runId: string,
+  result: {
+    artifact_path: string;
+    spec_source: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<void> {
+  await updateCodegenRun(runId, {
+    status: "completed",
+    artifact_path: result.artifact_path,
+    spec_source: result.spec_source,
+    log: null,
+    metadata: result.metadata
+  });
+}
+
+export async function markCodegenRunFailed(
+  runId: string,
+  message: string
+): Promise<void> {
+  await updateCodegenRun(runId, {
+    status: "failed",
+    log: message.slice(0, 4000)
+  });
+}
