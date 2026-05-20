@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { buildMinimalSpecFromProject } from "@/lib/app-spec/from-project";
+import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { generateWechatZip } from "@/lib/wechat-codegen/generate";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -22,7 +22,7 @@ export async function GET(
     const projectId = params.id;
     const { data: project, error } = await getSupabaseAdmin()
       .from("projects")
-      .select("id, title, idea, status")
+      .select("id, title, idea, final_report, status")
       .eq("id", projectId)
       .single();
 
@@ -30,13 +30,16 @@ export async function GET(
       return NextResponse.json({ error: "项目不存在" }, { status: 404 });
     }
 
-    const spec = buildMinimalSpecFromProject({
+    const built = await buildSpecForProject({
       id: project.id,
       title: project.title ?? "未命名",
-      idea: project.idea
+      idea: project.idea,
+      final_report: project.final_report
     });
 
-    const { buffer, fileName, displayName } = await generateWechatZip(spec);
+    const { buffer, fileName, displayName } = await generateWechatZip(
+      built.spec
+    );
     const encoded = encodeURIComponent(fileName);
 
     return new NextResponse(new Uint8Array(buffer), {

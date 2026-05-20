@@ -18,7 +18,10 @@
     "verify:codegen": "npm run validate:spec:examples && npm run codegen:flutter -- --spec docs/schemas/examples/valid-minimal.json --out /tmp/app-factory-codegen-verify --verify",
     "verify:wechat": "node scripts/verify-wechat-template.mjs",
     "codegen:wechat": "npx tsx scripts/codegen-wechat.ts",
-    "verify:wechat-codegen": "npm run validate:spec:examples && npm run codegen:wechat -- --spec docs/schemas/examples/valid-minimal.json --out /tmp/app-factory-wechat-codegen-verify && node scripts/verify-wechat-template.mjs /tmp/app-factory-wechat-codegen-verify"
+    "verify:wechat-codegen": "npm run validate:spec:examples && npm run codegen:wechat -- --spec docs/schemas/examples/valid-minimal.json --out /tmp/app-factory-wechat-codegen-verify && node scripts/verify-wechat-template.mjs /tmp/app-factory-wechat-codegen-verify",
+    "extract:spec": "npx tsx scripts/extract-spec.ts",
+    "sandbox:flutter": "npx tsx scripts/sandbox-flutter.ts",
+    "sandbox:flutter:analyze-only": "npx tsx scripts/sandbox-flutter.ts -- --no-build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",

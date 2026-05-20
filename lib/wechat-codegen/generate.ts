@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 
-import type { AppSpec } from "@/lib/app-spec/types";
+import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
@@ -30,7 +30,7 @@ async function copyTemplate(destDir: string): Promise<void> {
 
 async function ensureGeneratedPage(
   appDir: string,
-  screen: { id: string; title: string }
+  screen: AppSpecScreen
 ): Promise<void> {
   const pagePath = wechatPagePath(screen.id);
   if (pagePath === "pages/index/index" || pagePath === "pages/profile/profile") {

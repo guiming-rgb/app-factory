@@ -16,6 +16,8 @@
 - [x] **v2b 实现-1**：`templates/wechat-miniprogram-minimal`（`npm run verify:wechat` / G7）
 - [x] **v2b 实现-2**：小程序 Generator PoC（`codegen:wechat` / `export-wechat` / G8）
 - [x] **MVP v2（虚拟汇总）**：G6 + G8 双轨终端验收（2026-05-20，见 [验收记录.md](./验收记录.md) §十一）
+- [x] **v2a 增强 PoC**：报告→Spec（[v2a-增强-报告到Spec.md](./v2a-增强-报告到Spec.md)）
+- [x] **v2.1 沙箱 PoC**：`npm run sandbox:flutter`（[v2.1-沙箱-PoC.md](./v2.1-沙箱-PoC.md)）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -34,8 +36,8 @@
 
 ## 待办列表（执行顺序建议）
 
-1. **v2a/v2b 增强**（可选）：报告→Spec Agent、Inngest codegen 事件、`codegen_runs` 表。
-2. 下一主线 **v2.1 沙箱** 或 **同步执行计划/ONE_PAGER** 或安全中期。
+1. **v2.1 完整**：Docker 沙箱、自动修错、小程序构建 CLI。
+2. Inngest codegen 事件 + `codegen_runs` 表（单独立项评审 schema）。
 
 ## 阻塞 / 风险（简）
 
@@ -47,6 +49,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-20 | **v2a 增强 + v2.1 沙箱 PoC + 执行计划/ONE_PAGER 同步** |
 | 2026-05-20 | **章程**：测试验收 Agent 先跑、测前告知（`agent-testing-minimal-human.mdc`、纲要 §二点七） |
 | 2026-05-20 | **MVP v2 虚拟汇总验收通过**；代码已推 `guiming-rgb/app-factory` |
 | 2026-05-20 | **v2b 实现-2**：小程序 Generator + `export-wechat` + G8（见 [v2b-实现-2-小程序Generator-PoC.md](./v2b-实现-2-小程序Generator-PoC.md)） |
