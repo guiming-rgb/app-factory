@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-25  
+> **最后更新**：2026-05-26  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -23,7 +23,8 @@
 - [x] **v2.1 自动修错 Agent**：analyze 失败 LLM patch 循环（`lib/codegen/auto-fix-flutter.ts`）
 - [x] **LLM→Spec 收紧**：外置 prompt + AJV 错误格式化（`lib/app-spec/prompts/report-to-spec.ts`）
 - [x] **v3 部署预览 PoC**：`/deploy` + `/api/deploy/status` + codegen HTML 预览
-- [x] **v3 真上云（Vercel）**：https://app-factory-five.vercel.app（2026-05-25 CLI 部署）
+- [x] **v3 真上云（Vercel）**：https://app-factory-five.vercel.app
+- [ ] **v4 Auth + RLS**：v4-1 Auth UI ✅ · v4-2 `owner_id` ✅ · v4-3～v4-6 待做（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -45,7 +46,8 @@
 1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅
 2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅
 3. ~~LLM 报告→Spec~~ ✅ · ~~v3 预览 PoC~~ ✅
-4. ~~**v3 真上云**~~ ✅ https://app-factory-five.vercel.app · GET 验收通过 · generate 浏览器冒烟待确认
+4. ~~**v3 真上云**~~ ✅ · 尾项见 [收工记录-20260526-v3收工.md](./收工记录-20260526-v3收工.md)
+5. **v4 Auth + RLS**：v4-1 ✅ · v4-2 ✅ → 下一步 **v4-3** API owner 校验（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
 
 ## 阻塞 / 风险（简）
 
@@ -59,6 +61,8 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-26 | **v4-1 Auth UI + v4-2 owner_id**（本地 build ✅，未 push）；[收工记录-20260526-v4-auth.md](./收工记录-20260526-v4-auth.md) |
+| 2026-05-26 | **v3 收工 + v4 设计草案**；ONE_PAGER 同步 |
 | 2026-05-25 | **v3 Vercel 生产部署** https://app-factory-five.vercel.app · APP_URL 已回填 |
 | 2026-05-19 | **v2.1 auto-fix + Spec prompt + v3 preview**：`auto-fix-flutter`、报告→Spec prompt 外置、`/deploy` 与 HTML 预览 |
 | 2026-05-25 | **G10 + P2 异步 codegen + G9-Docker** 验收通过；[收工记录-20260525.md](./收工记录-20260525.md) |

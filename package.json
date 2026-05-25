@@ -32,12 +32,15 @@
     "poll:codegen": "npx tsx scripts/poll-codegen-run.ts",
     "verify:codegen:storage": "npx tsx scripts/verify-codegen-storage.ts",
     "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
+    "db:apply:v4-owner": "node scripts/apply-v4-owner-migration.mjs",
+    "check:v4:owner": "npx tsx scripts/check-v4-owner-id.ts",
     "check:deploy": "node scripts/check-deploy-env.mjs",
     "deploy:vercel": "npx vercel deploy --prod --yes",
     "deploy:vercel:env": "node scripts/sync-vercel-env.mjs",
     "verify:v3:production": "node scripts/verify-v3-production.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.48.1",
     "inngest": "^4.3.0",
     "next": "^14.2.23",

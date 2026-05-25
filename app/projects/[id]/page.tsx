@@ -12,6 +12,7 @@ import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButto
 import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
 import { APP_FEATURES } from "@/lib/app-features";
 import { getProjectDetailForPage } from "@/lib/projects-server";
+import { getServerUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,7 +22,8 @@ export default async function ProjectPage({
 }: {
   params: { id: string };
 }) {
-  const data = await getProjectDetailForPage(params.id);
+  const user = await getServerUser();
+  const data = await getProjectDetailForPage(params.id, user?.id ?? null);
 
   if (!data) {
     return (

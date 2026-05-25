@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { AuthHeader } from "@/components/AuthHeader";
 import { ProjectForm } from "@/components/ProjectForm";
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-16">
       <section className="mx-auto flex max-w-5xl flex-col items-center text-center">
+        <div className="mb-4 w-full">
+          <AuthHeader />
+        </div>
         <div className="mb-4 flex flex-wrap items-center justify-center gap-3">
           <div className="rounded-full bg-black px-4 py-1 text-sm text-white">
             App 生产工厂 MVP v1.2

@@ -1,5 +1,7 @@
 import { listCodegenRuns } from "@/lib/codegen/runs";
 import { enrichCodegenRuns } from "@/lib/codegen/run-response";
+import { projectOwnedByUser } from "@/lib/auth/api-user";
+import { isAuthEnabled } from "@/lib/auth-config";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
   getProjectUsageSummary,
@@ -16,13 +18,25 @@ export type ProjectListItem = {
   updated_at: string;
 };
 
-export async function listProjectsForPage(): Promise<ProjectListItem[] | null> {
+export async function listProjectsForPage(
+  ownerUserId?: string | null
+): Promise<ProjectListItem[] | null> {
   try {
-    const { data, error } = await getSupabaseAdmin()
+    if (isAuthEnabled() && !ownerUserId) {
+      return [];
+    }
+
+    let query = getSupabaseAdmin()
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
+
+    if (isAuthEnabled() && ownerUserId) {
+      query = query.eq("owner_id", ownerUserId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("[listProjectsForPage]", error.message);
@@ -36,7 +50,10 @@ export async function listProjectsForPage(): Promise<ProjectListItem[] | null> {
   }
 }
 
-export async function getProjectDetailForPage(projectId: string) {
+export async function getProjectDetailForPage(
+  projectId: string,
+  ownerUserId?: string | null
+) {
   try {
     const { data: project, error: projectError } = await getSupabaseAdmin()
       .from("projects")
@@ -45,6 +62,10 @@ export async function getProjectDetailForPage(projectId: string) {
       .single();
 
     if (projectError || !project) {
+      return null;
+    }
+
+    if (!projectOwnedByUser(project, ownerUserId ?? null)) {
       return null;
     }
 

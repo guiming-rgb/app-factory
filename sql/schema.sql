@@ -7,6 +7,7 @@ create table if not exists projects (
   status text not null default 'pending',
   final_report text,
   error_message text,
+  owner_id uuid references auth.users (id) on delete set null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -110,6 +111,7 @@ create table if not exists usage_logs (
 );
 
 create index if not exists idx_projects_status on projects(status);
+create index if not exists idx_projects_owner_id on projects(owner_id);
 create index if not exists idx_agent_runs_project_id on agent_runs(project_id);
 create index if not exists idx_agent_runs_status on agent_runs(status);
 create index if not exists idx_memories_project_id on memories(project_id);

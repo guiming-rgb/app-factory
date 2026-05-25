@@ -1,20 +1,28 @@
 import Link from "next/link";
+import { AuthHeader } from "@/components/AuthHeader";
 import { listProjectsForPage } from "@/lib/projects-server";
+import { getServerUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ProjectsListPage() {
-  const projects = await listProjectsForPage();
+  const user = await getServerUser();
+  const projects = await listProjectsForPage(user?.id ?? null);
 
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <div className="mx-auto max-w-4xl">
+        <div className="mb-4">
+          <AuthHeader />
+        </div>
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-950">历史项目</h1>
             <p className="mt-1 text-sm text-gray-500">
-              查看最近创建的方案项目（最多展示 50 条）。
+              {user?.email
+                ? `已登录：${user.email} · 仅显示您创建的项目`
+                : "查看最近创建的方案项目（最多展示 50 条）。"}
             </p>
           </div>
           <Link

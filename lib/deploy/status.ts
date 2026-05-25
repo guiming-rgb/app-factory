@@ -45,6 +45,13 @@ export function getDeployStatus(): {
     detail: process.env.OPENAI_API_KEY ? "已配置" : "未配置"
   });
 
+  checks.push({
+    id: "anon_key",
+    label: "Supabase Anon Key（Auth）",
+    ok: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim(),
+    detail: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "已配置" : "未配置（v4 Auth UI 未启用）"
+  });
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? null;
   checks.push({
     id: "app_url",

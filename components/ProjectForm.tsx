@@ -1,13 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export function ProjectForm() {
   const router = useRouter();
   const [idea, setIdea] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
+
+  useEffect(() => {
+    setAuthRequired(!!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  }, []);
 
   async function handleSubmit() {
     setError("");
@@ -22,6 +29,20 @@ export function ProjectForm() {
     if (cleanIdea.length < 10) {
       setError("请更具体地描述你的 App 想法，至少 10 个字");
       return;
+    }
+
+    if (authRequired) {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) {
+          router.push(`/login?next=${encodeURIComponent("/")}`);
+          return;
+        }
+      } catch {
+        router.push("/login");
+        return;
+      }
     }
 
     setLoading(true);

@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getApiUser,
+  unauthorizedResponse
+} from "@/lib/auth/api-user";
+import { isAuthEnabled } from "@/lib/auth-config";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -9,11 +14,22 @@ const LIST_LIMIT = 50;
 
 export async function GET() {
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const user = await getApiUser();
+    if (isAuthEnabled() && !user) {
+      return unauthorizedResponse();
+    }
+
+    let query = getSupabaseAdmin()
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
+
+    if (isAuthEnabled() && user) {
+      query = query.eq("owner_id", user.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -61,13 +77,28 @@ export async function POST(req: NextRequest) {
 
     const title = buildProjectTitle(idea);
 
+    const user = await getApiUser();
+    if (isAuthEnabled() && !user) {
+      return unauthorizedResponse();
+    }
+
+    const insert: {
+      title: string;
+      idea: string;
+      status: string;
+      owner_id?: string;
+    } = {
+      title,
+      idea,
+      status: "pending"
+    };
+    if (user) {
+      insert.owner_id = user.id;
+    }
+
     const { data, error } = await getSupabaseAdmin()
       .from("projects")
-      .insert({
-        title,
-        idea,
-        status: "pending"
-      })
+      .insert(insert)
       .select("*")
       .single();
 

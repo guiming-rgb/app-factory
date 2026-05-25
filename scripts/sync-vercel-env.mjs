@@ -12,6 +12,7 @@ const envFile = path.join(root, ".env.local");
 
 const SYNC_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "OPENAI_API_KEY",
   "OPENAI_BASE_URL",
