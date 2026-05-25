@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 
@@ -14,15 +14,17 @@ export async function GET(
     const sourceParam = req.nextUrl.searchParams.get("source");
     const preferReport = sourceParam !== "title";
 
-    const { data: project, error } = await getSupabaseAdmin()
-      .from("projects")
-      .select("id, title, idea, final_report, status")
-      .eq("id", projectId)
-      .single();
-
-    if (error || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    const access = await fetchProjectWithAccess<{
+      id: string;
+      title: string;
+      idea: string;
+      final_report: string | null;
+      status: string;
+    }>(projectId, "id, title, idea, final_report, status");
+    if (!access.ok) {
+      return access.response;
     }
+    const project = access.project;
 
     if (sourceParam === "title") {
       const { buildMinimalSpecFromProject } = await import(

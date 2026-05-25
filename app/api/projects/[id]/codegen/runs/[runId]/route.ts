@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { enrichCodegenRun } from "@/lib/codegen/run-response";
 import { getCodegenRun } from "@/lib/codegen/runs";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,14 +14,9 @@ export async function GET(
   try {
     const { id: projectId, runId } = params;
 
-    const { data: project, error } = await getSupabaseAdmin()
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .single();
-
-    if (error || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    const denied = await guardProjectAccess(projectId);
+    if (denied) {
+      return denied;
     }
 
     const run = await getCodegenRun(runId);

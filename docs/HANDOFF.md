@@ -24,7 +24,7 @@
 - [x] **LLM→Spec 收紧**：外置 prompt + AJV 错误格式化（`lib/app-spec/prompts/report-to-spec.ts`）
 - [x] **v3 部署预览 PoC**：`/deploy` + `/api/deploy/status` + codegen HTML 预览
 - [x] **v3 真上云（Vercel）**：https://app-factory-five.vercel.app
-- [ ] **v4 Auth + RLS**：v4-1 Auth UI ✅ · v4-2 `owner_id` ✅ · v4-3～v4-6 待做（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
+- [ ] **v4 Auth + RLS**：v4-1～v4-3 ✅ · v4-4～v4-6 待做（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -47,7 +47,7 @@
 2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅
 3. ~~LLM 报告→Spec~~ ✅ · ~~v3 预览 PoC~~ ✅
 4. ~~**v3 真上云**~~ ✅ · 尾项见 [收工记录-20260526-v3收工.md](./收工记录-20260526-v3收工.md)
-5. **v4 Auth + RLS**：v4-1 ✅ · v4-2 ✅ → 下一步 **v4-3** API owner 校验（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
+5. **v4 Auth + RLS**：v4-1～v4-3 ✅ → 下一步 **v4-4** RLS（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
 
 ## 阻塞 / 风险（简）
 

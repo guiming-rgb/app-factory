@@ -226,7 +226,7 @@ lib/supabase-browser.ts → createBrowserClient（anon）
 |------|------|------|
 | **v4-1** | Auth UI + session middleware | 登录后可看 `/projects` | ✅ 2026-05-26 |
 | **v4-2** | `owner_id` 迁移 + 新项写入 | 新 project 行有 owner | ✅ 2026-05-26 |
-| **v4-3** | API owner 校验（仍 service role 写） | 用户 A 不能读 B 的项目 API |
+| **v4-3** | API owner 校验（仍 service role 写） | 用户 A 不能读 B 的项目 API | ✅ 2026-05-27 |
 | **v4-4** | 启用 RLS + anon client 读 | SQL 测试：A 不能 select B |
 | **v4-5** | Inngest payload userId + 校验 | 伪造 projectId 不消费 |
 | **v4-6** | 简单限流 | 刷接口 429 |

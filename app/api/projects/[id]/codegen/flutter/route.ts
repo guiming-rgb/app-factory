@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { enqueueCodegenJob } from "@/lib/codegen/enqueue";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,17 +12,12 @@ export async function POST(
 ) {
   const projectId = params.id;
 
+  const denied = await guardProjectAccess(projectId);
+  if (denied) {
+    return denied;
+  }
+
   try {
-    const { data: project, error } = await getSupabaseAdmin()
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .single();
-
-    if (error || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
-    }
-
     const run = await enqueueCodegenJob({ projectId, target: "flutter" });
 
     return NextResponse.json({

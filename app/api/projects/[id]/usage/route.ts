@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getProjectUsageSummary } from "@/lib/usage-logs";
 import { APP_FEATURES } from "@/lib/app-features";
@@ -13,18 +14,15 @@ export async function GET(
 ) {
   const projectId = params.id;
 
-  const { data: project, error: projectError } = await getSupabaseAdmin()
-    .from("projects")
-    .select("id, title, status")
-    .eq("id", projectId)
-    .single();
-
-  if (projectError || !project) {
-    return NextResponse.json(
-      { error: "项目不存在", projectId, hint: "检查 URL 里的 ID 是否完整、无拼错" },
-      { status: 404 }
-    );
+  const access = await fetchProjectWithAccess<{
+    id: string;
+    title: string;
+    status: string;
+  }>(projectId, "id, title, status");
+  if (!access.ok) {
+    return access.response;
   }
+  const project = access.project;
 
   const { count, error: countError } = await getSupabaseAdmin()
     .from("usage_logs")

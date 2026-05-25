@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
+import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
 import { generateWechatZip } from "@/lib/wechat-codegen/generate";
-import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -20,15 +20,17 @@ export async function GET(
 ) {
   try {
     const projectId = params.id;
-    const { data: project, error } = await getSupabaseAdmin()
-      .from("projects")
-      .select("id, title, idea, final_report, status")
-      .eq("id", projectId)
-      .single();
-
-    if (error || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    const access = await fetchProjectWithAccess<{
+      id: string;
+      title: string;
+      idea: string;
+      final_report: string | null;
+      status: string;
+    }>(projectId, "id, title, idea, final_report, status");
+    if (!access.ok) {
+      return access.response;
     }
+    const project = access.project;
 
     const built = await buildSpecForProject({
       id: project.id,
@@ -62,15 +64,11 @@ export async function POST(
 ) {
   try {
     const projectId = params.id;
-    const { data: project, error } = await getSupabaseAdmin()
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .single();
-
-    if (error || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    const access = await fetchProjectWithAccess<{ id: string }>(projectId, "id");
+    if (!access.ok) {
+      return access.response;
     }
+    const project = access.project;
 
     const body = (await req.json().catch(() => ({}))) as { spec?: unknown };
     if (!body.spec) {

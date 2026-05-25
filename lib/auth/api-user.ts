@@ -25,13 +25,16 @@ export function unauthorizedResponse() {
 
 /** 项目是否属于当前用户（Auth 未启用时一律 true） */
 export function projectOwnedByUser(
-  project: { owner_id?: string | null },
+  project: { owner_id?: string | null } | null | undefined,
   userId: string | null
 ): boolean {
   if (!isAuthEnabled()) {
     return true;
   }
   if (!userId) {
+    return false;
+  }
+  if (!project) {
     return false;
   }
   return project.owner_id === userId;

@@ -34,6 +34,7 @@
     "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
     "db:apply:v4-owner": "node scripts/apply-v4-owner-migration.mjs",
     "check:v4:owner": "npx tsx scripts/check-v4-owner-id.ts",
+    "verify:v4:owner-api": "node scripts/verify-v4-owner-api.mjs",
     "check:deploy": "node scripts/check-deploy-env.mjs",
     "deploy:vercel": "npx vercel deploy --prod --yes",
     "deploy:vercel:env": "node scripts/sync-vercel-env.mjs",

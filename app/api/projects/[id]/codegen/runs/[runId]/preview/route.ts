@@ -5,6 +5,7 @@ import {
   readPreviewHtml
 } from "@/lib/codegen/artifacts";
 import { getCodegenRun } from "@/lib/codegen/runs";
+import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,12 @@ export async function GET(
 ) {
   try {
     const { id: projectId, runId } = params;
+
+    const denied = await guardProjectAccess(projectId);
+    if (denied) {
+      return denied;
+    }
+
     const run = await getCodegenRun(runId);
 
     if (!run || run.project_id !== projectId) {

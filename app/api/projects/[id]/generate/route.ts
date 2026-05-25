@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { inngest } from "@/lib/inngest/client";
+import { guardProjectAccess } from "@/lib/auth/require-project-access";
 import {
   markProjectFailed,
   prepareProjectWorkflow,
@@ -32,6 +33,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const projectId = params.id;
+
+  const denied = await guardProjectAccess(projectId);
+  if (denied) {
+    return denied;
+  }
 
   try {
     const body = await parseJsonBody(req);

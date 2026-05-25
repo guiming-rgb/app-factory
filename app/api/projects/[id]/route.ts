@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -12,15 +13,11 @@ export async function GET(
   try {
     const projectId = params.id;
 
-    const { data: project, error: projectError } = await getSupabaseAdmin()
-      .from("projects")
-      .select("*")
-      .eq("id", projectId)
-      .single();
-
-    if (projectError || !project) {
-      return NextResponse.json({ error: "项目不存在" }, { status: 404 });
+    const access = await fetchProjectWithAccess(projectId, "*");
+    if (!access.ok) {
+      return access.response;
     }
+    const project = access.project;
 
     const { data: runs, error: runsError } = await getSupabaseAdmin()
       .from("agent_runs")
