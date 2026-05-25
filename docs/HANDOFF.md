@@ -45,7 +45,7 @@
 1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅
 2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅
 3. ~~LLM 报告→Spec~~ ✅ · ~~v3 预览 PoC~~ ✅
-4. ~~**v3 真上云**~~ ✅ https://app-factory-five.vercel.app · **待补** Inngest Cloud 密钥 + Serve URL
+4. ~~**v3 真上云**~~ ✅ https://app-factory-five.vercel.app · GET 验收通过 · generate 浏览器冒烟待确认
 
 ## 阻塞 / 风险（简）
 

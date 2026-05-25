@@ -34,7 +34,8 @@
     "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
     "check:deploy": "node scripts/check-deploy-env.mjs",
     "deploy:vercel": "npx vercel deploy --prod --yes",
-    "deploy:vercel:env": "node scripts/sync-vercel-env.mjs"
+    "deploy:vercel:env": "node scripts/sync-vercel-env.mjs",
+    "verify:v3:production": "node scripts/verify-v3-production.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
