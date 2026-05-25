@@ -67,6 +67,20 @@ npm run verify:codegen:flutter -- <projectId>   # 完成后 metadata.storageUplo
 
 ---
 
+## 小程序结构门禁（v2.1）
+
+| 项 | 说明 |
+|----|------|
+| 模块 | `lib/sandbox/wechat-validate.ts` |
+| 触发 | wechat codegen 完成后校验 JSON/JS/页面结构 |
+| CLI | `npm run verify:wechat:build` |
+| 禁用 | `CODEGEN_WECHAT_BUILD_DISABLED=1` |
+| metadata | `buildStatus`、`buildOutput` |
+| 同步验收 | `npm run verify:codegen:wechat -- <projectId>` |
+| 异步 E2E | `npm run verify:codegen:async -- <projectId> wechat` |
+
+---
+
 ## 维护者
 
 - 无需手建 bucket（自动创建）；若 Dashboard 禁 auto-create，Storage → New bucket → `codegen-artifacts`（Private）。

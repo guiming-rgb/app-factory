@@ -1,25 +1,25 @@
 /**
- * 同步验收 Flutter codegen（不经过 Inngest，需已执行 codegen_runs 迁移）
- * npm run verify:codegen:flutter -- <projectId>
+ * 同步验收微信小程序 codegen
+ * npm run verify:codegen:wechat -- <projectId>
  */
 import "../lib/load-env-local";
 
 import { artifactExists } from "../lib/codegen/artifacts";
-import { executeFlutterCodegen } from "../lib/codegen/execute-flutter";
+import { executeWechatCodegen } from "../lib/codegen/execute-wechat";
 import { createCodegenRun, getCodegenRun } from "../lib/codegen/runs";
 
 async function main() {
   const projectId = process.argv[2]?.trim();
   if (!projectId) {
-    console.error("用法: npm run verify:codegen:flutter -- <projectId>");
+    console.error("用法: npm run verify:codegen:wechat -- <projectId>");
     process.exit(1);
   }
 
-  console.log("══ 同步 Flutter codegen 验收 ══\n");
+  console.log("══ 同步微信小程序 codegen 验收 ══\n");
   console.log(`项目: ${projectId}\n`);
 
-  const run = await createCodegenRun({ projectId, target: "flutter" });
-  const result = await executeFlutterCodegen({
+  const run = await createCodegenRun({ projectId, target: "wechat" });
+  const result = await executeWechatCodegen({
     projectId,
     runId: run.id
   });
@@ -27,8 +27,7 @@ async function main() {
   const row = await getCodegenRun(run.id);
   const meta = (row?.metadata ?? {}) as {
     previewPath?: string;
-    analyzeStatus?: string;
-    autoFixRounds?: number;
+    buildStatus?: string;
   };
 
   const hasArtifact =
@@ -39,8 +38,7 @@ async function main() {
   console.log(`runId: ${run.id}`);
   console.log(`status: ${row?.status}`);
   console.log(`spec_source: ${result.spec_source}`);
-  console.log(`analyzeStatus: ${meta.analyzeStatus ?? result.analyze.status}`);
-  if (meta.autoFixRounds) console.log(`autoFixRounds: ${meta.autoFixRounds}`);
+  console.log(`buildStatus: ${meta.buildStatus ?? result.build.status}`);
   console.log(`artifact: ${row?.artifact_path}`);
   console.log(`preview: ${meta.previewPath ?? "—"}`);
   console.log(`file: ${result.fileName}`);
@@ -53,7 +51,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("\n✅ verify:codegen:flutter 通过");
+  console.log("\n✅ verify:codegen:wechat 通过");
 }
 
 main().catch((e) => {

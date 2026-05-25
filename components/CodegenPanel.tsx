@@ -29,11 +29,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function formatAnalyzeStatus(meta: Record<string, unknown>) {
-  const status = meta.analyzeStatus;
   let s = "";
+  const status = meta.analyzeStatus;
   if (status === "passed") s = " · analyze ✅";
   else if (status === "skipped") s = " · analyze 跳过";
   else if (status === "failed") s = " · analyze ❌";
+  const buildStatus = meta.buildStatus;
+  if (buildStatus === "passed") s += " · build ✅";
+  else if (buildStatus === "skipped") s += " · build 跳过";
+  else if (buildStatus === "failed") s += " · build ❌";
   const rounds = meta.autoFixRounds;
   if (typeof rounds === "number" && rounds > 0) {
     s += ` · 自动修 ${rounds} 轮`;

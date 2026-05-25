@@ -25,11 +25,16 @@
     "sandbox:flutter:docker": "npx tsx scripts/sandbox-flutter-docker.ts",
     "sandbox:flutter:docker:analyze-only": "npx tsx scripts/sandbox-flutter-docker.ts -- --no-build",
     "verify:codegen:flutter": "npx tsx scripts/verify-codegen-flutter.ts",
+    "verify:codegen:wechat": "npx tsx scripts/verify-codegen-wechat.ts",
+    "verify:codegen:async": "npx tsx scripts/verify-codegen-async.ts",
+    "verify:wechat:build": "npx tsx scripts/verify-wechat-build.ts",
     "check:codegen:table": "npx tsx scripts/check-codegen-table.ts",
     "poll:codegen": "npx tsx scripts/poll-codegen-run.ts",
     "verify:codegen:storage": "npx tsx scripts/verify-codegen-storage.ts",
     "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
-    "check:deploy": "node scripts/check-deploy-env.mjs"
+    "check:deploy": "node scripts/check-deploy-env.mjs",
+    "deploy:vercel": "npx vercel deploy --prod --yes",
+    "deploy:vercel:env": "node scripts/sync-vercel-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",

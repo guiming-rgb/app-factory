@@ -42,7 +42,7 @@
 ## 待办列表（执行顺序建议）
 
 1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅（见 [v2-codegen-UI与Storage.md](./v2-codegen-UI与Storage.md)）
-2. ~~v2.1 自动修错~~ ✅ · 小程序 CLI 构建（待做）。
+2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅（结构门禁 `verify:wechat:build`）。
 3. ~~LLM 报告→Spec 校验通过率~~ ✅（prompt 收紧） · ~~v3 部署预览 PoC~~ ✅（见 [v3-部署指南.md](./v3-部署指南.md)）。
 
 ## 阻塞 / 风险（简）
@@ -57,6 +57,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-25 | **A+B 验收**：G10/G8 + `verify:codegen:wechat` + 异步 wechat E2E；小程序结构门禁 |
 | 2026-05-19 | **v2.1 auto-fix + Spec prompt + v3 preview**：`auto-fix-flutter`、报告→Spec prompt 外置、`/deploy` 与 HTML 预览 |
 | 2026-05-25 | **G10 + P2 异步 codegen + G9-Docker** 验收通过；[收工记录-20260525.md](./收工记录-20260525.md) |
 | 2026-05-22 | **收工记录**：双 Supabase 项目澄清；P0 仍为 dllaezdyxmoebkkwbftd 迁移；增 `check:codegen:table` / `db:apply:codegen` |
