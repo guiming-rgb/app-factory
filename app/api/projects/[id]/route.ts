@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  fetchProjectWithAccess,
+  getSupabaseForUserRead
+} from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +21,12 @@ export async function GET(
     }
     const project = access.project;
 
-    const { data: runs, error: runsError } = await getSupabaseAdmin()
+    const supabase = await getSupabaseForUserRead();
+    if (!supabase) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+
+    const { data: runs, error: runsError } = await supabase
       .from("agent_runs")
       .select("*")
       .eq("project_id", projectId)

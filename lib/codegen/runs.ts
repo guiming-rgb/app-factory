@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export type CodegenTarget = "flutter" | "wechat";
@@ -51,9 +53,11 @@ export async function getCodegenRun(
 
 export async function listCodegenRuns(
   projectId: string,
-  limit = 20
+  limit = 20,
+  client?: SupabaseClient
 ): Promise<CodegenRunRow[]> {
-  const { data, error } = await getSupabaseAdmin()
+  const db = client ?? getSupabaseAdmin();
+  const { data, error } = await db
     .from("codegen_runs")
     .select("*")
     .eq("project_id", projectId)

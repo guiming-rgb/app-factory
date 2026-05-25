@@ -1,13 +1,13 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-import {
-  getApiUser,
-  projectOwnedByUser,
-  unauthorizedResponse
-} from "@/lib/auth/api-user";
+import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  getSupabaseForUserRead,
+  getSupabaseForUserRequest
+} from "@/lib/supabase/request-client";
 
 function ensureOwnerIdInSelect(select: string): string {
   if (select === "*") {
@@ -24,7 +24,7 @@ type AccessDenied = { ok: false; response: NextResponse };
 type AccessGranted<T> = { ok: true; user: User | null; project: T };
 
 /**
- * Auth 启用时校验 session + owner；通过返回 null，否则返回应直接 return 的 Response。
+ * Auth 启用时校验 session + RLS；通过返回 null，否则返回应直接 return 的 Response。
  */
 export async function guardProjectAccess(
   projectId: string
@@ -37,25 +37,24 @@ export async function guardProjectAccess(
     return null;
   }
 
-  const { data: project, error } = await getSupabaseAdmin()
+  const supabase = await getSupabaseForUserRead();
+  if (!supabase) {
+    return unauthorizedResponse();
+  }
+
+  const { data: project, error } = await supabase
     .from("projects")
-    .select("id, owner_id")
+    .select("id")
     .eq("id", projectId)
-    .single();
+    .maybeSingle();
 
   if (error || !project) {
-    return NextResponse.json({ error: "项目不存在" }, { status: 404 });
-  }
-  if (!projectOwnedByUser(
-    project as { owner_id?: string | null },
-    user!.id
-  )) {
     return NextResponse.json({ error: "项目不存在" }, { status: 404 });
   }
   return null;
 }
 
-/** 单次查询：取项目字段并校验 owner（Auth 未启用时仅校验存在性） */
+/** 单次查询：取项目字段；Auth 启用时走 RLS session client */
 export async function fetchProjectWithAccess<T = Record<string, unknown>>(
   projectId: string,
   select: string
@@ -65,22 +64,23 @@ export async function fetchProjectWithAccess<T = Record<string, unknown>>(
     return { ok: false, response: unauthorizedResponse() };
   }
 
-  const { data: project, error } = await getSupabaseAdmin()
+  const supabase = isAuthEnabled()
+    ? await getSupabaseForUserRead()
+    : getSupabaseAdmin();
+
+  if (isAuthEnabled() && !supabase) {
+    return { ok: false, response: unauthorizedResponse() };
+  }
+
+  const selectFields = isAuthEnabled() ? select : ensureOwnerIdInSelect(select);
+
+  const { data: project, error } = await supabase!
     .from("projects")
-    .select(ensureOwnerIdInSelect(select))
+    .select(selectFields)
     .eq("id", projectId)
-    .single();
+    .maybeSingle();
 
   if (error || !project) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: "项目不存在" }, { status: 404 })
-    };
-  }
-  if (!projectOwnedByUser(
-    project as { owner_id?: string | null },
-    user?.id ?? null
-  )) {
     return {
       ok: false,
       response: NextResponse.json({ error: "项目不存在" }, { status: 404 })
@@ -89,3 +89,5 @@ export async function fetchProjectWithAccess<T = Record<string, unknown>>(
 
   return { ok: true, user, project: project as T };
 }
+
+export { getSupabaseForUserRead, getSupabaseForUserRequest };

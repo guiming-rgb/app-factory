@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  fetchProjectWithAccess,
+  getSupabaseForUserRead
+} from "@/lib/auth/require-project-access";
 import { getProjectUsageSummary } from "@/lib/usage-logs";
 import { APP_FEATURES } from "@/lib/app-features";
 
@@ -24,13 +26,18 @@ export async function GET(
   }
   const project = access.project;
 
-  const { count, error: countError } = await getSupabaseAdmin()
+  const supabase = await getSupabaseForUserRead();
+  if (!supabase) {
+    return NextResponse.json({ error: "请先登录" }, { status: 401 });
+  }
+
+  const { count, error: countError } = await supabase
     .from("usage_logs")
     .select("id", { count: "exact", head: true })
     .eq("project_id", projectId)
     .eq("event_type", "llm_call");
 
-  const summary = await getProjectUsageSummary(projectId);
+  const summary = await getProjectUsageSummary(projectId, supabase);
 
   return NextResponse.json({
     build: APP_FEATURES,

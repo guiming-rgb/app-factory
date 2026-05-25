@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { enrichCodegenRuns } from "@/lib/codegen/run-response";
 import { listCodegenRuns } from "@/lib/codegen/runs";
-import { guardProjectAccess } from "@/lib/auth/require-project-access";
+import {
+  guardProjectAccess,
+  getSupabaseForUserRead
+} from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +21,12 @@ export async function GET(
       return denied;
     }
 
-    const runs = await listCodegenRuns(projectId);
+    const supabase = await getSupabaseForUserRead();
+    if (!supabase) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+
+    const runs = await listCodegenRuns(projectId, 20, supabase);
     const enriched = await enrichCodegenRuns(runs, projectId);
     return NextResponse.json({ runs: enriched }, {
       headers: { "Cache-Control": "no-store" }

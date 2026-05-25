@@ -117,3 +117,8 @@ create index if not exists idx_agent_runs_status on agent_runs(status);
 create index if not exists idx_memories_project_id on memories(project_id);
 create index if not exists idx_usage_logs_project_id on usage_logs(project_id);
 create index if not exists idx_usage_logs_agent_run_id on usage_logs(agent_run_id);
+
+-- v4 RLS 策略（Auth 启用前须在 Supabase 执行）：
+--   sql/migrations/20260526_v4_owner_id.sql
+--   sql/migrations/20260527_v4_rls.sql
+-- 或 npm run db:apply:v4-rls

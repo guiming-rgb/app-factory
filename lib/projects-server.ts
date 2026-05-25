@@ -1,8 +1,7 @@
 import { listCodegenRuns } from "@/lib/codegen/runs";
 import { enrichCodegenRuns } from "@/lib/codegen/run-response";
-import { projectOwnedByUser } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseForUserRead } from "@/lib/supabase/request-client";
 import {
   getProjectUsageSummary,
   type ProjectUsageSummary
@@ -26,17 +25,16 @@ export async function listProjectsForPage(
       return [];
     }
 
-    let query = getSupabaseAdmin()
+    const supabase = await getSupabaseForUserRead();
+    if (isAuthEnabled() && !supabase) {
+      return [];
+    }
+
+    const { data, error } = await supabase!
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
-
-    if (isAuthEnabled() && ownerUserId) {
-      query = query.eq("owner_id", ownerUserId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.error("[listProjectsForPage]", error.message);
@@ -55,21 +53,26 @@ export async function getProjectDetailForPage(
   ownerUserId?: string | null
 ) {
   try {
-    const { data: project, error: projectError } = await getSupabaseAdmin()
+    if (isAuthEnabled() && !ownerUserId) {
+      return null;
+    }
+
+    const supabase = await getSupabaseForUserRead();
+    if (isAuthEnabled() && !supabase) {
+      return null;
+    }
+
+    const { data: project, error: projectError } = await supabase!
       .from("projects")
       .select("*")
       .eq("id", projectId)
-      .single();
+      .maybeSingle();
 
     if (projectError || !project) {
       return null;
     }
 
-    if (!projectOwnedByUser(project, ownerUserId ?? null)) {
-      return null;
-    }
-
-    const { data: runs, error: runsError } = await getSupabaseAdmin()
+    const { data: runs, error: runsError } = await supabase!
       .from("agent_runs")
       .select("*")
       .eq("project_id", projectId)
@@ -80,11 +83,11 @@ export async function getProjectDetailForPage(
       return null;
     }
 
-    const usage = await getProjectUsageSummary(projectId);
+    const usage = await getProjectUsageSummary(projectId, supabase!);
 
     let codegenRuns: Awaited<ReturnType<typeof enrichCodegenRuns>> = [];
     try {
-      const rawRuns = await listCodegenRuns(projectId, 8);
+      const rawRuns = await listCodegenRuns(projectId, 8, supabase!);
       codegenRuns = await enrichCodegenRuns(rawRuns, projectId);
     } catch (e) {
       console.warn("[getProjectDetailForPage] codegen_runs", e);

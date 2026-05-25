@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { getSupabaseAdmin } from "./supabase";
 
 export type UsageLogInsert = {
@@ -61,9 +63,11 @@ export async function insertUsageLog(row: UsageLogInsert) {
 }
 
 export async function getProjectUsageSummary(
-  projectId: string
+  projectId: string,
+  client?: SupabaseClient
 ): Promise<ProjectUsageSummary | null> {
-  const { data, error } = await getSupabaseAdmin()
+  const db = client ?? getSupabaseAdmin();
+  const { data, error } = await db
     .from("usage_logs")
     .select(
       "agent_code, event_type, duration_ms, total_tokens, prompt_tokens, completion_tokens"

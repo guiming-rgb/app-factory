@@ -4,7 +4,7 @@ import {
   unauthorizedResponse
 } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import { getSupabaseForUserRequest } from "@/lib/supabase/request-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,17 +19,13 @@ export async function GET() {
       return unauthorizedResponse();
     }
 
-    let query = getSupabaseAdmin()
+    const supabase = await getSupabaseForUserRequest();
+
+    const { data, error } = await supabase
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
-
-    if (isAuthEnabled() && user) {
-      query = query.eq("owner_id", user.id);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -96,7 +92,9 @@ export async function POST(req: NextRequest) {
       insert.owner_id = user.id;
     }
 
-    const { data, error } = await getSupabaseAdmin()
+    const supabase = await getSupabaseForUserRequest();
+
+    const { data, error } = await supabase
       .from("projects")
       .insert(insert)
       .select("*")

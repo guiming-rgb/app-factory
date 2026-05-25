@@ -35,6 +35,8 @@
     "db:apply:v4-owner": "node scripts/apply-v4-owner-migration.mjs",
     "check:v4:owner": "npx tsx scripts/check-v4-owner-id.ts",
     "verify:v4:owner-api": "node scripts/verify-v4-owner-api.mjs",
+    "db:apply:v4-rls": "node scripts/apply-v4-rls-migration.mjs",
+    "check:v4:rls": "npx tsx scripts/check-v4-rls.ts",
     "check:deploy": "node scripts/check-deploy-env.mjs",
     "deploy:vercel": "npx vercel deploy --prod --yes",
     "deploy:vercel:env": "node scripts/sync-vercel-env.mjs",
