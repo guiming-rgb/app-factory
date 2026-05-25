@@ -140,16 +140,50 @@ export async function deleteProjectMemory(
   return { ok: true };
 }
 
-/** v5-2 预留：工作流注入用 */
+/** Inngest / 工作流：Service Role 读取项目记忆（按重要度优先） */
+export async function listProjectMemoriesForWorkflow(
+  projectId: string,
+  limit = 5
+): Promise<ProjectMemory[]> {
+  const { getSupabaseAdmin } = await import("@/lib/supabase");
+  const { data, error } = await getSupabaseAdmin()
+    .from("memories")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("importance", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (/memories|schema cache|relation.*does not exist/i.test(error.message)) {
+      return [];
+    }
+    console.warn("[listProjectMemoriesForWorkflow]", error.message);
+    return [];
+  }
+  return (data ?? []) as ProjectMemory[];
+}
+
+/** v5-2：工作流 prompt 注入 */
 export function formatMemoriesForPrompt(memories: ProjectMemory[], limit = 5): string {
-  const slice = memories.slice(0, limit);
-  if (!slice.length) {
+  const sorted = [...memories]
+    .sort((a, b) => {
+      if (b.importance !== a.importance) {
+        return b.importance - a.importance;
+      }
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    })
+    .slice(0, limit);
+
+  if (!sorted.length) {
     return "";
   }
-  return slice
+  return sorted
     .map(
       (m, i) =>
-        `${i + 1}. [${m.memory_type}] ${m.content.slice(0, 400)}`
+        `${i + 1}. [${m.memory_type}]（重要度 ${m.importance}） ${m.content.slice(0, 400)}`
     )
     .join("\n");
 }

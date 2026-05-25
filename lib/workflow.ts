@@ -3,6 +3,10 @@ import { agentConfigs } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
 import {
+  formatMemoriesForPrompt,
+  listProjectMemoriesForWorkflow
+} from "./memories/server";
+import {
   deleteUsageLogsForProject,
   insertUsageLog
 } from "./usage-logs";
@@ -117,12 +121,16 @@ export async function executeProjectWorkflow(projectId: string) {
   }
 
   const contextOutputs: string[] = [];
+  const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
+  const memoryBlock = formatMemoriesForPrompt(workflowMemories);
 
   try {
     for (const agent of agentConfigs) {
       const runInput = buildAgentInput({
         projectIdea: project.idea,
-        previousOutputs: contextOutputs
+        previousOutputs: contextOutputs,
+        projectMemoriesBlock:
+          agent.code === "ceo" ? memoryBlock : undefined
       });
 
       const { data: run, error: runCreateError } = await getSupabaseAdmin()
@@ -239,17 +247,29 @@ export async function markProjectFailed(projectId: string, message: string) {
 function buildAgentInput(params: {
   projectIdea: string;
   previousOutputs: string[];
+  projectMemoriesBlock?: string;
 }) {
   const previous =
     params.previousOutputs.length > 0
       ? params.previousOutputs.join("\n\n---\n\n")
       : "暂无，这是第一个智能体。";
 
+  const memoriesSection =
+    params.projectMemoriesBlock?.trim()
+      ? `
+---
+
+**项目记忆（用户此前补充的约束与反馈，CEO 须纳入战略判断）：**
+
+${params.projectMemoriesBlock}
+`
+      : "";
+
   return `
 用户的 App 想法如下：
 
 ${params.projectIdea}
-
+${memoriesSection}
 ---
 
 之前其他 AI 智能体已经完成的内容如下：
