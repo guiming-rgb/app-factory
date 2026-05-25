@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { artifactExists } from "@/lib/codegen/artifacts";
+import { enrichCodegenRun } from "@/lib/codegen/run-response";
 import { getCodegenRun } from "@/lib/codegen/runs";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -29,16 +29,11 @@ export async function GET(
       return NextResponse.json({ error: "codegen 记录不存在" }, { status: 404 });
     }
 
-    const hasArtifact =
-      run.status === "completed" &&
-      !!run.artifact_path &&
-      (await artifactExists(run.artifact_path));
+    const enriched = await enrichCodegenRun(run, projectId);
 
     return NextResponse.json({
-      run,
-      downloadUrl: hasArtifact
-        ? `/api/projects/${projectId}/codegen/runs/${runId}/download`
-        : null
+      run: enriched,
+      downloadUrl: enriched.downloadUrl
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "查询 codegen 记录失败";

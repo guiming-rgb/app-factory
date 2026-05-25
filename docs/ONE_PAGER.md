@@ -2,7 +2,7 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-05-20）
+## 当前事实（截至 2026-05-22 收工）
 
 - **产品**：Next + Supabase + Inngest，8 Agent 异步生成方案（MVP v1.2）；**v1.3** 用量 `usage_logs`。
 - **代码生成**：**v2a** Flutter ZIP + **v2b** 小程序 ZIP；**MVP v2** 虚拟汇总 ✅（G6+G8）。
@@ -12,9 +12,11 @@
 
 ## 近期待办（压缩）
 
-1. **v2.1 完整**：Docker 沙箱、自动修错、小程序 CLI 构建。
-2. 首次 SQL：`20260520_codegen_runs.sql`；产物 Storage、前端 codegen 按钮。
-3. 安全中期 Auth/RLS 或 **v3** 部署预览。
+1. **P0**：在 **`dllaezdyxmoebkkwbftd`**（guiming-rgb's Project，非 guiming@263.net）跑 `20260520_codegen_runs.sql` + Reload → G10。
+2. 双进程异步 codegen 联调；G9-Docker；v2.1 自动修。
+3. Storage、前端 codegen 按钮；**v3** / Auth·RLS。
+
+**收工详情**：[收工记录-20260522.md](./收工记录-20260522.md)
 
 ## 本地入口（本机常用：3001）
 

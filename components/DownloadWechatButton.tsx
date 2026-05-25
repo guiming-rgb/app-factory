@@ -9,7 +9,7 @@ export function DownloadWechatButton({ projectId }: { projectId: string }) {
         window.open(`/api/projects/${projectId}/export-wechat`, "_blank");
       }}
     >
-      下载微信小程序（ZIP）
+      快速下载小程序（同步）
     </button>
   );
 }

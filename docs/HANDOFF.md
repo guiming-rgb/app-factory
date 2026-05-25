@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-20  
+> **最后更新**：2026-05-22  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -38,12 +38,14 @@
 
 ## 待办列表（执行顺序建议）
 
-1. **维护者首次 SQL**：`sql/migrations/20260520_codegen_runs.sql`（Inngest codegen 依赖）。
+1. **维护者首次 SQL（必须在 `dllaezdyxmoebkkwbftd` / guiming-rgb's Project，勿用 ypvbdwyeiidwmgxylhwn）**：`sql/migrations/20260520_codegen_runs.sql` + API Reload schema。
 2. v2.1 增强：codegen 流水线接 Docker analyze、自动修错、小程序构建 CLI。
 3. 产物持久化：Supabase Storage（当前 ZIP 在 Next 进程 `/tmp`）。
 
 ## 阻塞 / 风险（简）
 
+- **Supabase 项目搞混**（2026-05-22）：工厂只用 **`dllaezdyxmoebkkwbftd`**（guiming-rgb's Project）；**`ypvbdwyeiidwmgxylhwn`**（guiming@263.net）上建表无效。详见 [收工记录-20260522.md](./收工记录-20260522.md)。
+- **codegen_runs 未就绪** → G10 / 异步 codegen 不可用；P0：迁移 + Reload schema。
 - **Inngest 未开** → `后台任务投递失败：fetch failed`；须保持 **终端 B** 运行。
 - **详情页缓存**（已修）：生产模式曾缓存旧 `pending`；已对项目页/API 加 `force-dynamic`（见 2026-05-19 提交）。
 - 联调：`PUT /api/inngest` 500 时查 **`INNGEST_DEV=1`**。
@@ -52,6 +54,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-22 | **收工记录**：双 Supabase 项目澄清；P0 仍为 dllaezdyxmoebkkwbftd 迁移；增 `check:codegen:table` / `db:apply:codegen` |
 | 2026-05-20 | **v2.1 Docker 沙箱 + Inngest codegen**（`codegen_runs`、flutter/wechat 事件与 API） |
 | 2026-05-20 | **v2a 增强 + v2.1 沙箱 PoC + 执行计划/ONE_PAGER 同步** |
 | 2026-05-20 | **章程**：测试验收 Agent 先跑、测前告知（`agent-testing-minimal-human.mdc`、纲要 §二点七） |

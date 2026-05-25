@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AgentResultCard } from "@/components/AgentResultCard";
 import { AutoRefreshWhenRunning } from "@/components/AutoRefreshWhenRunning";
+import { CodegenPanel } from "@/components/CodegenPanel";
 import { CopyReportButton } from "@/components/CopyReportButton";
 import { DownloadFlutterButton } from "@/components/DownloadFlutterButton";
 import { DownloadWechatButton } from "@/components/DownloadWechatButton";
@@ -35,34 +36,7 @@ export default async function ProjectPage({
     );
   }
 
-  const { project, runs, usage } = data as {
-    project: {
-      id: string;
-      title: string;
-      idea: string;
-      status: string;
-      final_report: string | null;
-      error_message: string | null;
-    };
-    runs: Array<{
-      id: string;
-      agent_code: string;
-      agent_name: string;
-      status: string;
-      output: string | null;
-      error_message: string | null;
-    }>;
-    usage: {
-      llmCallCount: number;
-      totalDurationMs: number;
-      totalTokens: number;
-      byAgent: Array<{
-        agentCode: string;
-        durationMs: number;
-        totalTokens: number;
-      }>;
-    } | null;
-  };
+  const { project, runs, usage, codegenRuns } = data;
 
   const completedAgentCount = runs.filter((r) => r.status === "completed")
     .length;
@@ -174,6 +148,24 @@ export default async function ProjectPage({
 
               <DownloadFlutterButton projectId={project.id} />
               <DownloadWechatButton projectId={project.id} />
+
+              <CodegenPanel
+                projectId={project.id}
+                initialRuns={codegenRuns.map((run) => ({
+                  id: run.id,
+                  target: run.target,
+                  status: run.status as
+                    | "queued"
+                    | "running"
+                    | "completed"
+                    | "failed",
+                  spec_source: run.spec_source,
+                  log: run.log,
+                  metadata: run.metadata,
+                  created_at: run.created_at,
+                  downloadUrl: run.downloadUrl
+                }))}
+              />
             </div>
           </div>
 

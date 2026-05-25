@@ -2,6 +2,12 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 
+import {
+  codegenArtifactInStorage,
+  downloadCodegenArtifact,
+  uploadCodegenArtifact
+} from "@/lib/codegen/storage";
+
 const ARTIFACTS_ROOT = path.join(os.tmpdir(), "app-factory-artifacts");
 
 export function resolveArtifactPath(relativePath: string): string {
@@ -22,13 +28,24 @@ export async function writeArtifactFile(
   const full = resolveArtifactPath(relative);
   await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, buffer);
+  await uploadCodegenArtifact(relative, buffer).catch((err) => {
+    console.warn("[writeArtifactFile] Storage upload skipped:", err);
+  });
   return relative;
 }
 
 export async function readArtifactFile(
   relativePath: string
 ): Promise<Buffer> {
-  return fs.readFile(resolveArtifactPath(relativePath));
+  try {
+    return await fs.readFile(resolveArtifactPath(relativePath));
+  } catch {
+    const fromStorage = await downloadCodegenArtifact(relativePath);
+    if (fromStorage) {
+      return fromStorage;
+    }
+    throw new Error("产物文件不存在");
+  }
 }
 
 export async function artifactExists(relativePath: string): Promise<boolean> {
@@ -36,6 +53,6 @@ export async function artifactExists(relativePath: string): Promise<boolean> {
     await fs.access(resolveArtifactPath(relativePath));
     return true;
   } catch {
-    return false;
+    return codegenArtifactInStorage(relativePath);
   }
 }

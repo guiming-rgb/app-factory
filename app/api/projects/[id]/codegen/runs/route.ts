@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { enrichCodegenRuns } from "@/lib/codegen/run-response";
 import { listCodegenRuns } from "@/lib/codegen/runs";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -23,7 +24,8 @@ export async function GET(
     }
 
     const runs = await listCodegenRuns(projectId);
-    return NextResponse.json({ runs });
+    const enriched = await enrichCodegenRuns(runs, projectId);
+    return NextResponse.json({ runs: enriched });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "查询 codegen 记录失败";
     return NextResponse.json({ error: message }, { status: 500 });

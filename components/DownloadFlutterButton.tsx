@@ -9,7 +9,7 @@ export function DownloadFlutterButton({ projectId }: { projectId: string }) {
         window.open(`/api/projects/${projectId}/export-flutter`, "_blank");
       }}
     >
-      下载 Flutter 工程（ZIP）
+      快速下载 Flutter（同步）
     </button>
   );
 }

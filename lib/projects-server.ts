@@ -1,3 +1,5 @@
+import { listCodegenRuns } from "@/lib/codegen/runs";
+import { enrichCodegenRuns } from "@/lib/codegen/run-response";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
   getProjectUsageSummary,
@@ -59,7 +61,15 @@ export async function getProjectDetailForPage(projectId: string) {
 
     const usage = await getProjectUsageSummary(projectId);
 
-    return { project, runs: runs ?? [], usage };
+    let codegenRuns: Awaited<ReturnType<typeof enrichCodegenRuns>> = [];
+    try {
+      const rawRuns = await listCodegenRuns(projectId, 8);
+      codegenRuns = await enrichCodegenRuns(rawRuns, projectId);
+    } catch (e) {
+      console.warn("[getProjectDetailForPage] codegen_runs", e);
+    }
+
+    return { project, runs: runs ?? [], usage, codegenRuns };
   } catch (e) {
     console.error("[getProjectDetailForPage]", e);
     return null;
