@@ -38,9 +38,9 @@
 
 ## 待办列表（执行顺序建议）
 
-1. 详情页 **codegen 按钮** 或 **Supabase Storage** 持久化 ZIP（见 [收工记录-20260525.md](./收工记录-20260525.md)）。
+1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅（见 [v2-codegen-UI与Storage.md](./v2-codegen-UI与Storage.md)）
 2. v2.1：自动修错、小程序 CLI 构建。
-3. LLM 报告→Spec 校验通过率。
+3. LLM 报告→Spec 校验通过率；**v3** 部署。
 
 ## 阻塞 / 风险（简）
 

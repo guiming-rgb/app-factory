@@ -46,13 +46,16 @@ function formatSpecSource(source: string | null, meta: Record<string, unknown>) 
 
 export function CodegenPanel({
   projectId,
-  initialRuns = []
+  initialRuns = [],
+  embedded = false
 }: {
   projectId: string;
   initialRuns?: CodegenRun[];
+  embedded?: boolean;
 }) {
   const [runs, setRuns] = useState<CodegenRun[]>(initialRuns);
   const [loadingTarget, setLoadingTarget] = useState<CodegenTarget | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -152,13 +155,34 @@ export function CodegenPanel({
     }
   }
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    setError("");
+    try {
+      await fetchRuns();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "刷新失败");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   const activeRun = runs.find(
     (r) => r.status === "queued" || r.status === "running"
   );
 
+  const shellClass = embedded
+    ? "mt-4"
+    : "mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4";
+
   return (
-    <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
-      <p className="text-sm font-medium text-violet-950">代码生成（后台队列）</p>
+    <div className={shellClass}>
+      {!embedded && (
+        <p className="text-sm font-medium text-violet-950">代码生成（后台队列）</p>
+      )}
+      {embedded && (
+        <p className="text-sm font-medium text-violet-950">后台队列</p>
+      )}
       <p className="mt-1 text-xs text-violet-800/80">
         通过 Inngest 异步生成 ZIP；产物持久化至 Supabase Storage（若已配置）。
         本地需同时运行 Inngest Dev（
@@ -166,7 +190,7 @@ export function CodegenPanel({
         ）。
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={!!loadingTarget || !!activeRun}
@@ -192,6 +216,15 @@ export function CodegenPanel({
               ? "小程序生成中…"
               : "后台生成小程序 ZIP"}
         </button>
+
+        <button
+          type="button"
+          disabled={refreshing}
+          onClick={() => void handleRefresh()}
+          className="rounded-lg border border-violet-300 px-3 py-2 text-xs text-violet-800 disabled:opacity-50"
+        >
+          {refreshing ? "刷新中…" : "刷新记录"}
+        </button>
       </div>
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
@@ -214,6 +247,7 @@ export function CodegenPanel({
                 <th className="py-2 pr-2 font-medium">类型</th>
                 <th className="py-2 pr-2 font-medium">状态</th>
                 <th className="py-2 pr-2 font-medium">Spec 来源</th>
+                <th className="py-2 pr-2 font-medium">产物</th>
                 <th className="py-2 font-medium">操作</th>
               </tr>
             </thead>
@@ -223,6 +257,8 @@ export function CodegenPanel({
                   specWarning?: string;
                   analyzeOutput?: string;
                   analyzeReason?: string;
+                  storageUploaded?: boolean;
+                  storageBucket?: string;
                 };
                 const hint = meta.specWarning ?? meta.analyzeOutput ?? meta.analyzeReason;
                 return (
@@ -241,6 +277,19 @@ export function CodegenPanel({
                           ⚠
                         </span>
                       ) : null}
+                    </td>
+                    <td className="py-2 pr-2">
+                      {run.status === "completed" && meta.storageUploaded ? (
+                        <span className="text-emerald-700" title={meta.storageBucket}>
+                          Storage ✅
+                        </span>
+                      ) : run.status === "completed" ? (
+                        <span className="text-amber-700" title="仅本机 /tmp">
+                          本地
+                        </span>
+                      ) : (
+                        <span className="text-violet-400">—</span>
+                      )}
                     </td>
                     <td className="py-2">
                       {run.downloadUrl ? (

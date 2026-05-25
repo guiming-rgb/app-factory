@@ -4,6 +4,7 @@ import path from "path";
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
+import { getCodegenStorageBucket } from "@/lib/codegen/storage";
 import {
   markCodegenRunCompleted,
   markCodegenRunFailed,
@@ -90,7 +91,8 @@ export async function executeFlutterCodegen(input: {
 
     const buffer = await zipDirectory(outputDir);
     const fileName = `${appName}-flutter.zip`;
-    const artifact_path = await writeArtifactFile(runId, fileName, buffer);
+    const { relativePath: artifact_path, storageUploaded } =
+      await writeArtifactFile(runId, fileName, buffer);
 
     await markCodegenRunCompleted(runId, {
       artifact_path,
@@ -98,6 +100,10 @@ export async function executeFlutterCodegen(input: {
       metadata: {
         fileName,
         displayName,
+        storageUploaded,
+        ...(storageUploaded
+          ? { storageBucket: getCodegenStorageBucket() }
+          : {}),
         ...buildAnalyzeMetadata(analyze),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }

@@ -34,7 +34,7 @@ export async function GET(
 
     if (!(await artifactExists(run.artifact_path))) {
       return NextResponse.json(
-        { error: "产物文件不存在（可能服务已重启，请重新生成）" },
+        { error: "产物文件不存在（本地与 Storage 均无，请重新生成）" },
         { status: 410 }
       );
     }

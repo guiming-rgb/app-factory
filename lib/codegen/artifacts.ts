@@ -23,15 +23,21 @@ export async function writeArtifactFile(
   runId: string,
   fileName: string,
   buffer: Buffer
-): Promise<string> {
+): Promise<{ relativePath: string; storageUploaded: boolean }> {
   const relative = `${runId}/${fileName}`;
   const full = resolveArtifactPath(relative);
   await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, buffer);
-  await uploadCodegenArtifact(relative, buffer).catch((err) => {
+
+  let storageUploaded = false;
+  try {
+    await uploadCodegenArtifact(relative, buffer);
+    storageUploaded = true;
+  } catch (err) {
     console.warn("[writeArtifactFile] Storage upload skipped:", err);
-  });
-  return relative;
+  }
+
+  return { relativePath: relative, storageUploaded };
 }
 
 export async function readArtifactFile(

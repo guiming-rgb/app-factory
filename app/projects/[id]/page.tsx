@@ -145,12 +145,23 @@ export default async function ProjectPage({
                 project.status === "completed") && (
                 <RefreshProjectButton />
               )}
+            </div>
+          </div>
 
-              <DownloadFlutterButton projectId={project.id} />
-              <DownloadWechatButton projectId={project.id} />
-
+          {project.status === "completed" && (
+            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50/80 p-5">
+              <h2 className="text-lg font-semibold text-gray-900">代码生成</h2>
+              <p className="mt-1 text-xs text-gray-600">
+                「快速下载」为同步即时导出；「后台生成」经 Inngest 队列，产物写入
+                Supabase Storage（若已配置），可重复下载历史记录。
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <DownloadFlutterButton projectId={project.id} />
+                <DownloadWechatButton projectId={project.id} />
+              </div>
               <CodegenPanel
                 projectId={project.id}
+                embedded
                 initialRuns={codegenRuns.map((run) => ({
                   id: run.id,
                   target: run.target,
@@ -167,7 +178,7 @@ export default async function ProjectPage({
                 }))}
               />
             </div>
-          </div>
+          )}
 
           <div>
             <h2 className="mb-2 font-semibold text-gray-900">原始想法</h2>

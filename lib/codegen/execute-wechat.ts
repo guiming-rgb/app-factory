@@ -2,6 +2,7 @@ import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { generateWechatZip } from "@/lib/wechat-codegen/generate";
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
+import { getCodegenStorageBucket } from "@/lib/codegen/storage";
 import {
   markCodegenRunCompleted,
   markCodegenRunFailed,
@@ -55,7 +56,8 @@ export async function executeWechatCodegen(input: {
     const { buffer, fileName, displayName } = await generateWechatZip(
       validation.spec
     );
-    const artifact_path = await writeArtifactFile(runId, fileName, buffer);
+    const { relativePath: artifact_path, storageUploaded } =
+      await writeArtifactFile(runId, fileName, buffer);
 
     await markCodegenRunCompleted(runId, {
       artifact_path,
@@ -63,6 +65,10 @@ export async function executeWechatCodegen(input: {
       metadata: {
         fileName,
         displayName,
+        storageUploaded,
+        ...(storageUploaded
+          ? { storageBucket: getCodegenStorageBucket() }
+          : {}),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }
     });

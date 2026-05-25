@@ -27,6 +27,7 @@
     "verify:codegen:flutter": "npx tsx scripts/verify-codegen-flutter.ts",
     "check:codegen:table": "npx tsx scripts/check-codegen-table.ts",
     "poll:codegen": "npx tsx scripts/poll-codegen-run.ts",
+    "verify:codegen:storage": "npx tsx scripts/verify-codegen-storage.ts",
     "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
     "check:deploy": "node scripts/check-deploy-env.mjs"
   },
