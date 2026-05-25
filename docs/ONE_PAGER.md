@@ -2,21 +2,21 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-05-22 收工）
+## 当前事实（截至 2026-05-25 收工）
 
 - **产品**：Next + Supabase + Inngest，8 Agent 异步生成方案（MVP v1.2）；**v1.3** 用量 `usage_logs`。
 - **代码生成**：**v2a** Flutter ZIP + **v2b** 小程序 ZIP；**MVP v2** 虚拟汇总 ✅（G6+G8）。
-- **增强**：**报告→Spec**；**v2.1 沙箱**（本机 + **Docker**）；**Inngest codegen**（`POST .../codegen/flutter|wechat`）。
+- **codegen**：G10 + **异步 P2** ✅（`POST .../codegen/flutter` + 下载 ZIP）；G9-Docker ✅。
 - **远程**：`https://github.com/guiming-rgb/app-factory` · 标签 `mvp-v2`。
 - **章程**：验收 Agent 终端优先 · [agent-testing-minimal-human.mdc](../.cursor/rules/agent-testing-minimal-human.mdc)。
 
 ## 近期待办（压缩）
 
-1. **P0**：在 **`dllaezdyxmoebkkwbftd`**（guiming-rgb's Project，非 guiming@263.net）跑 `20260520_codegen_runs.sql` + Reload → G10。
-2. 双进程异步 codegen 联调；G9-Docker；v2.1 自动修。
-3. Storage、前端 codegen 按钮；**v3** / Auth·RLS。
+1. 详情页 codegen 按钮 或 Storage 持久化 ZIP。
+2. v2.1 自动修；LLM Spec 通过率。
+3. **v3** 部署 / Auth·RLS。
 
-**收工详情**：[收工记录-20260522.md](./收工记录-20260522.md)
+**收工**：[收工记录-20260525.md](./收工记录-20260525.md)
 
 ## 本地入口（本机常用：3001）
 
@@ -25,7 +25,7 @@
 | 工厂 Web | `http://localhost:3001` |
 | 终端 A | `npm run build && npm run start -- -p 3001` |
 | 终端 B | `npm run inngest:dev:3001` |
-| 门禁 | `accept` · `verify:codegen` · `verify:wechat-codegen` · `sandbox:flutter:docker:analyze-only` · `verify:codegen:flutter` |
+| 门禁 | `verify:codegen:flutter` · `poll:codegen` · `sandbox:flutter:docker:analyze-only` · `check:codegen:table` |
 
 ## 必读
 
