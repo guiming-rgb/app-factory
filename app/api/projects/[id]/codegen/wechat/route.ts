@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getApiUser } from "@/lib/auth/api-user";
 import { enqueueCodegenJob } from "@/lib/codegen/enqueue";
+import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const projectId = params.id;
@@ -20,6 +21,11 @@ export async function POST(
 
   try {
     const user = await getApiUser();
+    const limited = await enforceRateLimit(req, "codegen", user?.id);
+    if (limited) {
+      return limited;
+    }
+
     const run = await enqueueCodegenJob({
       projectId,
       target: "wechat",

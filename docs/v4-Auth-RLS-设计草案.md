@@ -229,7 +229,7 @@ lib/supabase-browser.ts → createBrowserClient（anon）
 | **v4-3** | API owner 校验（仍 service role 写） | 用户 A 不能读 B 的项目 API | ✅ 2026-05-27 |
 | **v4-4** | 启用 RLS + anon client 读 | SQL 测试：A 不能 select B | ✅ 2026-05-27 |
 | **v4-5** | Inngest payload userId + 校验 | 伪造 projectId 不消费 | ✅ 2026-05-27 |
-| **v4-6** | 简单限流 | 刷接口 429 |
+| **v4-6** | 简单限流 | 刷接口 429 | ✅ 2026-05-27 |
 
 ---
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { inngest } from "@/lib/inngest/client";
 import { getApiUser } from "@/lib/auth/api-user";
 import { inngestUserIdFromSession } from "@/lib/auth/inngest-project-auth";
+import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 import {
   markProjectFailed,
@@ -45,6 +46,11 @@ export async function POST(
     const body = await parseJsonBody(req);
     const forceRegenerate = Boolean(body.forceRegenerate);
     const user = await getApiUser();
+
+    const limited = await enforceRateLimit(req, "generate", user?.id);
+    if (limited) {
+      return limited;
+    }
 
     await prepareProjectWorkflow(projectId, { forceRegenerate });
 
