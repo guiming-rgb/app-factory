@@ -1,4 +1,5 @@
 import { inngest } from "@/lib/inngest/client";
+import { assertInngestProjectOwner } from "@/lib/auth/inngest-project-auth";
 import { codegenInngestFunctions } from "@/lib/inngest/codegen-functions";
 
 /**
@@ -18,10 +19,13 @@ export const generateProjectReport = inngest.createFunction(
   },
   async ({ event, step }) => {
     const projectId = event.data.projectId as string;
+    const userId = event.data.userId as string | undefined;
 
     if (!projectId || typeof projectId !== "string") {
       throw new Error("缺少 projectId");
     }
+
+    await assertInngestProjectOwner(projectId, userId);
 
     const result = await step.run("execute-project-workflow", async () => {
       const { executeProjectWorkflow } = await import("@/lib/workflow");

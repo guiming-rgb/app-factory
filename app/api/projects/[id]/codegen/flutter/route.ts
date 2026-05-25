@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { getApiUser } from "@/lib/auth/api-user";
 import { enqueueCodegenJob } from "@/lib/codegen/enqueue";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
@@ -18,7 +19,12 @@ export async function POST(
   }
 
   try {
-    const run = await enqueueCodegenJob({ projectId, target: "flutter" });
+    const user = await getApiUser();
+    const run = await enqueueCodegenJob({
+      projectId,
+      target: "flutter",
+      userId: user?.id
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,3 +1,4 @@
+import { inngestUserIdFromSession } from "@/lib/auth/inngest-project-auth";
 import { inngest } from "@/lib/inngest/client";
 import {
   createCodegenRun,
@@ -20,6 +21,7 @@ function getErrorMessage(error: unknown) {
 export async function enqueueCodegenJob(input: {
   projectId: string;
   target: CodegenTarget;
+  userId?: string;
 }) {
   const run = await createCodegenRun({
     projectId: input.projectId,
@@ -31,7 +33,8 @@ export async function enqueueCodegenJob(input: {
       name: EVENT_BY_TARGET[input.target],
       data: {
         projectId: input.projectId,
-        runId: run.id
+        runId: run.id,
+        ...inngestUserIdFromSession(input.userId)
       }
     });
   } catch (eventError: unknown) {

@@ -1,4 +1,5 @@
 import { inngest } from "@/lib/inngest/client";
+import { assertInngestProjectOwner } from "@/lib/auth/inngest-project-auth";
 
 /**
  * Flutter / 微信小程序 codegen 与方案 8-Agent 并列，独立事件与 codegen_runs 表。
@@ -14,10 +15,13 @@ export const flutterCodegen = inngest.createFunction(
   async ({ event, step }) => {
     const projectId = event.data.projectId as string;
     const runId = event.data.runId as string;
+    const userId = event.data.userId as string | undefined;
 
     if (!projectId || !runId) {
       throw new Error("缺少 projectId 或 runId");
     }
+
+    await assertInngestProjectOwner(projectId, userId);
 
     const result = await step.run("execute-flutter-codegen", async () => {
       const { executeFlutterCodegen } = await import(
@@ -40,10 +44,13 @@ export const wechatCodegen = inngest.createFunction(
   async ({ event, step }) => {
     const projectId = event.data.projectId as string;
     const runId = event.data.runId as string;
+    const userId = event.data.userId as string | undefined;
 
     if (!projectId || !runId) {
       throw new Error("缺少 projectId 或 runId");
     }
+
+    await assertInngestProjectOwner(projectId, userId);
 
     const result = await step.run("execute-wechat-codegen", async () => {
       const { executeWechatCodegen } = await import(

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { inngest } from "@/lib/inngest/client";
+import { getApiUser } from "@/lib/auth/api-user";
+import { inngestUserIdFromSession } from "@/lib/auth/inngest-project-auth";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 import {
   markProjectFailed,
@@ -42,6 +44,7 @@ export async function POST(
   try {
     const body = await parseJsonBody(req);
     const forceRegenerate = Boolean(body.forceRegenerate);
+    const user = await getApiUser();
 
     await prepareProjectWorkflow(projectId, { forceRegenerate });
 
@@ -50,7 +53,8 @@ export async function POST(
         name: "project/generate.requested",
         data: {
           projectId,
-          forceRegenerate
+          forceRegenerate,
+          ...inngestUserIdFromSession(user?.id)
         }
       });
     } catch (eventError: unknown) {

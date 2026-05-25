@@ -14,7 +14,7 @@
 ## 近期待办（压缩）
 
 1. ~~v3 上云~~ ✅ · 尾项：浏览器 generate 冒烟 + Inngest Serve URL（可选一次）
-2. **v4 Auth + RLS** — v4-1～v4-4 ✅ · 下一步 v4-5 Inngest userId
+2. **v4 Auth + RLS** — v4-1～v4-5 ✅ · 下一步 v4-6 限流
 3. v4 实施后：限流、历史项目 owner 回填策略
 
 **收工**：[收工记录-20260526-v4-auth.md](./收工记录-20260526-v4-auth.md)（v4-1·v4-2 · 未 push）
