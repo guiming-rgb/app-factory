@@ -23,7 +23,7 @@
 - [x] **v2.1 自动修错 Agent**：analyze 失败 LLM patch 循环（`lib/codegen/auto-fix-flutter.ts`）
 - [x] **LLM→Spec 收紧**：外置 prompt + AJV 错误格式化（`lib/app-spec/prompts/report-to-spec.ts`）
 - [x] **v3 部署预览 PoC**：`/deploy` + `/api/deploy/status` + codegen HTML 预览
-- [ ] **v3 真上云（Vercel）**：代码已推 `777a317`；待 Vercel 导入 + 环境变量（见 [v3-部署指南.md](./v3-部署指南.md)）
+- [x] **v3 真上云（Vercel）**：https://app-factory-five.vercel.app（2026-05-25 CLI 部署）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -45,7 +45,7 @@
 1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅
 2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅
 3. ~~LLM 报告→Spec~~ ✅ · ~~v3 预览 PoC~~ ✅
-4. **v3 真上云**：Vercel Import + Inngest Cloud Serve URL + 回填 `NEXT_PUBLIC_APP_URL`
+4. ~~**v3 真上云**~~ ✅ https://app-factory-five.vercel.app · **待补** Inngest Cloud 密钥 + Serve URL
 
 ## 阻塞 / 风险（简）
 
@@ -59,7 +59,7 @@
 
 | 日期 | 变更 |
 |------|------|
-| 2026-05-25 | **A+B 验收 + 清理重复文档**；`777a317` 已推 main；Vercel 待 Import |
+| 2026-05-25 | **v3 Vercel 生产部署** https://app-factory-five.vercel.app · APP_URL 已回填 |
 | 2026-05-19 | **v2.1 auto-fix + Spec prompt + v3 preview**：`auto-fix-flutter`、报告→Spec prompt 外置、`/deploy` 与 HTML 预览 |
 | 2026-05-25 | **G10 + P2 异步 codegen + G9-Docker** 验收通过；[收工记录-20260525.md](./收工记录-20260525.md) |
 | 2026-05-22 | **收工记录**：双 Supabase 项目澄清；P0 仍为 dllaezdyxmoebkkwbftd 迁移；增 `check:codegen:table` / `db:apply:codegen` |
