@@ -13,6 +13,7 @@ type CodegenRun = {
   metadata: Record<string, unknown> | null;
   created_at: string;
   downloadUrl?: string | null;
+  previewUrl?: string | null;
 };
 
 const TARGET_LABEL: Record<CodegenTarget, string> = {
@@ -29,10 +30,15 @@ const STATUS_LABEL: Record<string, string> = {
 
 function formatAnalyzeStatus(meta: Record<string, unknown>) {
   const status = meta.analyzeStatus;
-  if (status === "passed") return " · analyze ✅";
-  if (status === "skipped") return " · analyze 跳过";
-  if (status === "failed") return " · analyze ❌";
-  return "";
+  let s = "";
+  if (status === "passed") s = " · analyze ✅";
+  else if (status === "skipped") s = " · analyze 跳过";
+  else if (status === "failed") s = " · analyze ❌";
+  const rounds = meta.autoFixRounds;
+  if (typeof rounds === "number" && rounds > 0) {
+    s += ` · 自动修 ${rounds} 轮`;
+  }
+  return s;
 }
 
 function formatSpecSource(source: string | null, meta: Record<string, unknown>) {
@@ -83,7 +89,8 @@ export function CodegenPanel({
       }
 
       const updated = data.run as CodegenRun;
-      updated.downloadUrl = data.downloadUrl ?? null;
+      updated.downloadUrl = data.downloadUrl ?? updated.downloadUrl ?? null;
+      updated.previewUrl = data.previewUrl ?? updated.previewUrl ?? null;
 
       setRuns((prev) => {
         const rest = prev.filter((r) => r.id !== runId);
@@ -292,20 +299,34 @@ export function CodegenPanel({
                       )}
                     </td>
                     <td className="py-2">
-                      {run.downloadUrl ? (
-                        <a
-                          href={run.downloadUrl}
-                          className="font-medium text-violet-700 underline"
-                        >
-                          下载 ZIP
-                        </a>
-                      ) : run.status === "failed" && run.log ? (
-                        <span className="text-red-600" title={run.log}>
-                          查看失败原因
-                        </span>
-                      ) : (
-                        <span className="text-violet-400">—</span>
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {run.previewUrl ? (
+                          <a
+                            href={run.previewUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-violet-700 underline"
+                          >
+                            预览
+                          </a>
+                        ) : null}
+                        {run.downloadUrl ? (
+                          <a
+                            href={run.downloadUrl}
+                            className="font-medium text-violet-700 underline"
+                          >
+                            下载 ZIP
+                          </a>
+                        ) : null}
+                        {!run.downloadUrl && !run.previewUrl && run.status === "failed" && run.log ? (
+                          <span className="text-red-600" title={run.log}>
+                            失败
+                          </span>
+                        ) : null}
+                        {!run.downloadUrl && !run.previewUrl && run.status !== "failed" ? (
+                          <span className="text-violet-400">—</span>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -42,7 +42,8 @@ async function ensureCodegenBucket(): Promise<void> {
 
 export async function uploadCodegenArtifact(
   storageKey: string,
-  buffer: Buffer
+  buffer: Buffer,
+  options?: { contentType?: string }
 ): Promise<void> {
   if (!isCodegenStorageEnabled()) {
     return;
@@ -53,7 +54,7 @@ export async function uploadCodegenArtifact(
   const supabase = getSupabaseAdmin();
 
   const { error } = await supabase.storage.from(bucket).upload(storageKey, buffer, {
-    contentType: "application/zip",
+    contentType: options?.contentType ?? "application/zip",
     upsert: true
   });
 

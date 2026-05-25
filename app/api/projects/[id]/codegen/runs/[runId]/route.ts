@@ -33,7 +33,8 @@ export async function GET(
 
     return NextResponse.json({
       run: enriched,
-      downloadUrl: enriched.downloadUrl
+      downloadUrl: enriched.downloadUrl,
+      previewUrl: enriched.previewUrl
     }, {
       headers: { "Cache-Control": "no-store" }
     });

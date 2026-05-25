@@ -15,6 +15,12 @@ export default function HomePage() {
           >
             历史项目
           </Link>
+          <Link
+            href="/deploy"
+            className="rounded-full border border-violet-300 bg-violet-50 px-4 py-1 text-sm text-violet-800 hover:bg-violet-100"
+          >
+            部署状态
+          </Link>
         </div>
 
         <h1 className="max-w-4xl text-4xl font-bold tracking-tight text-gray-950 md:text-6xl">

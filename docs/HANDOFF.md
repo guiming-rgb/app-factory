@@ -20,6 +20,9 @@
 - [x] **v2.1 沙箱 PoC**：`npm run sandbox:flutter`（[v2.1-沙箱-PoC.md](./v2.1-沙箱-PoC.md)）
 - [x] **v2.1 Docker 沙箱**：`npm run sandbox:flutter:docker`（[v2.1-沙箱-Docker.md](./v2.1-沙箱-Docker.md)）
 - [x] **Inngest codegen**：`codegen_runs` + 事件 + API（[v2-Inngest-codegen.md](./v2-Inngest-codegen.md)）
+- [x] **v2.1 自动修错 Agent**：analyze 失败 LLM patch 循环（`lib/codegen/auto-fix-flutter.ts`）
+- [x] **LLM→Spec 收紧**：外置 prompt + AJV 错误格式化（`lib/app-spec/prompts/report-to-spec.ts`）
+- [x] **v3 部署预览 PoC**：`/deploy` + `/api/deploy/status` + codegen HTML 预览
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -39,8 +42,8 @@
 ## 待办列表（执行顺序建议）
 
 1. ~~详情页 codegen 按钮~~ ✅ · ~~Storage~~ ✅（见 [v2-codegen-UI与Storage.md](./v2-codegen-UI与Storage.md)）
-2. v2.1：自动修错、小程序 CLI 构建。
-3. LLM 报告→Spec 校验通过率；**v3** 部署。
+2. ~~v2.1 自动修错~~ ✅ · 小程序 CLI 构建（待做）。
+3. ~~LLM 报告→Spec 校验通过率~~ ✅（prompt 收紧） · ~~v3 部署预览 PoC~~ ✅（见 [v3-部署指南.md](./v3-部署指南.md)）。
 
 ## 阻塞 / 风险（简）
 
@@ -54,6 +57,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-19 | **v2.1 auto-fix + Spec prompt + v3 preview**：`auto-fix-flutter`、报告→Spec prompt 外置、`/deploy` 与 HTML 预览 |
 | 2026-05-25 | **G10 + P2 异步 codegen + G9-Docker** 验收通过；[收工记录-20260525.md](./收工记录-20260525.md) |
 | 2026-05-22 | **收工记录**：双 Supabase 项目澄清；P0 仍为 dllaezdyxmoebkkwbftd 迁移；增 `check:codegen:table` / `db:apply:codegen` |
 | 2026-05-20 | **v2.1 Docker 沙箱 + Inngest codegen**（`codegen_runs`、flutter/wechat 事件与 API） |

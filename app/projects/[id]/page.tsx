@@ -174,7 +174,8 @@ export default async function ProjectPage({
                   log: run.log,
                   metadata: run.metadata,
                   created_at: run.created_at,
-                  downloadUrl: run.downloadUrl
+                  downloadUrl: run.downloadUrl,
+                  previewUrl: run.previewUrl
                 }))}
               />
             </div>

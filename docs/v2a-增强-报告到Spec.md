@@ -7,6 +7,8 @@
 | 项 | 说明 |
 |----|------|
 | 抽取 | `lib/app-spec/from-report.ts`：LLM 读 `final_report` → JSON → Validator |
+| Prompt | `lib/app-spec/prompts/report-to-spec.ts`（外置、4 次尝试、16000 字符报告上限） |
+| 校验修复 | `lib/app-spec/format-validation-errors.ts`：AJV 错误 → LLM 修复提示 |
 | 回退 | 失败或无报告 → `buildMinimalSpecFromProject`（标题启发式） |
 | API | `GET /api/projects/[id]/spec`（`?source=title` 强制启发式） |
 | 导出 | `export-flutter` / `export-wechat` **默认**走 `buildSpecForProject` |

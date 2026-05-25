@@ -3,16 +3,16 @@ import path from "path";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
-import { writeArtifactFile } from "@/lib/codegen/artifacts";
-import { getCodegenStorageBucket } from "@/lib/codegen/storage";
+import { runAutoFixAnalyzeLoop } from "@/lib/codegen/auto-fix-flutter";
+import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
+import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
 import {
   markCodegenRunCompleted,
   markCodegenRunFailed,
   markCodegenRunRunning
 } from "@/lib/codegen/runs";
-import {
-  generateFlutterProject
-} from "@/lib/flutter-codegen/generate";
+import { getCodegenStorageBucket } from "@/lib/codegen/storage";
+import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
   runDockerFlutterAnalyze,
@@ -30,12 +30,21 @@ export type FlutterCodegenExecuteResult = {
   analyze: DockerAnalyzeResult;
 };
 
-function buildAnalyzeMetadata(analyze: DockerAnalyzeResult) {
+function buildAnalyzeMetadata(
+  analyze: DockerAnalyzeResult,
+  autoFix?: { rounds: number; log: string[] }
+) {
   return {
     analyzeStatus: analyze.status,
     ...(analyze.reason ? { analyzeReason: analyze.reason.slice(0, 200) } : {}),
     ...(analyze.output
       ? { analyzeOutput: analyze.output.slice(0, 1500) }
+      : {}),
+    ...(autoFix?.rounds
+      ? {
+          autoFixRounds: autoFix.rounds,
+          autoFixLog: autoFix.log.join("\n").slice(0, 800)
+        }
       : {})
   };
 }
@@ -77,17 +86,27 @@ export async function executeFlutterCodegen(input: {
       throw new Error(msg);
     }
 
+    const spec = validation.spec;
     const { outputDir, appName, displayName } = await generateFlutterProject(
-      validation.spec
+      spec
     );
     outputRoot = path.dirname(outputDir);
 
-    const analyze = runDockerFlutterAnalyze({ outDir: outputDir });
+    let initialAnalyze = runDockerFlutterAnalyze({ outDir: outputDir });
+    const autoFix = await runAutoFixAnalyzeLoop({
+      appDir: outputDir,
+      initialAnalyze
+    });
+    const analyze = autoFix.analyze;
+
     if (shouldFailCodegenOnAnalyze(analyze)) {
-      const msg = `Docker dart analyze 未通过：${analyze.output?.slice(-3000) ?? analyze.reason ?? "unknown"}`;
+      const msg = `Docker dart analyze 未通过（已尝试自动修错 ${autoFix.rounds} 轮）：${analyze.output?.slice(-3000) ?? analyze.reason ?? "unknown"}`;
       await markCodegenRunFailed(runId, msg.slice(0, 4000));
       throw new Error(msg);
     }
+
+    const previewHtml = generateSpecPreviewHtml(spec);
+    const previewPath = await writePreviewHtml(runId, previewHtml);
 
     const buffer = await zipDirectory(outputDir);
     const fileName = `${appName}-flutter.zip`;
@@ -101,10 +120,11 @@ export async function executeFlutterCodegen(input: {
         fileName,
         displayName,
         storageUploaded,
+        previewPath,
         ...(storageUploaded
           ? { storageBucket: getCodegenStorageBucket() }
           : {}),
-        ...buildAnalyzeMetadata(analyze),
+        ...buildAnalyzeMetadata(analyze, autoFix),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }
     });

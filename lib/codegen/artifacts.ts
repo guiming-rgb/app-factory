@@ -62,3 +62,29 @@ export async function artifactExists(relativePath: string): Promise<boolean> {
     return codegenArtifactInStorage(relativePath);
   }
 }
+
+export async function writePreviewHtml(
+  runId: string,
+  html: string
+): Promise<string> {
+  const relative = `${runId}/preview/index.html`;
+  const full = resolveArtifactPath(relative);
+  await fs.mkdir(path.dirname(full), { recursive: true });
+  const buffer = Buffer.from(html, "utf8");
+  await fs.writeFile(full, buffer);
+
+  try {
+    await uploadCodegenArtifact(relative, buffer, {
+      contentType: "text/html; charset=utf-8"
+    });
+  } catch (err) {
+    console.warn("[writePreviewHtml] Storage upload skipped:", err);
+  }
+
+  return relative;
+}
+
+export async function readPreviewHtml(relativePath: string): Promise<string> {
+  const buffer = await readArtifactFile(relativePath);
+  return buffer.toString("utf8");
+}

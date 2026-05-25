@@ -39,7 +39,31 @@ npm run verify:codegen:storage
 npm run verify:codegen:flutter -- <projectId>   # 完成后 metadata.storageUploaded 应为 true
 ```
 
-详情页历史表 **产物** 列：`Storage ✅` / `本地`。
+详情页历史表 **产物** 列：`Storage ✅` / `本地`；Flutter codegen 成功后可点 **预览**（HTML mock，非 Flutter Web）。
+
+---
+
+## v2.1 自动修错（analyze 失败）
+
+| 项 | 说明 |
+|----|------|
+| 模块 | `lib/codegen/auto-fix-flutter.ts` |
+| 触发 | Docker `dart analyze` 失败时，LLM 返回 `{ patches: [{ relativePath, content }] }` |
+| 轮次 | 默认最多 3 轮（`CODEGEN_AUTOFIX_MAX_ROUNDS`） |
+| 禁用 | `CODEGEN_AUTOFIX_DISABLED=1` |
+| metadata | `autoFixRounds`、`autoFixLog`；详情页历史表显示「自动修 N 轮」 |
+
+---
+
+## v3 HTML 预览
+
+| 项 | 说明 |
+|----|------|
+| 生成 | `lib/codegen/preview-html.ts`（从 App Spec 生成静态手机 mock） |
+| 存储 | `{runId}/preview/index.html`（本地 + Storage 双写） |
+| API | `GET /api/projects/[id]/codegen/runs/[runId]/preview` |
+| UI | CodegenPanel **预览** 链接；首页 **部署状态** → `/deploy` |
+| 部署检查 | `GET /api/deploy/status` · `npm run check:deploy` |
 
 ---
 

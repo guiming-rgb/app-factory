@@ -1,26 +1,17 @@
 import { callLLM } from "@/lib/llm";
 
+import { formatValidationErrorsForLlm } from "./format-validation-errors";
 import { buildMinimalSpecFromProject } from "./from-project";
 import { mergeSpecWithMinimal } from "./merge-spec";
 import { parseJsonFromLlmText } from "./parse-json";
+import {
+  REPORT_RETRY_SLICE_CHARS,
+  REPORT_SLICE_CHARS,
+  REPORT_SPEC_MAX_ATTEMPTS,
+  REPORT_SPEC_SYSTEM
+} from "./prompts/report-to-spec";
 import type { AppSpec } from "./types";
 import { validateAppSpec } from "./validate";
-
-const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器。根据「8-Agent 方案报告」输出**唯一**一个 JSON 对象，必须符合 App Spec v0.1。
-
-硬性要求：
-- specVersion 固定 "0.1.0"
-- appName：小写英文+下划线，2～48 字符，以字母开头
-- displayName：中文或英文产品名
-- targets.flutter.enabled 默认 true；platforms 必须含 ["ios","android"]；formFactors 必须含 ["phone"]；backend.provider 默认 supabase
-- targets.wechatMiniProgram.enabled 若报告提到小程序则为 true
-- screens：至少 3 个；每个 screen 必须有 id、title、type；screen.id 匹配 ^[a-z][a-z0-9_]*$
-- navigation.tabs：与 Tab 页面对应的 screen id 数组，至少 2 个
-- limitations：数组，列出报告中的范围限制（不少于 1 条）
-- 不要输出 markdown，不要解释，只输出 JSON
-
-输出结构示例（字段名与类型必须一致，内容按报告替换）：
-{"specVersion":"0.1.0","appName":"kids_soccer","displayName":"少儿足球","targets":{"flutter":{"enabled":true,"platforms":["ios","android"],"formFactors":["phone"]},"backend":{"provider":"supabase"},"wechatMiniProgram":{"enabled":true}},"screens":[{"id":"home","title":"首页","type":"tabRoot","children":["match_list"]},{"id":"match_list","title":"比赛","type":"list"},{"id":"profile","title":"我的","type":"placeholder"}],"navigation":{"tabs":["match_list","profile"]},"limitations":["首版不含支付"]}`;
 
 export type SpecBuildSource = "report-llm" | "title-heuristic";
 
@@ -39,14 +30,15 @@ function buildRetryUserPrompt(
   },
   validationErrors: string[]
 ): string {
-  const reportSlice = project.final_report.slice(0, 12000);
+  const reportSlice = project.final_report.slice(0, REPORT_RETRY_SLICE_CHARS);
+  const hints = formatValidationErrorsForLlm(validationErrors);
   return [
     `项目标题：${project.title}`,
     `原始想法：${project.idea ?? "（无）"}`,
     `项目 ID：${project.id}`,
     "",
-    "上次 JSON 未通过 Schema 校验，请修正后重新输出完整 JSON：",
-    validationErrors.map((e) => `- ${e}`).join("\n"),
+    "上次 JSON 未通过 Schema 校验。请输出**完整**修正后的 JSON（不要只输出 diff）：",
+    hints.map((e) => `- ${e}`).join("\n"),
     "",
     "=== 方案报告（节选）===",
     reportSlice
@@ -62,7 +54,7 @@ async function extractSpecFromReportOnce(
   },
   options?: { retryErrors?: string[] }
 ): Promise<SpecBuildResult> {
-  const reportSlice = project.final_report.slice(0, 14000);
+  const reportSlice = project.final_report.slice(0, REPORT_SLICE_CHARS);
   const minimal = buildMinimalSpecFromProject(project);
 
   const userPrompt = options?.retryErrors?.length
@@ -79,7 +71,7 @@ async function extractSpecFromReportOnce(
   const { content } = await callLLM({
     systemPrompt: REPORT_SPEC_SYSTEM,
     userPrompt,
-    temperature: options?.retryErrors?.length ? 0.15 : 0.2
+    temperature: options?.retryErrors?.length ? 0.1 : 0.15
   });
 
   const parsed = parseJsonFromLlmText(content);
@@ -113,7 +105,7 @@ export async function extractSpecFromReport(project: {
   final_report: string;
 }): Promise<SpecBuildResult> {
   let lastErrors: string[] = [];
-  const maxAttempts = 3;
+  const maxAttempts = REPORT_SPEC_MAX_ATTEMPTS;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
