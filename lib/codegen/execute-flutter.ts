@@ -1,12 +1,23 @@
+import fs from "fs/promises";
+import path from "path";
+
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
-import { generateFlutterZip } from "@/lib/flutter-codegen/generate";
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
 import {
   markCodegenRunCompleted,
   markCodegenRunFailed,
   markCodegenRunRunning
 } from "@/lib/codegen/runs";
+import {
+  generateFlutterProject
+} from "@/lib/flutter-codegen/generate";
+import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import {
+  runDockerFlutterAnalyze,
+  shouldFailCodegenOnAnalyze,
+  type DockerAnalyzeResult
+} from "@/lib/sandbox/docker-analyze";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export type FlutterCodegenExecuteResult = {
@@ -15,7 +26,18 @@ export type FlutterCodegenExecuteResult = {
   artifact_path: string;
   spec_source: string;
   displayName: string;
+  analyze: DockerAnalyzeResult;
 };
+
+function buildAnalyzeMetadata(analyze: DockerAnalyzeResult) {
+  return {
+    analyzeStatus: analyze.status,
+    ...(analyze.reason ? { analyzeReason: analyze.reason.slice(0, 200) } : {}),
+    ...(analyze.output
+      ? { analyzeOutput: analyze.output.slice(0, 1500) }
+      : {})
+  };
+}
 
 export async function executeFlutterCodegen(input: {
   projectId: string;
@@ -37,6 +59,8 @@ export async function executeFlutterCodegen(input: {
     throw new Error(msg);
   }
 
+  let outputRoot: string | null = null;
+
   try {
     const built = await buildSpecForProject({
       id: project.id,
@@ -52,9 +76,20 @@ export async function executeFlutterCodegen(input: {
       throw new Error(msg);
     }
 
-    const { buffer, fileName, displayName } = await generateFlutterZip(
+    const { outputDir, appName, displayName } = await generateFlutterProject(
       validation.spec
     );
+    outputRoot = path.dirname(outputDir);
+
+    const analyze = runDockerFlutterAnalyze({ outDir: outputDir });
+    if (shouldFailCodegenOnAnalyze(analyze)) {
+      const msg = `Docker dart analyze 未通过：${analyze.output?.slice(-3000) ?? analyze.reason ?? "unknown"}`;
+      await markCodegenRunFailed(runId, msg.slice(0, 4000));
+      throw new Error(msg);
+    }
+
+    const buffer = await zipDirectory(outputDir);
+    const fileName = `${appName}-flutter.zip`;
     const artifact_path = await writeArtifactFile(runId, fileName, buffer);
 
     await markCodegenRunCompleted(runId, {
@@ -63,6 +98,7 @@ export async function executeFlutterCodegen(input: {
       metadata: {
         fileName,
         displayName,
+        ...buildAnalyzeMetadata(analyze),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }
     });
@@ -72,11 +108,16 @@ export async function executeFlutterCodegen(input: {
       fileName,
       artifact_path,
       spec_source: built.source,
-      displayName
+      displayName,
+      analyze
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Flutter codegen 失败";
     await markCodegenRunFailed(runId, message).catch(() => {});
     throw err;
+  } finally {
+    if (outputRoot) {
+      await fs.rm(outputRoot, { recursive: true, force: true }).catch(() => {});
+    }
   }
 }

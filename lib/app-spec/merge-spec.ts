@@ -1,4 +1,5 @@
 import type { AppSpec } from "./types";
+import { normalizeSpecScreens } from "./normalize-screens";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -21,9 +22,7 @@ export function mergeSpecWithMinimal(
   const wechat = asRecord(targets.wechatMiniProgram);
   const backend = asRecord(targets.backend);
 
-  const screens = Array.isArray(partial.screens)
-    ? (partial.screens as AppSpec["screens"])
-    : minimal.screens;
+  const screens = normalizeSpecScreens(partial.screens, minimal);
 
   const navigation = asRecord(partial.navigation);
 
@@ -68,7 +67,7 @@ export function mergeSpecWithMinimal(
             : minBackend.provider ?? "supabase"
       }
     },
-    screens: screens.length >= 3 ? screens : minimal.screens,
+    screens: screens,
     navigation: {
       ...asRecord(minimal.navigation),
       ...navigation,

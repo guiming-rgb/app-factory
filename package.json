@@ -26,7 +26,8 @@
     "sandbox:flutter:docker:analyze-only": "npx tsx scripts/sandbox-flutter-docker.ts -- --no-build",
     "verify:codegen:flutter": "npx tsx scripts/verify-codegen-flutter.ts",
     "check:codegen:table": "npx tsx scripts/check-codegen-table.ts",
-    "db:apply:codegen": "node scripts/apply-codegen-migration.mjs"
+    "db:apply:codegen": "node scripts/apply-codegen-migration.mjs",
+    "check:deploy": "node scripts/check-deploy-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",

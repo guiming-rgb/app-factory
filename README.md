@@ -38,7 +38,7 @@ AI 原生软件生产平台：输入 App 想法，经 8 个智能体串行生成
 ## API 说明
 
 - `POST /api/projects/[id]/generate`：body 可选 `{ "forceRegenerate": true }`；`running` 重复调用 → **409**；已完成且未带 `forceRegenerate` → **400**。
-- 生产部署：在 Inngest Cloud 创建应用，配置 `INNGEST_EVENT_KEY`、`INNGEST_SIGNING_KEY`，并将 Vercel 等 URL 注册为同步目标。
+- 生产部署：见 [docs/v3-部署指南.md](./docs/v3-部署指南.md)；`npm run check:deploy` 检查环境变量。Inngest Cloud 注册 `/api/inngest` 同步目标。
 
 ## 技术栈
 

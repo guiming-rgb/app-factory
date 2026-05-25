@@ -27,10 +27,21 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "失败"
 };
 
-function formatSpecSource(source: string | null) {
-  if (source === "report-llm") return "报告→Spec（LLM）";
-  if (source === "title-heuristic") return "标题启发式（回退）";
-  return source ?? "—";
+function formatAnalyzeStatus(meta: Record<string, unknown>) {
+  const status = meta.analyzeStatus;
+  if (status === "passed") return " · analyze ✅";
+  if (status === "skipped") return " · analyze 跳过";
+  if (status === "failed") return " · analyze ❌";
+  return "";
+}
+
+function formatSpecSource(source: string | null, meta: Record<string, unknown>) {
+  const base = source === "report-llm"
+    ? "报告→Spec（LLM）"
+    : source === "title-heuristic"
+      ? "标题启发式（回退）"
+      : source ?? "—";
+  return base + formatAnalyzeStatus(meta);
 }
 
 export function CodegenPanel({
@@ -46,7 +57,9 @@ export function CodegenPanel({
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchRuns = useCallback(async () => {
-    const res = await fetch(`/api/projects/${projectId}/codegen/runs`);
+    const res = await fetch(`/api/projects/${projectId}/codegen/runs`, {
+      cache: "no-store"
+    });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data?.error ?? "加载 codegen 记录失败");
@@ -58,7 +71,8 @@ export function CodegenPanel({
   const pollRun = useCallback(
     async (runId: string) => {
       const res = await fetch(
-        `/api/projects/${projectId}/codegen/runs/${runId}`
+        `/api/projects/${projectId}/codegen/runs/${runId}`,
+        { cache: "no-store" }
       );
       const data = await res.json();
       if (!res.ok) {
@@ -77,6 +91,12 @@ export function CodegenPanel({
     },
     [projectId]
   );
+
+  useEffect(() => {
+    void fetchRuns().catch(() => {
+      /* 首屏静默；用户可点刷新或重新提交 */
+    });
+  }, [fetchRuns]);
 
   useEffect(() => {
     return () => {
@@ -199,7 +219,12 @@ export function CodegenPanel({
             </thead>
             <tbody>
               {runs.slice(0, 8).map((run) => {
-                const meta = (run.metadata ?? {}) as { specWarning?: string };
+                const meta = (run.metadata ?? {}) as {
+                  specWarning?: string;
+                  analyzeOutput?: string;
+                  analyzeReason?: string;
+                };
+                const hint = meta.specWarning ?? meta.analyzeOutput ?? meta.analyzeReason;
                 return (
                   <tr key={run.id} className="border-b border-violet-100/80">
                     <td className="py-2 pr-2">{TARGET_LABEL[run.target]}</td>
@@ -207,7 +232,7 @@ export function CodegenPanel({
                       {STATUS_LABEL[run.status] ?? run.status}
                     </td>
                     <td className="py-2 pr-2">
-                      {formatSpecSource(run.spec_source)}
+                      {formatSpecSource(run.spec_source, meta)}
                       {meta.specWarning ? (
                         <span
                           className="ml-1 cursor-help text-amber-700"

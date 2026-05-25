@@ -34,6 +34,8 @@ export async function GET(
     return NextResponse.json({
       run: enriched,
       downloadUrl: enriched.downloadUrl
+    }, {
+      headers: { "Cache-Control": "no-store" }
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "查询 codegen 记录失败";

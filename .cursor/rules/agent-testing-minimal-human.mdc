@@ -29,9 +29,10 @@ alwaysApply: true
 | 阶段收工 | 对应 **G0～G8** 或 `npm run verify:*` / `npm run accept` |
 | 改 TS/路由/API | `npm run build`；必要时 `lint` |
 | v2a/v2b | `verify:codegen` / `verify:wechat-codegen` |
-| 宣称通过 | 贴终端 **最后 5～15 行**；更新 `验收记录.md` / `HANDOFF.md` |
+| **改 codegen / Inngest / Supabase 读写的 API** | **Agent 自启双进程（3001 + `inngest:dev:3001`）→ `POST .../codegen/flutter` → 轮询 `GET .../codegen/runs/[runId]` 至 completed/failed → 断言 `downloadUrl` / `metadata.analyzeStatus`；不把「请你点生成/刷新」甩给维护者** |
+| 宣称通过 | 贴终端 **最后 5～15 行** + API 断言摘要；更新 `验收记录.md` / `HANDOFF.md` |
 
-**禁止**：未跑门禁就写「请您本地验证」；把 5～6 条命令拆成多轮让维护者逐条敲。
+**禁止**：未跑门禁就写「请您本地验证」；把 5～6 条命令拆成多轮让维护者逐条敲；改完 codegen 只叫维护者「硬刷新看看」而不自测 API。
 
 ## 四、仅维护者 / 须事先说明的项
 

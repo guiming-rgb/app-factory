@@ -30,10 +30,14 @@ export function getSupabaseAdmin(): SupabaseClient {
   }
 
   try {
+    // Next.js 会默认缓存 fetch；Supabase 查询必须实时，否则 codegen 状态会卡在「排队中」。
     cached = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false
+      },
+      global: {
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" })
       }
     });
   } catch (e) {
