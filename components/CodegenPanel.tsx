@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { GitHubConnectButton } from "@/components/GitHubConnectButton";
+
 type CodegenTarget = "flutter" | "wechat";
 
 type CodegenRun = {
@@ -67,6 +69,7 @@ export function CodegenPanel({
   const [loadingTarget, setLoadingTarget] = useState<CodegenTarget | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [pushingRunId, setPushingRunId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchRuns = useCallback(async () => {
@@ -178,6 +181,33 @@ export function CodegenPanel({
     }
   }
 
+  async function handleGitHubPush(runId: string) {
+    setPushingRunId(runId);
+    setError("");
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/codegen/runs/${runId}/github-push`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({})
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        if (data?.code === "github_not_connected") {
+          throw new Error("请先连接 GitHub（上方「连接 GitHub」）");
+        }
+        throw new Error(data?.error ?? "推送到 GitHub 失败");
+      }
+      await fetchRuns();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "推送到 GitHub 失败");
+    } finally {
+      setPushingRunId(null);
+    }
+  }
+
   const activeRun = runs.find(
     (r) => r.status === "queued" || r.status === "running"
   );
@@ -200,6 +230,10 @@ export function CodegenPanel({
         <code className="rounded bg-violet-100 px-1">npm run inngest:dev:3001</code>
         ）。
       </p>
+
+      <div className="mt-2">
+        <GitHubConnectButton nextPath={`/projects/${projectId}`} />
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
@@ -270,6 +304,8 @@ export function CodegenPanel({
                   analyzeReason?: string;
                   storageUploaded?: boolean;
                   storageBucket?: string;
+                  githubRepoUrl?: string;
+                  githubPushStatus?: string;
                 };
                 const hint = meta.specWarning ?? meta.analyzeOutput ?? meta.analyzeReason;
                 return (
@@ -320,6 +356,30 @@ export function CodegenPanel({
                             className="font-medium text-violet-700 underline"
                           >
                             下载 ZIP
+                          </a>
+                        ) : null}
+                        {run.status === "completed" && run.downloadUrl ? (
+                          <button
+                            type="button"
+                            disabled={pushingRunId === run.id}
+                            onClick={() => void handleGitHubPush(run.id)}
+                            className="font-medium text-emerald-700 underline disabled:opacity-50"
+                          >
+                            {pushingRunId === run.id
+                              ? "推送中…"
+                              : meta.githubRepoUrl
+                                ? "再次推送"
+                                : "推 GitHub"}
+                          </button>
+                        ) : null}
+                        {meta.githubRepoUrl ? (
+                          <a
+                            href={meta.githubRepoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-emerald-700 underline"
+                          >
+                            GitHub
                           </a>
                         ) : null}
                         {!run.downloadUrl && !run.previewUrl && run.status === "failed" && run.log ? (

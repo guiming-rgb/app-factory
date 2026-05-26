@@ -48,6 +48,12 @@ export default async function ProjectPage({
     100
   );
 
+  const skillInjectionByRunId = new Map(
+    (usage?.skillInjections ?? [])
+      .filter((row) => row.agentRunId)
+      .map((row) => [row.agentRunId as string, row])
+  );
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-10">
       <AutoRefreshWhenRunning enabled={project.status === "running"} />
@@ -92,6 +98,41 @@ export default async function ProjectPage({
                     {formatDurationMs(usage.totalDurationMs)} · Token 合计{" "}
                     {usage.totalTokens.toLocaleString()}
                   </p>
+                </div>
+              )}
+
+              {usage && usage.skillInjections.length > 0 && (
+                <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
+                  <p className="font-medium">技能注入记录（v5-9）</p>
+                  <p className="mt-1 text-xs text-violet-800">
+                    共 {usage.skillInjections.length} 条 · 已写入 usage_logs（event_type=skill_injection）
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-violet-900">
+                    {usage.skillInjections.map((row) => (
+                      <li key={row.id}>
+                        <span className="font-mono">{row.agentCode}</span>
+                        {row.injectedCodes.length > 0 ? (
+                          <>
+                            {" "}
+                            →{" "}
+                            {row.skillNames.length > 0
+                              ? row.skillNames
+                                  .map((s) => `${s.name} (${s.code})`)
+                                  .join("、")
+                              : row.injectedCodes.join("、")}
+                          </>
+                        ) : (
+                          <span className="text-violet-700">（本轮未注入已发布技能）</span>
+                        )}
+                        {row.missingCodes.length > 0 && (
+                          <span className="text-amber-800">
+                            {" "}
+                            · 未发布/缺失：{row.missingCodes.join("、")}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -219,7 +260,11 @@ export default async function ProjectPage({
               </div>
             ) : (
               runs.map((run) => (
-                <AgentResultCard key={run.id} run={run} />
+                <AgentResultCard
+                  key={run.id}
+                  run={run}
+                  skillInjection={skillInjectionByRunId.get(run.id) ?? null}
+                />
               ))
             )}
           </div>

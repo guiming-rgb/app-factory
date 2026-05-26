@@ -12,6 +12,9 @@ export function formatValidationErrorsForLlm(errors: string[]): string[] {
       hints.push(
         "→ screen.type 只能是：tabRoot | list | detail | form | placeholder"
       );
+      hints.push(
+        "→ 不要把 screen.id（如 home、match_list）当作 type；home 页用 tabRoot，列表用 list，「我的」用 placeholder"
+      );
     }
     if (raw.includes("/screens/") && raw.includes('"id"')) {
       hints.push("→ screen.id 必须匹配 ^[a-z][a-z0-9_]*$，如 match_list、profile");

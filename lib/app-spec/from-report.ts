@@ -19,6 +19,7 @@ export type SpecBuildResult = {
   spec: AppSpec;
   source: SpecBuildSource;
   warning?: string;
+  attempts?: number;
 };
 
 function buildRetryUserPrompt(
@@ -109,9 +110,21 @@ export async function extractSpecFromReport(project: {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      return await extractSpecFromReportOnce(project, {
+      const result = await extractSpecFromReportOnce(project, {
         retryErrors: attempt > 0 ? lastErrors : undefined
       });
+      const attempts = attempt + 1;
+      return {
+        ...result,
+        attempts,
+        spec: {
+          ...result.spec,
+          metadata: {
+            ...(result.spec.metadata ?? {}),
+            reportToSpecAttempts: attempts
+          }
+        }
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (!message.includes("App Spec 校验失败")) {

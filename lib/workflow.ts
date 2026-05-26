@@ -6,14 +6,19 @@ import {
   formatMemoriesForPrompt,
   listProjectMemoriesForWorkflow
 } from "./memories/server";
+import {
+  agentReceivesProjectMemories,
+  memorySectionHintForAgent
+} from "./agents/memory-bindings";
 import { loadAgentSkillBindings } from "./agents/skill-bindings";
+import { resolveAgentSkillInjection } from "./agents/resolve-skills";
 import {
   formatSkillsForPrompt,
-  getPublishedSkillsByCodes,
-  type Skill
+  getPublishedSkillsByCodes
 } from "./skills/server";
 import {
   deleteUsageLogsForProject,
+  insertSkillInjectionLog,
   insertUsageLog
 } from "./usage-logs";
 
@@ -138,10 +143,12 @@ export async function executeProjectWorkflow(projectId: string) {
 
   try {
     for (const agent of agentConfigs) {
-      const agentSkillCodes = agentSkillBindings[agent.code] ?? [];
-      const agentSkills = agentSkillCodes
-        .map((code) => skillsByCode.get(code))
-        .filter((s): s is Skill => !!s);
+      const injection = resolveAgentSkillInjection(
+        agent.code,
+        agentSkillBindings,
+        skillsByCode
+      );
+      const agentSkills = injection.skills;
       const skillsBlock = formatSkillsForPrompt(agentSkills);
       const systemPrompt = skillsBlock
         ? `${agent.systemPrompt}
@@ -156,8 +163,12 @@ ${skillsBlock}`
       const runInput = buildAgentInput({
         projectIdea: project.idea,
         previousOutputs: contextOutputs,
-        projectMemoriesBlock:
-          agent.code === "ceo" ? memoryBlock : undefined
+        projectMemoriesBlock: agentReceivesProjectMemories(agent.code)
+          ? memoryBlock
+          : undefined,
+        memorySectionHint: agentReceivesProjectMemories(agent.code)
+          ? memorySectionHintForAgent(agent.code)
+          : undefined
       });
 
       const { data: run, error: runCreateError } = await getSupabaseAdmin()
@@ -178,6 +189,20 @@ ${skillsBlock}`
           `创建 Agent 运行记录失败：${runCreateError?.message || agent.name}`
         );
       }
+
+      await insertSkillInjectionLog({
+        projectId,
+        agentRunId: run.id,
+        agentCode: agent.code,
+        boundCodes: injection.boundCodes,
+        injectedCodes: injection.injectedCodes,
+        missingCodes: injection.missingCodes,
+        skillNames: agentSkills.map((s) => ({
+          code: s.code,
+          name: s.name,
+          version: s.version
+        }))
+      });
 
       try {
         const llmStartedAt = Date.now();
@@ -275,18 +300,21 @@ function buildAgentInput(params: {
   projectIdea: string;
   previousOutputs: string[];
   projectMemoriesBlock?: string;
+  memorySectionHint?: string;
 }) {
   const previous =
     params.previousOutputs.length > 0
       ? params.previousOutputs.join("\n\n---\n\n")
       : "暂无，这是第一个智能体。";
 
+  const memoryHint =
+    params.memorySectionHint?.trim() || "须在本轮输出中体现";
   const memoriesSection =
     params.projectMemoriesBlock?.trim()
       ? `
 ---
 
-**项目记忆（用户此前补充的约束与反馈，CEO 须纳入战略判断）：**
+**项目记忆（用户此前补充的约束与反馈，${memoryHint}）：**
 
 ${params.projectMemoriesBlock}
 `

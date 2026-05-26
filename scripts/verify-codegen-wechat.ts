@@ -39,6 +39,8 @@ async function main() {
   console.log(`status: ${row?.status}`);
   console.log(`spec_source: ${result.spec_source}`);
   console.log(`buildStatus: ${meta.buildStatus ?? result.build.status}`);
+  console.log(`structureStatus: ${(meta as { structureStatus?: string }).structureStatus ?? result.build.structure.status}`);
+  console.log(`compileStatus: ${(meta as { compileStatus?: string }).compileStatus ?? result.build.compile.status}`);
   console.log(`artifact: ${row?.artifact_path}`);
   console.log(`preview: ${meta.previewPath ?? "—"}`);
   console.log(`file: ${result.fileName}`);

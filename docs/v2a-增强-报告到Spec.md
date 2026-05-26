@@ -1,13 +1,14 @@
 # v2a 增强 — 报告 → App Spec
 
-> **状态**：PoC（2026-05-20）
+> **状态**：C1 收紧 ✅（2026-05-22）· 验收 `npm run verify:c1:report-to-spec`
 
 ## 能力
 
 | 项 | 说明 |
 |----|------|
-| 抽取 | `lib/app-spec/from-report.ts`：LLM 读 `final_report` → JSON → Validator |
-| Prompt | `lib/app-spec/prompts/report-to-spec.ts`（外置、4 次尝试、16000 字符报告上限） |
+| 抽取 | `lib/app-spec/from-report.ts`：LLM 读 `final_report` → JSON → Validator（最多 4 次 AJV 重试） |
+| Prompt | `lib/app-spec/prompts/report-to-spec.ts`（禁止 id 误填为 type） |
+| 归一化 | `normalize-screens.ts` / `normalize-navigation.ts`：修正 LLM 常见 screen.type、tabs 错误 |
 | 校验修复 | `lib/app-spec/format-validation-errors.ts`：AJV 错误 → LLM 修复提示 |
 | 回退 | 失败或无报告 → `buildMinimalSpecFromProject`（标题启发式） |
 | API | `GET /api/projects/[id]/spec`（`?source=title` 强制启发式） |

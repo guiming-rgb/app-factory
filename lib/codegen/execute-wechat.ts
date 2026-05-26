@@ -13,10 +13,10 @@ import {
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
-  runWechatStructureValidate,
-  shouldFailCodegenOnWechatValidate,
-  type WechatValidateResult
-} from "@/lib/sandbox/wechat-validate";
+  runWechatFullBuildValidate,
+  shouldFailCodegenOnWechatBuild,
+  type WechatFullBuildResult
+} from "@/lib/sandbox/wechat-build";
 import { generateWechatProject } from "@/lib/wechat-codegen/generate";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -26,14 +26,22 @@ export type WechatCodegenExecuteResult = {
   artifact_path: string;
   spec_source: string;
   displayName: string;
-  build: WechatValidateResult;
+  build: WechatFullBuildResult;
 };
 
-function buildWechatMetadata(build: WechatValidateResult) {
+function buildWechatMetadata(build: WechatFullBuildResult) {
   return {
     buildStatus: build.status,
+    structureStatus: build.structure.status,
+    compileStatus: build.compile.status,
     ...(build.reason ? { buildReason: build.reason.slice(0, 200) } : {}),
-    ...(build.output ? { buildOutput: build.output.slice(0, 1500) } : {})
+    ...(build.output ? { buildOutput: build.output.slice(0, 1500) } : {}),
+    ...(build.compile.wxmlFiles != null
+      ? { compileWxmlFiles: build.compile.wxmlFiles }
+      : {}),
+    ...(build.compile.wxssFiles != null
+      ? { compileWxssFiles: build.compile.wxssFiles }
+      : {})
   };
 }
 
@@ -42,6 +50,9 @@ export async function executeWechatCodegen(input: {
   runId: string;
 }): Promise<WechatCodegenExecuteResult> {
   const { projectId, runId } = input;
+
+  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
+  await cleanupStaleCodegenRuns({ projectId });
 
   await markCodegenRunRunning(runId);
 
@@ -78,9 +89,9 @@ export async function executeWechatCodegen(input: {
     const { outputDir, appName, displayName } = await generateWechatProject(spec);
     outputRoot = path.dirname(outputDir);
 
-    const build = runWechatStructureValidate({ appDir: outputDir });
-    if (shouldFailCodegenOnWechatValidate(build)) {
-      const msg = `小程序结构门禁未通过：${build.output?.slice(-3000) ?? build.reason ?? "unknown"}`;
+    const build = runWechatFullBuildValidate({ appDir: outputDir });
+    if (shouldFailCodegenOnWechatBuild(build)) {
+      const msg = `小程序编译门禁未通过：${build.output?.slice(-3000) ?? build.reason ?? "unknown"}`;
       await markCodegenRunFailed(runId, msg.slice(0, 4000));
       throw new Error(msg);
     }

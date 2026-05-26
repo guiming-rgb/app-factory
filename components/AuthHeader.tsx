@@ -39,6 +39,12 @@ export function AuthHeader() {
     <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
       {email ? (
         <>
+          <Link
+            href="/skills"
+            className="rounded-full border border-gray-300 px-3 py-1 text-gray-800 hover:bg-gray-50"
+          >
+            技能管理
+          </Link>
           <span className="text-gray-500">{email}</span>
           <form action="/auth/signout" method="post">
             <button

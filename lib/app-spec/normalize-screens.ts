@@ -8,6 +8,24 @@ const SCREEN_TYPES = new Set([
   "placeholder"
 ]);
 
+/** LLM 常把 id 或页面语义误填为 type */
+const INVALID_TYPE_TOKENS = new Set([
+  "home",
+  "main",
+  "list",
+  "page",
+  "profile",
+  "detail",
+  "form",
+  "tab",
+  "root",
+  "tabroot",
+  "placeholder",
+  "screen",
+  "index",
+  "menu"
+]);
+
 function slugScreenId(raw: unknown, fallback: string): string {
   if (typeof raw === "string") {
     const slug = raw
@@ -18,6 +36,52 @@ function slugScreenId(raw: unknown, fallback: string): string {
     if (/^[a-z][a-z0-9_]*$/.test(slug)) return slug.slice(0, 48);
   }
   return fallback;
+}
+
+function inferScreenType(
+  screenId: string,
+  rawType: unknown,
+  fallbackType: AppSpec["screens"][number]["type"]
+): AppSpec["screens"][number]["type"] {
+  if (typeof rawType === "string" && SCREEN_TYPES.has(rawType)) {
+    return rawType as AppSpec["screens"][number]["type"];
+  }
+
+  const token =
+    typeof rawType === "string" ? rawType.trim().toLowerCase() : "";
+
+  if (token === screenId || INVALID_TYPE_TOKENS.has(token) || !token) {
+    if (
+      screenId === "home" ||
+      token === "home" ||
+      token === "main" ||
+      token === "tab" ||
+      token === "root" ||
+      token === "tabroot"
+    ) {
+      return "tabRoot";
+    }
+    if (screenId === "profile" || token === "profile") {
+      return "placeholder";
+    }
+    if (
+      screenId.includes("list") ||
+      token === "list" ||
+      token === "page" ||
+      token === "index" ||
+      token === "menu"
+    ) {
+      return "list";
+    }
+    if (screenId.includes("detail") || token === "detail") {
+      return "detail";
+    }
+    if (screenId.includes("form") || token === "form") {
+      return "form";
+    }
+  }
+
+  return fallbackType;
 }
 
 function normalizeOneScreen(
@@ -33,13 +97,11 @@ function normalizeOneScreen(
       : {};
 
   const typeRaw = obj.type;
-  const type =
-    typeof typeRaw === "string" && SCREEN_TYPES.has(typeRaw)
-      ? (typeRaw as AppSpec["screens"][number]["type"])
-      : fallback.type;
+  const screenId = slugScreenId(obj.id, fallback.id);
+  const type = inferScreenType(screenId, typeRaw, fallback.type);
 
   const screen: AppSpec["screens"][number] = {
-    id: slugScreenId(obj.id, fallback.id),
+    id: screenId,
     title:
       typeof obj.title === "string" && obj.title.trim()
         ? obj.title.trim().slice(0, 128)

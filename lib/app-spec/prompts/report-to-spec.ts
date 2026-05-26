@@ -15,6 +15,7 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 - screens: 至少 3 个；每个必须有 id、title、type
 - screen.id: 仅小写+下划线，如 home、match_list、profile
 - screen.type: 只能是 tabRoot | list | detail | form | placeholder
+- **禁止**把 screen.id 的值（如 home、match_list）当作 type；**禁止**使用 main、home、list、page 等作为 type
 - navigation.tabs: 字符串数组，元素必须是 screens 里 type 为 list/placeholder/detail 的 id，至少 2 个
 - limitations: 非空字符串数组（从报告提炼首版范围限制）
 - roles: 数组（可为空 []）

@@ -12,10 +12,37 @@ type ProjectMemory = {
 };
 
 const MEMORY_TYPES = [
-  { value: "note", label: "备注" },
-  { value: "constraint", label: "约束" },
-  { value: "feedback", label: "反馈" }
+  { value: "note", label: "备注", badgeClass: "bg-slate-100 text-slate-700" },
+  {
+    value: "constraint",
+    label: "约束",
+    badgeClass: "bg-amber-100 text-amber-900"
+  },
+  {
+    value: "feedback",
+    label: "反馈",
+    badgeClass: "bg-sky-100 text-sky-900"
+  }
 ] as const;
+
+function memoryTypeLabel(type: string): string {
+  return MEMORY_TYPES.find((t) => t.value === type)?.label ?? type;
+}
+
+function memoryTypeBadgeClass(type: string): string {
+  return (
+    MEMORY_TYPES.find((t) => t.value === type)?.badgeClass ??
+    "bg-gray-100 text-gray-700"
+  );
+}
+
+function importanceLabel(n: number): string {
+  if (n >= 5) return "极高";
+  if (n >= 4) return "高";
+  if (n >= 3) return "中";
+  if (n >= 2) return "低";
+  return "很低";
+}
 
 export function ProjectMemoriesPanel({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -105,7 +132,7 @@ export function ProjectMemoriesPanel({ projectId }: { projectId: string }) {
     <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <h2 className="text-lg font-semibold text-gray-900">项目记忆</h2>
       <p className="mt-1 text-xs text-gray-600">
-        补充偏好、约束或迭代反馈；下次生成时 CEO 会读取最近记忆。
+        补充偏好、约束或迭代反馈；下次生成时 CEO / 产品 / 架构 / QA 会读取最近记忆。
       </p>
 
       <form onSubmit={handleAdd} className="mt-4 space-y-3">
@@ -173,9 +200,15 @@ export function ProjectMemoriesPanel({ projectId }: { projectId: string }) {
               className="flex items-start justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
             >
               <div className="min-w-0 flex-1">
-                <div className="mb-1 flex flex-wrap gap-2 text-xs text-gray-500">
-                  <span className="rounded bg-white px-2 py-0.5">{m.memory_type}</span>
-                  <span>重要度 {m.importance}</span>
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-medium ${memoryTypeBadgeClass(m.memory_type)}`}
+                  >
+                    {memoryTypeLabel(m.memory_type)}
+                  </span>
+                  <span className="text-gray-500">
+                    重要度 {m.importance}（{importanceLabel(m.importance)}）
+                  </span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm text-gray-800">
                   {m.content}

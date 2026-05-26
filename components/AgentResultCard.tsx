@@ -1,3 +1,9 @@
+type SkillInjectionSummary = {
+  injectedCodes: string[];
+  missingCodes: string[];
+  skillNames: Array<{ code: string; name: string; version: string }>;
+};
+
 type AgentRun = {
   id: string;
   agent_code: string;
@@ -7,7 +13,13 @@ type AgentRun = {
   error_message: string | null;
 };
 
-export function AgentResultCard({ run }: { run: AgentRun }) {
+export function AgentResultCard({
+  run,
+  skillInjection
+}: {
+  run: AgentRun;
+  skillInjection?: SkillInjectionSummary | null;
+}) {
   const statusStyle = getStatusStyle(run.status);
 
   return (
@@ -24,6 +36,28 @@ export function AgentResultCard({ run }: { run: AgentRun }) {
           {formatStatus(run.status)}
         </span>
       </div>
+
+      {skillInjection && (
+        <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50/80 px-3 py-2 text-xs text-violet-900">
+          <span className="font-medium">已注入技能：</span>
+          {skillInjection.injectedCodes.length > 0 ? (
+            <span>
+              {skillInjection.skillNames.length > 0
+                ? skillInjection.skillNames
+                    .map((s) => `${s.name} (${s.code})`)
+                    .join("、")
+                : skillInjection.injectedCodes.join("、")}
+            </span>
+          ) : (
+            <span className="text-violet-700">无（绑定未命中已发布技能）</span>
+          )}
+          {skillInjection.missingCodes.length > 0 && (
+            <span className="mt-1 block text-amber-800">
+              未发布/缺失：{skillInjection.missingCodes.join("、")}
+            </span>
+          )}
+        </div>
+      )}
 
       {run.error_message && (
         <div className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">

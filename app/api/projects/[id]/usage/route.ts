@@ -37,6 +37,12 @@ export async function GET(
     .eq("project_id", projectId)
     .eq("event_type", "llm_call");
 
+  const { count: skillInjectionCount, error: skillCountError } = await supabase
+    .from("usage_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", projectId)
+    .eq("event_type", "skill_injection");
+
   const summary = await getProjectUsageSummary(projectId, supabase);
 
   return NextResponse.json({
@@ -44,6 +50,10 @@ export async function GET(
     project,
     usage_logs_row_count: countError ? null : count ?? 0,
     usage_logs_query_error: countError?.message ?? null,
+    skill_injection_row_count: skillCountError
+      ? null
+      : skillInjectionCount ?? 0,
+    skill_injection_query_error: skillCountError?.message ?? null,
     summary
   });
 }

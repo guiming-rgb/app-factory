@@ -1,4 +1,5 @@
 import type { AppSpec } from "./types";
+import { normalizeSpecNavigation } from "./normalize-navigation";
 import { normalizeSpecScreens } from "./normalize-screens";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -23,8 +24,11 @@ export function mergeSpecWithMinimal(
   const backend = asRecord(targets.backend);
 
   const screens = normalizeSpecScreens(partial.screens, minimal);
-
-  const navigation = asRecord(partial.navigation);
+  const navigation = normalizeSpecNavigation(
+    screens,
+    partial.navigation,
+    minimal
+  );
 
   return {
     ...minimal,
@@ -68,14 +72,7 @@ export function mergeSpecWithMinimal(
       }
     },
     screens: screens,
-    navigation: {
-      ...asRecord(minimal.navigation),
-      ...navigation,
-      tabs:
-        Array.isArray(navigation.tabs) && navigation.tabs.length > 0
-          ? (navigation.tabs as string[])
-          : minimal.navigation?.tabs ?? []
-    },
+    navigation,
     limitations:
       Array.isArray(partial.limitations) && partial.limitations.length > 0
         ? (partial.limitations as string[])

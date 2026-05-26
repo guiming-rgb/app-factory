@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-19  
+> **最后更新**：2026-05-22  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -25,6 +25,9 @@
 - [x] **v3 部署预览 PoC**：`/deploy` + `/api/deploy/status` + codegen HTML 预览
 - [x] **v3 真上云（Vercel）**：https://app-factory-five.vercel.app
 - [x] **v4 Auth + RLS**：v4-1～v4-6 ✅（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
+- [x] **v5.1 记忆与 Skills**：V5-6～V5-9 ✅（多 Agent 记忆 · 记忆 UI · Skills 管理 · 技能注入可观测）
+- [x] **C1 Report→Spec 收紧**：prompt + normalize · `verify:c1:report-to-spec`
+- [x] **C4 GitHub OAuth + push**：连接 GitHub · codegen 产物推私有仓库 · `verify:c4:github`
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -51,6 +54,7 @@
 7. **M1/M2** ✅ Vercel Auth + v4/v5 迁移已应用
 8. **E 本地全链路** ✅ 8/8 · `verify:v13` · `accept`（样本 `833ad678…`）
 9. **记忆约束实测** ✅ 生产/本地 CEO·PRD 均体现「第一版不做联网对战」
+10. **三阶段路线** 🟡 — ① 加固 ~90% · ② v5.1 ✅ · ③ C1/C3/C4 ✅ → **下一波 C5**
 
 ## 阻塞 / 风险（简）
 
@@ -64,6 +68,8 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-22 | **C3** 小程序 WXML/WXSS 真编译 · **C1** Report→Spec · V5-8/V5-9 · S1 文档同步 |
+| 2026-05-19 | **三阶段路线** 启动：S5 codegen 清理 · **v5-6** 多 Agent 记忆 · C1 Spec 收紧 |
 | 2026-05-19 | **G5 收工**：`npm run build` + `accept` ✅；**E 本地全链路** 8/8；记忆约束生产/本地实测 ✅ |
 | 2026-05-27 | **v5-4/v5-5** skill_ids prompt 注入 + 详情页记忆 UI ✅ |
 | 2026-05-27 | **v5-3** `GET /api/skills` + seed + `verify:v5:skills` ✅；M1/M2 ✅ |

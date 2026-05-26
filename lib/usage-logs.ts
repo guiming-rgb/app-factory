@@ -6,12 +6,24 @@ export type UsageLogInsert = {
   projectId: string;
   agentRunId?: string;
   agentCode?: string;
-  eventType?: "llm_call" | "workflow_total";
+  eventType?: "llm_call" | "workflow_total" | "skill_injection";
   durationMs?: number;
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
   modelName?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type SkillInjectionLogView = {
+  id: string;
+  agentRunId: string | null;
+  agentCode: string;
+  boundCodes: string[];
+  injectedCodes: string[];
+  missingCodes: string[];
+  skillNames: Array<{ code: string; name: string; version: string }>;
+  createdAt: string;
 };
 
 export type ProjectUsageSummary = {
@@ -23,6 +35,7 @@ export type ProjectUsageSummary = {
     durationMs: number;
     totalTokens: number;
   }>;
+  skillInjections: SkillInjectionLogView[];
 };
 
 function isUsageLogsTableMissing(message: string) {
@@ -54,12 +67,118 @@ export async function insertUsageLog(row: UsageLogInsert) {
     prompt_tokens: row.promptTokens ?? null,
     completion_tokens: row.completionTokens ?? null,
     total_tokens: row.totalTokens ?? null,
-    model_name: row.modelName ?? null
+    model_name: row.modelName ?? null,
+    metadata: row.metadata ?? {}
   });
 
   if (error) {
     console.warn("[insertUsageLog]", error.message);
   }
+}
+
+/** v5-9：记录本轮 Agent 实际注入的已发布技能 */
+export async function insertSkillInjectionLog(input: {
+  projectId: string;
+  agentRunId: string;
+  agentCode: string;
+  boundCodes: string[];
+  injectedCodes: string[];
+  missingCodes: string[];
+  skillNames: Array<{ code: string; name: string; version: string }>;
+}) {
+  await insertUsageLog({
+    projectId: input.projectId,
+    agentRunId: input.agentRunId,
+    agentCode: input.agentCode,
+    eventType: "skill_injection",
+    metadata: {
+      bound_skill_codes: input.boundCodes,
+      injected_skill_codes: input.injectedCodes,
+      missing_skill_codes: input.missingCodes,
+      skill_names: input.skillNames
+    }
+  });
+}
+
+function parseStringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw.map((item) => String(item ?? "").trim()).filter(Boolean);
+}
+
+function parseSkillInjectionRow(row: {
+  id: string;
+  agent_run_id: string | null;
+  agent_code: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}): SkillInjectionLogView {
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const skillNamesRaw = meta.skill_names;
+  const skillNames = Array.isArray(skillNamesRaw)
+    ? skillNamesRaw
+        .map((item) => {
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+          const o = item as Record<string, unknown>;
+          const code = String(o.code ?? "").trim();
+          if (!code) {
+            return null;
+          }
+          return {
+            code,
+            name: String(o.name ?? code),
+            version: String(o.version ?? "1.0.0")
+          };
+        })
+        .filter((x): x is { code: string; name: string; version: string } => !!x)
+    : [];
+
+  return {
+    id: row.id,
+    agentRunId: row.agent_run_id,
+    agentCode: row.agent_code ?? "unknown",
+    boundCodes: parseStringArray(meta.bound_skill_codes),
+    injectedCodes: parseStringArray(meta.injected_skill_codes),
+    missingCodes: parseStringArray(meta.missing_skill_codes),
+    skillNames,
+    createdAt: row.created_at
+  };
+}
+
+async function listSkillInjectionLogs(
+  projectId: string,
+  client?: SupabaseClient
+): Promise<SkillInjectionLogView[]> {
+  const db = client ?? getSupabaseAdmin();
+  const { data, error } = await db
+    .from("usage_logs")
+    .select("id, agent_run_id, agent_code, metadata, created_at")
+    .eq("project_id", projectId)
+    .eq("event_type", "skill_injection")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (isUsageLogsTableMissing(error.message)) {
+      return [];
+    }
+    console.warn("[listSkillInjectionLogs]", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) =>
+    parseSkillInjectionRow(
+      row as {
+        id: string;
+        agent_run_id: string | null;
+        agent_code: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: string;
+      }
+    )
+  );
 }
 
 export async function getProjectUsageSummary(
@@ -117,6 +236,7 @@ export async function getProjectUsageSummary(
     llmCallCount: rows.length,
     totalDurationMs,
     totalTokens,
-    byAgent: [...byAgentMap.values()]
+    byAgent: [...byAgentMap.values()],
+    skillInjections: await listSkillInjectionLogs(projectId, client)
   };
 }

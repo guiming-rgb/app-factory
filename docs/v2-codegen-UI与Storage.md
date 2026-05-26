@@ -67,15 +67,18 @@ npm run verify:codegen:flutter -- <projectId>   # 完成后 metadata.storageUplo
 
 ---
 
-## 小程序结构门禁（v2.1）
+## 小程序编译门禁（v2.1 / C3）
 
 | 项 | 说明 |
 |----|------|
-| 模块 | `lib/sandbox/wechat-validate.ts` |
-| 触发 | wechat codegen 完成后校验 JSON/JS/页面结构 |
-| CLI | `npm run verify:wechat:build` |
-| 禁用 | `CODEGEN_WECHAT_BUILD_DISABLED=1` |
-| metadata | `buildStatus`、`buildOutput` |
+| 结构 | `lib/sandbox/wechat-validate.ts` — JSON/JS/页面结构 |
+| 真编译 | `lib/sandbox/wechat-compile.ts` — 官方 wcc/wcsc（`miniprogram-compiler`） |
+| 编排 | `lib/sandbox/wechat-build.ts` — 结构通过后跑 WXML/WXSS 编译 |
+| 触发 | wechat codegen 完成后 `runWechatFullBuildValidate` |
+| CLI | `npm run verify:wechat:build` · `npm run verify:c3:wechat-compile` |
+| 禁用结构 | `CODEGEN_WECHAT_BUILD_DISABLED=1` |
+| 禁用编译 | `CODEGEN_WECHAT_COMPILE_DISABLED=1` |
+| metadata | `buildStatus`、`structureStatus`、`compileStatus`、`buildOutput` |
 | 同步验收 | `npm run verify:codegen:wechat -- <projectId>` |
 | 异步 E2E | `npm run verify:codegen:async -- <projectId> wechat` |
 

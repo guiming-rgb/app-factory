@@ -1,0 +1,30 @@
+{
+  "appName": "KidsSoccer",
+  "displayName": "少儿足球",
+  "targets": {
+    "flutter": { "enabled": true },
+    "wechatMiniProgram": { "enabled": true }
+  },
+  "screens": [
+    {
+      "id": "home",
+      "title": "首页",
+      "type": "home",
+      "children": ["match_list"]
+    },
+    {
+      "id": "match_list",
+      "title": "比赛列表",
+      "type": "list"
+    },
+    {
+      "id": "profile",
+      "title": "我的",
+      "type": "profile"
+    }
+  ],
+  "navigation": {
+    "tabs": ["home", "profile"]
+  },
+  "limitations": ["首版不含支付"]
+}

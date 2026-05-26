@@ -55,6 +55,9 @@ export async function executeFlutterCodegen(input: {
 }): Promise<FlutterCodegenExecuteResult> {
   const { projectId, runId } = input;
 
+  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
+  await cleanupStaleCodegenRuns({ projectId });
+
   await markCodegenRunRunning(runId);
 
   const { data: project, error } = await getSupabaseAdmin()

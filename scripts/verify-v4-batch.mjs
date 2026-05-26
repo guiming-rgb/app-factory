@@ -10,9 +10,15 @@ const STEPS = [
   ["verify:v4:rate-limit", "限流接线"],
   ["verify:v5:memories", "v5-1 记忆 API"],
   ["verify:v5:workflow", "v5-2 工作流记忆注入"],
+  ["verify:v5:multi-agent-memories", "v5-6 多 Agent 记忆"],
   ["verify:v5:skills", "v5-3 Skills API"],
   ["verify:v5:skills-binding", "v5-4 Agent skill_ids"],
   ["verify:v5:memories-ui", "v5-5 记忆 UI"],
+  ["verify:v5:memories-ui-v7", "v5-7 记忆类型 UI"],
+  ["verify:v5:skills-admin", "v5-8 Skills 管理"],
+  ["verify:c1:report-to-spec", "C1 Report→Spec 收紧"],
+  ["verify:c3:wechat-compile", "C3 小程序真编译"],
+  ["verify:c4:github", "C4 GitHub OAuth + push"],
   ["verify:v4:production", "生产 Auth 探针"]
 ];
 
