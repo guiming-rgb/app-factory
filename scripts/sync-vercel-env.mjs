@@ -25,6 +25,11 @@ const SYNC_KEYS = [
 
 const SKIP_KEYS = new Set(["INNGEST_DEV"]);
 
+/** 生产域名；同步时若 .env.local 为 localhost 则改用此值 */
+const PRODUCTION_APP_URL =
+  process.env.VERCEL_PRODUCTION_URL?.trim() ||
+  "https://app-factory-five.vercel.app";
+
 function parseEnv(content) {
   const out = {};
   for (const line of content.split("\n")) {
@@ -60,11 +65,20 @@ function main() {
   let skip = 0;
   for (const key of SYNC_KEYS) {
     if (SKIP_KEYS.has(key)) continue;
-    const val = env[key]?.trim();
+    let val = env[key]?.trim();
     if (!val) {
       console.log(`⏭  跳过 ${key}（.env.local 未设）`);
       skip++;
       continue;
+    }
+    if (
+      key === "NEXT_PUBLIC_APP_URL" &&
+      /localhost|127\.0\.0\.1/i.test(val)
+    ) {
+      console.warn(
+        `⚠️  ${key} 为本地地址，同步到 Vercel 生产时改用 ${PRODUCTION_APP_URL}`
+      );
+      val = PRODUCTION_APP_URL;
     }
     const r = spawnSync(
       "npx",

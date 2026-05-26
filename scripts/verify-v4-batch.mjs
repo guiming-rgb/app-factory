@@ -8,6 +8,11 @@ const STEPS = [
   ["verify:v4:owner-api", "API owner 守卫"],
   ["verify:v4:inngest-auth", "Inngest userId"],
   ["verify:v4:rate-limit", "限流接线"],
+  ["verify:v5:memories", "v5-1 记忆 API"],
+  ["verify:v5:workflow", "v5-2 工作流记忆注入"],
+  ["verify:v5:skills", "v5-3 Skills API"],
+  ["verify:v5:skills-binding", "v5-4 Agent skill_ids"],
+  ["verify:v5:memories-ui", "v5-5 记忆 UI"],
   ["verify:v4:production", "生产 Auth 探针"]
 ];
 

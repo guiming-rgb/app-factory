@@ -6,6 +6,12 @@ import {
   formatMemoriesForPrompt,
   listProjectMemoriesForWorkflow
 } from "./memories/server";
+import { loadAgentSkillBindings } from "./agents/skill-bindings";
+import {
+  formatSkillsForPrompt,
+  getPublishedSkillsByCodes,
+  type Skill
+} from "./skills/server";
 import {
   deleteUsageLogsForProject,
   insertUsageLog
@@ -123,9 +129,30 @@ export async function executeProjectWorkflow(projectId: string) {
   const contextOutputs: string[] = [];
   const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
   const memoryBlock = formatMemoriesForPrompt(workflowMemories);
+  const agentSkillBindings = await loadAgentSkillBindings();
+  const allSkillCodes = [
+    ...new Set(Object.values(agentSkillBindings).flat())
+  ];
+  const publishedSkills = await getPublishedSkillsByCodes(allSkillCodes);
+  const skillsByCode = new Map(publishedSkills.map((s) => [s.code, s]));
 
   try {
     for (const agent of agentConfigs) {
+      const agentSkillCodes = agentSkillBindings[agent.code] ?? [];
+      const agentSkills = agentSkillCodes
+        .map((code) => skillsByCode.get(code))
+        .filter((s): s is Skill => !!s);
+      const skillsBlock = formatSkillsForPrompt(agentSkills);
+      const systemPrompt = skillsBlock
+        ? `${agent.systemPrompt}
+
+---
+
+**已绑定技能（须在本轮输出中体现其方法论与检查项）：**
+
+${skillsBlock}`
+        : agent.systemPrompt;
+
       const runInput = buildAgentInput({
         projectIdea: project.idea,
         previousOutputs: contextOutputs,
@@ -155,7 +182,7 @@ export async function executeProjectWorkflow(projectId: string) {
       try {
         const llmStartedAt = Date.now();
         const llmResult = await callLLM({
-          systemPrompt: agent.systemPrompt,
+          systemPrompt,
           userPrompt: runInput,
           temperature: 0.35
         });

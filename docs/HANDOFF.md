@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-26  
+> **最后更新**：2026-05-27  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -47,7 +47,8 @@
 2. ~~v2.1 自动修错~~ ✅ · ~~小程序 CLI 构建~~ ✅
 3. ~~LLM 报告→Spec~~ ✅ · ~~v3 预览 PoC~~ ✅
 4. ~~**v3 真上云**~~ ✅ · 尾项见 [收工记录-20260526-v3收工.md](./收工记录-20260526-v3收工.md)
-6. **v5 记忆与技能**：v5-1～v5-2 ✅ → v5-3 Skills API（[v5-记忆与技能-设计草案.md](./v5-记忆与技能-设计草案.md)）
+6. **v5 记忆与技能**：v5-1～v5-5 ✅（[v5-记忆与技能-设计草案.md](./v5-记忆与技能-设计草案.md)）
+7. **M1/M2** ✅ Vercel Auth + v4/v5 迁移已应用
 
 ## 阻塞 / 风险（简）
 
@@ -61,6 +62,9 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-27 | **v5-4/v5-5** skill_ids prompt 注入 + 详情页记忆 UI ✅ |
+| 2026-05-27 | **v5-3** `GET /api/skills` + seed + `verify:v5:skills` ✅；M1/M2 ✅ |
+| 2026-05-27 | **v5-2** CEO 工作流记忆注入 ✅；**M1** Vercel 生产 Redeploy ✅ |
 | 2026-05-26 | **v4-1 Auth UI + v4-2 owner_id**（本地 build ✅，未 push）；[收工记录-20260526-v4-auth.md](./收工记录-20260526-v4-auth.md) |
 | 2026-05-26 | **v3 收工 + v4 设计草案**；ONE_PAGER 同步 |
 | 2026-05-25 | **v3 Vercel 生产部署** https://app-factory-five.vercel.app · APP_URL 已回填 |

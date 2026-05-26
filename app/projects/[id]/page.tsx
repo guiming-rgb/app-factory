@@ -7,6 +7,7 @@ import { DownloadFlutterButton } from "@/components/DownloadFlutterButton";
 import { DownloadWechatButton } from "@/components/DownloadWechatButton";
 import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { GenerateProjectButton } from "@/components/GenerateProjectButton";
+import { ProjectMemoriesPanel } from "@/components/ProjectMemoriesPanel";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
 import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButton";
 import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
@@ -189,6 +190,8 @@ export default async function ProjectPage({
               {project.idea}
             </p>
           </div>
+
+          <ProjectMemoriesPanel projectId={project.id} />
 
           {project.error_message && (
             <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">

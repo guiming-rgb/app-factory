@@ -15,7 +15,9 @@ const MIGRATIONS = [
   "sql/migrations/20260526_v4_owner_id.sql",
   "sql/migrations/20260527_v4_rls.sql",
   "sql/migrations/20260527_v4_rate_limits.sql",
-  "sql/migrations/20260528_v5_memories_write.sql"
+  "sql/migrations/20260528_v5_memories_write.sql",
+  "sql/migrations/20260529_v5_skills_seed.sql",
+  "sql/migrations/20260530_v5_agent_skill_ids.sql"
 ];
 
 function loadEnvLocal() {
