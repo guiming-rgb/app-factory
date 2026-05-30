@@ -50,6 +50,7 @@
 - [x] **批次 K1**：`git push` `c8006cb`（I/J/K 合入 main）
 - [x] **批次 K2**：鸿蒙实体列表 Supabase REST · `verify:g2` 增强
 - [ ] **批次 K3 生产 HTTP**：`verify:v3:production` 本 Agent 环境超时；维护者浏览器或本机网络正常时复跑
+- [x] **K+部署**：`dpl_JBiWLbLoaofPqx3hGHacude43bii`（含 K2 鸿蒙 REST codegen）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
