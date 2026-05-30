@@ -7,6 +7,10 @@ import {
   resolveEntityForScreen,
   supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
+import {
+  escapeHarmonyStringLiteral,
+  resolveHarmonySupabaseForCodegen
+} from "./supabase-env";
 
 function esc(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
@@ -32,11 +36,14 @@ export function emitHarmonyEntityListEts(
   const pk = esc(primaryKeyField(entity));
   const select = esc(supabaseSelectColumns(entity));
   const entityLabel = esc(entity.name);
+  const supabase = resolveHarmonySupabaseForCodegen();
+  const supabaseUrl = escapeHarmonyStringLiteral(supabase.url);
+  const supabaseKey = escapeHarmonyStringLiteral(supabase.anonKey);
 
   return `${entry}import http from '@ohos.net.http';
 
-const SUPABASE_URL: string = ''
-const SUPABASE_ANON_KEY: string = ''
+const SUPABASE_URL: string = '${supabaseUrl}'
+const SUPABASE_ANON_KEY: string = '${supabaseKey}'
 
 @Component
 struct Index {

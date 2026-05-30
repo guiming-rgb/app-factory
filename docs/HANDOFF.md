@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
 > **最后更新**：2026-05-31（今日收工：维护者 `verify:s6:local-full` ✅）  
-> **明日开工**：[收工记录-20260530-今日收工.md](./收工记录-20260530-今日收工.md) · 批次 L  
+> **今日开工**：[收工记录-20260531-今日开工.md](./收工记录-20260531-今日开工.md) · 批次 L  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -49,8 +49,11 @@
 - [x] **批次 J 部署**：`dpl_Hj7S2SBGQ8jP6jR544SCr4XMAa7v`
 - [x] **批次 K1**：`git push` `c8006cb`（I/J/K 合入 main）
 - [x] **批次 K2**：鸿蒙实体列表 Supabase REST · `verify:g2` 增强
-- [ ] **批次 K3 生产 HTTP**：`verify:v3:production` 本 Agent 环境超时；维护者浏览器或本机网络正常时复跑
+- [x] **维护者本地 S6**：`verify:s6:local-full` ✅（2026-05-31 · `faa13b44-…`）
+- [ ] **批次 K3 生产 HTTP**：`verify:v3:production` 可选（维护者本地 S6 已通过）
 - [x] **K+部署**：`dpl_JBiWLbLoaofPqx3hGHacude43bii`（含 K2 鸿蒙 REST codegen）
+- [x] **批次 L0**：`verify:i0:batch`（2026-05-31）
+- [x] **批次 L1**：鸿蒙 codegen 注入 `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY`
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 

@@ -12,6 +12,7 @@ import {
   emitHarmonyPageEts,
   harmonyPageComponentName
 } from "./emit";
+import { resolveHarmonySupabaseForCodegen } from "./supabase-env";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "harmony-minimal");
 
@@ -91,9 +92,15 @@ export async function generateHarmonyProject(
     ? spec.limitations.map((l) => `- ${l}`).join("\n")
     : "- （无）";
   const screenCount = countCodegenScreens(spec);
+  const { url: sbUrl, anonKey: sbKey } = resolveHarmonySupabaseForCodegen();
+  const supabaseNote =
+    sbUrl && sbKey
+      ? "- Supabase：已从工厂环境注入 URL/anon key（DevEco 需网络与表 RLS）\n"
+      : "- Supabase：未注入（工厂缺 NEXT_PUBLIC_SUPABASE_* 时仅用列表示例行）\n";
+
   await fs.writeFile(
     path.join(appDir, "LIMITATIONS.md"),
-    `# Harmony 生成说明\n\n- displayName: ${spec.displayName}\n- bundleName: ${bundleName}\n- screens: ${screenCount}\n- generatedAt: ${new Date().toISOString()}\n\n## limitations\n\n${limitations}\n`,
+    `# Harmony 生成说明\n\n- displayName: ${spec.displayName}\n- bundleName: ${bundleName}\n- screens: ${screenCount}\n- generatedAt: ${new Date().toISOString()}\n${supabaseNote}\n## limitations\n\n${limitations}\n`,
     "utf8"
   );
 
