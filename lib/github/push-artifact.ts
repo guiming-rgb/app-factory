@@ -107,6 +107,7 @@ export async function pushDirectoryToGitHub(input: {
     });
   }
 
+  /** 提交前再读一次 HEAD，降低「三栈连推 / 连点推送」导致的 422 */
   const parentSha = await getBranchHeadSha(
     octokit,
     input.owner,
@@ -120,21 +121,49 @@ export async function pushDirectoryToGitHub(input: {
     tree: treeItems
   });
 
+  const headBeforeCommit = await getBranchHeadSha(
+    octokit,
+    input.owner,
+    repoName,
+    branch
+  );
+  const parentForCommit = headBeforeCommit ?? parentSha;
+
   const { data: commit } = await octokit.rest.git.createCommit({
     owner: input.owner,
     repo: repoName,
     message: input.commitMessage,
     tree: tree.sha,
-    parents: parentSha ? [parentSha] : []
+    parents: parentForCommit ? [parentForCommit] : []
   });
 
-  if (parentSha) {
-    await octokit.rest.git.updateRef({
-      owner: input.owner,
-      repo: repoName,
-      ref: `heads/${branch}`,
-      sha: commit.sha
-    });
+  if (parentForCommit) {
+    try {
+      await octokit.rest.git.updateRef({
+        owner: input.owner,
+        repo: repoName,
+        ref: `heads/${branch}`,
+        sha: commit.sha,
+        force: false
+      });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      const msg =
+        err instanceof Error ? err.message : "updateRef failed";
+      if (status === 422) {
+        await octokit.rest.git.updateRef({
+          owner: input.owner,
+          repo: repoName,
+          ref: `heads/${branch}`,
+          sha: commit.sha,
+          force: true
+        });
+      } else {
+        throw new Error(
+          `GitHub 分支更新失败（${branch}）：${msg}。可稍后点「再次推送」，或删除仓库后重推。`
+        );
+      }
+    }
   } else {
     await octokit.rest.git.createRef({
       owner: input.owner,
