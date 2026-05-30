@@ -33,8 +33,10 @@ export function assessSpecQuality(spec: AppSpec): SpecQualityReport {
   const screenIds = new Set(screens.map((s) => s.id));
   for (const screen of screens) {
     if (screen.type === "list" && !(spec.entities?.length ?? 0)) {
-      warnings.push(`列表页 ${screen.id} 无 entities，Codegen 可能生成占位内容`);
-      score -= 6;
+      warnings.push(
+        `列表页 ${screen.id} 无 entities，将使用合成列表示例（非纯占位）`
+      );
+      score -= 3;
     }
     if (screen.children?.length) {
       for (const childId of screen.children) {

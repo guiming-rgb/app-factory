@@ -1,4 +1,5 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 
@@ -119,8 +120,10 @@ export function buildAppJson(
 }
 
 export function listScreenFromSpec(spec: AppSpec): AppSpecScreen | undefined {
+  const byType = spec.screens.find((s) => s.type === "list");
+  if (byType) return byType;
   return spec.screens.find(
-    (s) => LIST_PAGE_IDS.has(s.id) || s.type === "list"
+    (s) => LIST_PAGE_IDS.has(s.id) && s.type !== "tabRoot"
   );
 }
 
@@ -152,11 +155,35 @@ export function patchProjectConfigName(
   return JSON.stringify(json, null, 2) + "\n";
 }
 
-export function emitGeneratedPageWxml(screen: AppSpecScreen): string {
+export function emitGeneratedPageWxml(
+  screen: AppSpecScreen,
+  spec?: AppSpec
+): string {
   const title = screen.title.replace(/</g, "");
+  const safeId = screen.id.replace(/</g, "");
+  if (spec) {
+    const entity = resolveEntityForScreen(spec, screen);
+    if (entity && screen.type === "detail") {
+      const fields = entity.fields
+        .slice(0, 6)
+        .map((f) => `<view class="muted">${f.name}: ${f.type}</view>`)
+        .join("\n      ");
+      return `<view class="page">
+  <view class="card">
+    <view class="todo-title">${title}</view>
+    <view class="muted">${entity.name} 详情 · Spec 字段</view>
+  </view>
+  <view class="card">
+    ${fields}
+    <view class="muted">接 Backend 后可绑定真实数据</view>
+  </view>
+</view>
+`;
+    }
+  }
   return `<view class="page">
   <view class="card">
-    <view class="empty">${title} — 占位（App Spec: ${screen.id}）</view>
+    <view class="empty">${title} — 占位（App Spec: ${safeId}）</view>
   </view>
 </view>
 `;

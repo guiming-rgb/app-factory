@@ -23,6 +23,7 @@
     "verify:harmony": "node scripts/verify-harmony-template.mjs",
     "verify:c6:harmony": "node scripts/verify-c6-harmony.mjs",
     "verify:todo:parity": "node scripts/verify-todo-parity.mjs",
+    "verify:g2:entity-scaffold": "node scripts/verify-g2-entity-scaffold.mjs",
     "verify:codegen:stability": "node scripts/verify-codegen-stability.mjs",
     "stats:codegen": "node scripts/stats-codegen-runs.mjs",
     "stats:codegen:failures": "node scripts/stats-codegen-failures.mjs",

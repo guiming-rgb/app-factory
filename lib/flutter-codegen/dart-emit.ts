@@ -1,5 +1,9 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
+import {
+  buildEntityListRows,
+  resolveEntityForScreen
+} from "@/lib/app-spec/entity-scaffold";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 
 export { resolveTabScreens };
@@ -75,10 +79,15 @@ function tabIcon(screen: AppSpecScreen): string {
   return "Icons.widgets_outlined";
 }
 
-export function emitGeneratedListPage(screen: AppSpecScreen): string {
+export function emitGeneratedListPage(
+  screen: AppSpecScreen,
+  spec?: AppSpec
+): string {
   const className = `${pascalCase(screen.id)}Page`;
   const title = escapeDartString(screen.title);
-  return `import "package:flutter/material.dart";
+  const entity = spec ? resolveEntityForScreen(spec, screen) : undefined;
+  if (!entity || !spec) {
+    return `import "package:flutter/material.dart";
 
 import "../../core/widgets/empty_state.dart";
 
@@ -96,11 +105,90 @@ class ${className} extends StatelessWidget {
   }
 }
 `;
+  }
+  const rows = buildEntityListRows(entity, screen, spec);
+  const itemsDart = rows
+    .map(
+      (r) =>
+        `      _Item("${escapeDartString(r.id)}", "${escapeDartString(r.title)}", "${escapeDartString(r.subtitle)}"),`
+    )
+    .join("\n");
+  const entityName = escapeDartString(entity.name);
+  return `import "package:flutter/material.dart";
+
+class _Item {
+  const _Item(this.id, this.title, this.subtitle);
+  final String id;
+  final String title;
+  final String subtitle;
 }
 
-export function emitGeneratedPlaceholderPage(screen: AppSpecScreen): string {
+class ${className} extends StatelessWidget {
+  const ${className}({super.key});
+
+  static const _items = <_Item>[
+${itemsDart}
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("${title}")),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          return Card(
+            child: ListTile(
+              title: Text(item.title),
+              subtitle: Text(item.subtitle),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+`;
+}
+
+export function emitMatchListPageFromSpec(
+  spec: AppSpec,
+  screen: AppSpecScreen
+): string | null {
+  const entity = resolveEntityForScreen(spec, screen);
+  if (!entity) return null;
+  return emitGeneratedListPage(screen, spec).replace(
+    /class \w+Page/,
+    "class MatchListPage"
+  );
+}
+
+export function emitGeneratedPlaceholderPage(
+  screen: AppSpecScreen,
+  spec?: AppSpec
+): string {
   const className = `${pascalCase(screen.id)}Page`;
   const title = escapeDartString(screen.title);
+  const appLine = spec
+    ? escapeDartString(spec.displayName)
+    : escapeDartString(screen.id);
+  const roles =
+    spec?.roles
+      ?.map((r) => {
+        if (typeof r === "object" && r !== null && "name" in r) {
+          return String((r as { name: unknown }).name);
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .slice(0, 3) ?? [];
+  const roleLine =
+    roles.length > 0
+      ? `角色：${roles.map((r) => escapeDartString(r!)).join("、")}`
+      : "个人中心 · Spec placeholder";
   return `import "package:flutter/material.dart";
 
 class ${className} extends StatelessWidget {
@@ -110,7 +198,17 @@ class ${className} extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("${title}")),
-      body: const Center(child: Text("占位页（App Spec: ${screen.id}）")),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("${appLine}", style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text("${escapeDartString(roleLine)}"),
+          ],
+        ),
+      ),
     );
   }
 }

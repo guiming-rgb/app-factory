@@ -13,6 +13,7 @@ import {
   emitAppRouterDart,
   emitGeneratedListPage,
   emitGeneratedPlaceholderPage,
+  emitMatchListPageFromSpec,
   pageWidgetRef,
   patchAppTitle,
   patchListPageTitle,
@@ -148,12 +149,17 @@ export async function generateFlutterProject(
         "presentation",
         "list_page.dart"
       );
-      const listContent = await fs.readFile(listPath, "utf8");
-      await fs.writeFile(
-        listPath,
-        patchListPageTitle(listContent, listScreen.title),
-        "utf8"
-      );
+      const entityList = emitMatchListPageFromSpec(spec, listScreen);
+      if (entityList) {
+        await fs.writeFile(listPath, entityList, "utf8");
+      } else {
+        const listContent = await fs.readFile(listPath, "utf8");
+        await fs.writeFile(
+          listPath,
+          patchListPageTitle(listContent, listScreen.title),
+          "utf8"
+        );
+      }
     }
   }
 
@@ -165,8 +171,8 @@ export async function generateFlutterProject(
     if (!ref.needsGenerated) continue;
     const content =
       screen.type === "list"
-        ? emitGeneratedListPage(screen)
-        : emitGeneratedPlaceholderPage(screen);
+        ? emitGeneratedListPage(screen, spec)
+        : emitGeneratedPlaceholderPage(screen, spec);
     await fs.writeFile(
       path.join(generatedPagesDir, `${screen.id}_page.dart`),
       content,

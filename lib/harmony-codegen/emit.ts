@@ -1,7 +1,9 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
+import { emitHarmonyEntityListEts } from "./emit-entity-list";
 import { emitHarmonyTodoIndexEts } from "./emit-todo";
+import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
 
 /** screen id → Harmony 页面组件名（首屏固定 Index） */
 export function harmonyPageComponentName(
@@ -39,6 +41,19 @@ export function emitHarmonyPageEts(
     isTodoAppSpec(options.spec)
   ) {
     return emitHarmonyTodoIndexEts(options.spec.displayName);
+  }
+
+  if (
+    options.entry &&
+    componentName === "Index" &&
+    options.spec &&
+    screen.type === "list" &&
+    resolveEntityForScreen(options.spec, screen)
+  ) {
+    const body = emitHarmonyEntityListEts(options.spec, screen, {
+      entry: true
+    });
+    if (body) return body;
   }
 
   const title = screen.title.replace(/\\/g, "\\\\").replace(/'/g, "\\'");

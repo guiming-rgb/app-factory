@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GitHubConnectButton } from "@/components/GitHubConnectButton";
+import {
+  classifyCodegenFailure,
+  latestRunByTarget,
+  qualityGateBadges,
+  type CodegenTarget as QualityTarget,
+  type QualityGateBadge
+} from "@/lib/codegen/format-run-quality";
 
 const SPEC_QUALITY_WARN = 60;
 
@@ -96,14 +103,25 @@ function isQueuedSlow(run: CodegenRun): boolean {
 }
 
 function failureHint(run: CodegenRun, meta: Record<string, unknown>): string {
-  if (run.log) return run.log;
+  const breakdown = classifyCodegenFailure(meta, run.log);
+  if (run.log) {
+    return `[${breakdown.category}] ${breakdown.detail}\n${run.log}`;
+  }
   const parts = [
+    `[${breakdown.category}] ${breakdown.detail}`,
     meta.buildReason,
     meta.analyzeReason,
     meta.specQualityWarnings,
     meta.specWarning
   ].filter((x): x is string => typeof x === "string" && x.length > 0);
   return parts[0] ?? "生成失败，可点「重试」";
+}
+
+function badgeClass(tone: QualityGateBadge["tone"]): string {
+  if (tone === "ok") return "bg-emerald-100 text-emerald-900";
+  if (tone === "fail") return "bg-red-100 text-red-800";
+  if (tone === "warn") return "bg-amber-100 text-amber-900";
+  return "bg-violet-100 text-violet-800";
 }
 
 export function CodegenPanel({
@@ -360,6 +378,9 @@ export function CodegenPanel({
     (r) => r.status === "queued" || r.status === "running"
   );
 
+  const latestByTarget = latestRunByTarget(runs);
+  const stackTargets: QualityTarget[] = ["flutter", "wechat", "harmony"];
+
   const shellClass = embedded
     ? "mt-4"
     : "mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4";
@@ -397,6 +418,52 @@ export function CodegenPanel({
             : " — 建议先完善报告/Spec 或使用同步下载验证"}
         </p>
       ) : null}
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {stackTargets.map((target) => {
+          const run = latestByTarget[target];
+          const meta = (run?.metadata ?? {}) as Record<string, unknown>;
+          const badges = qualityGateBadges(meta);
+          const status = run
+            ? (STATUS_LABEL[run.status] ?? run.status)
+            : "未生成";
+          const fail =
+            run?.status === "failed"
+              ? classifyCodegenFailure(meta, run.log)
+              : null;
+          return (
+            <div
+              key={target}
+              className="rounded-lg border border-violet-200 bg-white/80 px-3 py-2 text-xs text-violet-950"
+            >
+              <p className="font-medium">{TARGET_LABEL[target]}</p>
+              <p className="mt-0.5 text-violet-700">{status}</p>
+              {badges.length > 0 ? (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {badges.map((b) => (
+                    <span
+                      key={b.label}
+                      className={`rounded px-1.5 py-0.5 text-[10px] ${badgeClass(b.tone)}`}
+                    >
+                      {b.label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-[10px] text-violet-500">暂无门禁记录</p>
+              )}
+              {fail ? (
+                <p
+                  className="mt-1 text-[10px] leading-snug text-red-700"
+                  title={failureHint(run!, meta)}
+                >
+                  {fail.category}：{fail.detail}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
 
       {activeRun?.status === "queued" && isQueuedSlow(activeRun) ? (
         <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -486,6 +553,7 @@ export function CodegenPanel({
                 <th className="py-2 pr-2 font-medium">类型</th>
                 <th className="py-2 pr-2 font-medium">状态</th>
                 <th className="py-2 pr-2 font-medium">Spec 来源</th>
+                <th className="py-2 pr-2 font-medium">门禁</th>
                 <th className="py-2 pr-2 font-medium">产物</th>
                 <th className="py-2 font-medium">操作</th>
               </tr>
@@ -501,9 +569,13 @@ export function CodegenPanel({
                   githubRepoUrl?: string;
                   githubPushStatus?: string;
                 };
-                const hint = meta.specWarning ?? meta.analyzeOutput ?? meta.analyzeReason;
+                const gateBadges = qualityGateBadges(meta);
                 const stuck = isRunStuck(run);
                 const failText = run.status === "failed" ? failureHint(run, meta) : "";
+                const failBreakdown =
+                  run.status === "failed"
+                    ? classifyCodegenFailure(meta, run.log)
+                    : null;
                 return (
                   <tr key={run.id} className="border-b border-violet-100/80 align-top">
                     <td className="py-2 pr-2">{TARGET_LABEL[run.target]}</td>
@@ -521,13 +593,14 @@ export function CodegenPanel({
                           ⚠ 可能卡住
                         </span>
                       ) : null}
-                      {run.status === "failed" && failText ? (
+                      {run.status === "failed" && failBreakdown ? (
                         <p
-                          className="mt-1 max-w-xs whitespace-pre-wrap text-[10px] leading-snug text-red-600"
+                          className="mt-1 max-w-xs text-[10px] leading-snug text-red-600"
                           title={failText}
                         >
-                          {failText.slice(0, 180)}
-                          {failText.length > 180 ? "…" : ""}
+                          <span className="font-medium">{failBreakdown.category}</span>
+                          {" — "}
+                          {failBreakdown.detail}
                         </p>
                       ) : null}
                     </td>
@@ -541,6 +614,22 @@ export function CodegenPanel({
                           ⚠
                         </span>
                       ) : null}
+                    </td>
+                    <td className="py-2 pr-2">
+                      <div className="flex flex-wrap gap-1">
+                        {gateBadges.length > 0 ? (
+                          gateBadges.map((b) => (
+                            <span
+                              key={b.label}
+                              className={`rounded px-1 py-0.5 text-[10px] ${badgeClass(b.tone)}`}
+                            >
+                              {b.label}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-violet-400">—</span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2 pr-2">
                       {run.status === "completed" && meta.storageUploaded ? (

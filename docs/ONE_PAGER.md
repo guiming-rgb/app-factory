@@ -16,7 +16,7 @@
 
 1. **G0** ✅ 落盘 · `verify:todo:parity` · `maintainer:pending` → 0
 2. **G1** Codegen 成功率（`stats:codegen`）：小程序目标 >75%；鸿蒙改同步后观察新 run
-3. **G2** Spec→Screen 深化 · 质量门禁 UI
+3. **G2** ✅ 实体列表示例 + 三栈门禁 UI（`verify:g2:entity-scaffold`）
 4. **维护者可选**：DevEco Run · Flutter run · 微信真机预览
 
 详表：[三阶段-执行计划-20260519.md](./三阶段-执行计划-20260519.md)

@@ -11,10 +11,16 @@ import {
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
+  emitEntityListIndexJs,
+  emitEntityListIndexWxml,
+  emitEntityListIndexWxss
+} from "./emit-entity-list";
+import {
   emitTodoIndexJs,
   emitTodoIndexWxml,
   emitTodoIndexWxss
 } from "./emit-todo";
+import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
 import {
   buildAppJson,
   emitGeneratedPageJs,
@@ -49,7 +55,18 @@ async function ensureGeneratedPage(
   const [, pageId, fileName] = pagePath.split("/");
   const fileBase = path.join(appDir, "pages", pageId, fileName);
   await fs.mkdir(path.dirname(fileBase), { recursive: true });
-  await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen), "utf8");
+  const specPath = path.join(appDir, "app_spec.json");
+  let specForPage: AppSpec | undefined;
+  try {
+    specForPage = JSON.parse(await fs.readFile(specPath, "utf8")) as AppSpec;
+  } catch {
+    specForPage = undefined;
+  }
+  await fs.writeFile(
+    `${fileBase}.wxml`,
+    emitGeneratedPageWxml(screen, specForPage),
+    "utf8"
+  );
   await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
   await fs.writeFile(`${fileBase}.json`, emitGeneratedPageJson(screen), "utf8");
   await fs.writeFile(`${fileBase}.wxss`, "", "utf8");
@@ -136,6 +153,31 @@ export async function generateWechatProject(
     await fs.writeFile(
       indexWxss,
       `${baseWxss}\n${emitTodoIndexWxss()}`,
+      "utf8"
+    );
+    await fs.writeFile(
+      indexJson,
+      patchIndexJsonTitle(
+        await fs.readFile(indexJson, "utf8"),
+        listScreen.title
+      ),
+      "utf8"
+    );
+  } else if (listScreen && resolveEntityForScreen(spec, listScreen)) {
+    const indexWxml = path.join(appDir, "pages/index/index.wxml");
+    const indexJs = path.join(appDir, "pages/index/index.js");
+    const indexWxss = path.join(appDir, "pages/index/index.wxss");
+    const indexJson = path.join(appDir, "pages/index/index.json");
+    await fs.writeFile(
+      indexWxml,
+      emitEntityListIndexWxml(spec, listScreen),
+      "utf8"
+    );
+    await fs.writeFile(indexJs, emitEntityListIndexJs(spec, listScreen), "utf8");
+    const baseWxss = await fs.readFile(path.join(appDir, "app.wxss"), "utf8");
+    await fs.writeFile(
+      indexWxss,
+      `${baseWxss}\n${emitEntityListIndexWxss()}`,
       "utf8"
     );
     await fs.writeFile(
