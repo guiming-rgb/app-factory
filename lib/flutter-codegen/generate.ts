@@ -106,12 +106,18 @@ export async function generateFlutterProject(
   );
 
   const pubspecPath = path.join(appDir, "pubspec.yaml");
-  const pubspec = await fs.readFile(pubspecPath, "utf8");
-  await fs.writeFile(
-    pubspecPath,
-    patchPubspecName(pubspec, spec.appName, spec.displayName),
-    "utf8"
+  let pubspecContent = patchPubspecName(
+    await fs.readFile(pubspecPath, "utf8"),
+    spec.appName,
+    spec.displayName
   );
+  if (isTodoAppSpec(spec) && !pubspecContent.includes("shared_preferences:")) {
+    pubspecContent = pubspecContent.replace(
+      /dependencies:\n/,
+      "dependencies:\n  shared_preferences: ^2.5.3\n"
+    );
+  }
+  await fs.writeFile(pubspecPath, pubspecContent, "utf8");
 
   const appDartPath = path.join(appDir, "lib", "app.dart");
   const appDart = await fs.readFile(appDartPath, "utf8");

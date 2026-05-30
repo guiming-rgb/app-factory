@@ -1,7 +1,9 @@
-/** 鸿蒙 Index 页：本地待办 MVP（添加 / 完成 / 删除，无联网） */
+/** 鸿蒙 Index 页：本地待办 MVP + Preferences 持久化 */
 export function emitHarmonyTodoIndexEts(displayTitle: string): string {
   const title = displayTitle.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-  return `@Entry
+  return `import preferences from '@ohos.data.preferences';
+
+@Entry
 @Component
 struct Index {
   @State todos: Array<TodoItem> = [
@@ -9,6 +11,46 @@ struct Index {
   ]
   @State inputText: string = ''
   private nextId: number = 2
+  private readonly storeName: string = 'app_factory_todo_v1'
+  private readonly storeKey: string = 'list'
+
+  async aboutToAppear() {
+    await this.loadTodos()
+  }
+
+  async loadTodos() {
+    try {
+      const ctx = getContext(this)
+      const pref = await preferences.getPreferences(ctx, this.storeName)
+      const raw = (await pref.get(this.storeKey, '')) as string
+      if (raw && raw.length > 2) {
+        const parsed = JSON.parse(raw) as Array<TodoItem>
+        if (parsed.length > 0) {
+          this.todos = parsed
+          let maxId = 1
+          for (let i = 0; i < parsed.length; i++) {
+            if (parsed[i].id >= maxId) {
+              maxId = parsed[i].id + 1
+            }
+          }
+          this.nextId = maxId
+        }
+      }
+    } catch (_) {
+      /* 使用默认示例 */
+    }
+  }
+
+  async persistTodos() {
+    try {
+      const ctx = getContext(this)
+      const pref = await preferences.getPreferences(ctx, this.storeName)
+      await pref.put(this.storeKey, JSON.stringify(this.todos))
+      await pref.flush()
+    } catch (_) {
+      /* 忽略 */
+    }
+  }
 
   addTodo() {
     const text = this.inputText.trim()
@@ -19,6 +61,7 @@ struct Index {
     this.nextId = this.nextId + 1
     this.todos = this.todos.concat([item])
     this.inputText = ''
+    this.persistTodos()
   }
 
   toggleTodo(id: number) {
@@ -32,10 +75,12 @@ struct Index {
       }
     }
     this.todos = next
+    this.persistTodos()
   }
 
   deleteTodo(id: number) {
     this.todos = this.todos.filter((item: TodoItem) => item.id !== id)
+    this.persistTodos()
   }
 
   build() {
@@ -44,7 +89,7 @@ struct Index {
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
         .margin({ top: 16, bottom: 8 })
-      Text('本地待办 · 添加 / 完成 / 删除')
+      Text('本地待办 · 添加 / 完成 / 删除 · 已持久化')
         .fontSize(13)
         .opacity(0.65)
         .margin({ bottom: 12 })

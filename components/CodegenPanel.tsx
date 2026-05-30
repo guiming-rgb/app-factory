@@ -494,7 +494,7 @@ export function CodegenPanel({
             ? "提交中…"
             : activeRun?.target === "flutter"
               ? "Flutter 生成中…"
-              : "后台生成 Flutter ZIP"}
+              : "生成 Flutter ZIP（同步）"}
         </button>
 
         <button

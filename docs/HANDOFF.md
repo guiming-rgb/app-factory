@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-30（G2 已部署 · G2 续 Supabase/详情导航）  
+> **最后更新**：2026-05-30（批次 H：H0–H4 代码完成）  
 > **明日开工**：[收工记录-20260528-今日收工.md](./收工记录-20260528-今日收工.md) §五  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
@@ -37,7 +37,12 @@
 - [x] **P0 生产验收**（维护者）：三栈生成/下载/推 GitHub · 鸿蒙待办 `Index.ets` ✅（2026-05-28）
 - [x] **P0 修复**：adm-zip · 鸿蒙同步 codegen · 下载缓存 · `emit-todo`（部署 `dpl_GPRQo24…`）
 - [x] **T1 小程序待办 E2**：微信开发者工具模拟器 · 添加/勾选/删除 ✅（2026-05-30）
-- [ ] **客户端真机补验（可选）**：微信真机预览 · DevEco Run · Flutter run
+- [x] **S6 维护者验收**：P0 + 三栈 GitHub + 真机/模拟器 ✅（2026-05-30）
+- [x] **批次 H2**：三栈 Codegen 同步（含 Flutter）· 探针通过
+- [x] **批次 H3**：待办持久化三栈 · `verify:g3:persistence`
+- [x] **批次 H4 本地**：`valid-shooter-minimal` · `verify:h4:shooter`
+- [ ] **git push**：本机需维护者执行（HTTPS 认证）
+- [ ] **H4 生产 8/8**：项目 `0ea7a53c-a645-4ad9-a43a-02263f9b7b4a` 待 Agent 跑满
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 

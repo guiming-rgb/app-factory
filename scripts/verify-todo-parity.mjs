@@ -35,7 +35,7 @@ const harmonyIndex = fs.readFileSync(
   "/tmp/app-factory-todo-harmony/entry/src/main/ets/pages/Index.ets",
   "utf8"
 );
-for (const k of ["addTodo", "TextInput"]) {
+for (const k of ["addTodo", "TextInput", "persistTodos", "preferences"]) {
   assert(harmonyIndex.includes(k), `harmony 缺少 ${k}`);
 }
 console.log("✓ 鸿蒙待办 Index.ets");
@@ -45,7 +45,7 @@ const flutterTodo = fs.readFileSync(
   "/tmp/app-factory-todo-flutter/lib/features/todo_list/presentation/todo_list_page.dart",
   "utf8"
 );
-for (const k of ["TodoListPage", "_addTodo", "TextField"]) {
+for (const k of ["TodoListPage", "_addTodo", "TextField", "SharedPreferences"]) {
   assert(flutterTodo.includes(k), `flutter 缺少 ${k}`);
 }
 console.log("✓ Flutter todo_list_page.dart");
@@ -59,7 +59,7 @@ const wechatWxml = fs.readFileSync(
   "/tmp/app-factory-todo-wechat/pages/index/index.wxml",
   "utf8"
 );
-for (const k of ["onAdd", "onDelete", "todos"]) {
+for (const k of ["onAdd", "onDelete", "todos", "saveTodos", "getStorageSync"]) {
   assert(wechatJs.includes(k), `wechat js 缺少 ${k}`);
 }
 assert(wechatWxml.includes("todo-input"), "wechat wxml 缺少待办输入");

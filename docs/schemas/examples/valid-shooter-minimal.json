@@ -1,0 +1,38 @@
+{
+  "specVersion": "0.1.0",
+  "appName": "kids_shooter",
+  "displayName": "少年枪战",
+  "targets": {
+    "flutter": { "enabled": true, "platforms": ["ios", "android"], "formFactors": ["phone"] },
+    "harmony": { "enabled": true, "formFactors": ["phone"] },
+    "backend": { "provider": "supabase" },
+    "wechatMiniProgram": {
+      "enabled": true,
+      "tabBar": ["match_list", "profile"],
+      "loginMethod": "wechat",
+      "subPackages": []
+    }
+  },
+  "entities": [
+    {
+      "name": "Match",
+      "fields": [
+        { "name": "id", "type": "uuid", "primary": true },
+        { "name": "title", "type": "string" },
+        { "name": "map_name", "type": "string" }
+      ]
+    }
+  ],
+  "screens": [
+    { "id": "home", "title": "首页", "type": "tabRoot", "children": ["match_list"] },
+    { "id": "match_list", "title": "对战列表", "type": "list", "entity": "Match" },
+    { "id": "profile", "title": "我的", "type": "placeholder" }
+  ],
+  "navigation": { "tabs": ["match_list", "profile"] },
+  "roles": [],
+  "auth": { "provider": "supabase", "methods": ["email"], "roles": ["user"] },
+  "api": [],
+  "layoutRules": {},
+  "complianceFlags": { "templateLimited": true },
+  "limitations": ["首版不含联网对战", "最多 20 人、5 种枪、2 张地图"]
+}

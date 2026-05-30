@@ -6,7 +6,7 @@ export function emitTodoIndexWxml(displayTitle: string): string {
 
   <view class="card">
     <view class="todo-title">${title}</view>
-    <view class="muted">本地待办 · 添加 / 完成 / 删除</view>
+    <view class="muted">本地待办 · 添加 / 完成 / 删除 · 已持久化</view>
   </view>
 
   <view class="card todo-input-row">
@@ -32,21 +32,44 @@ export function emitTodoIndexWxml(displayTitle: string): string {
 export function emitTodoIndexJs(): string {
   return `const { isSupabaseConfigured } = require("../../utils/supabase");
 
+const STORAGE_KEY = "app_factory_todos_v1";
+const DEFAULT_TODOS = [{ id: "1", title: "示例：买牛奶", done: false }];
+
 Page({
   data: {
     showPrivacy: false,
     supabaseReady: false,
     inputText: "",
-    todos: [{ id: "1", title: "示例：买牛奶", done: false }]
+    todos: DEFAULT_TODOS
+  },
+
+  loadTodos() {
+    try {
+      const raw = wx.getStorageSync(STORAGE_KEY);
+      if (raw && Array.isArray(raw) && raw.length > 0) {
+        this.setData({ todos: raw });
+      }
+    } catch (_) {
+      /* 使用默认 */
+    }
+  },
+
+  saveTodos() {
+    try {
+      wx.setStorageSync(STORAGE_KEY, this.data.todos);
+    } catch (_) {
+      /* 忽略存储失败 */
+    }
   },
 
   onShow() {
     const app = getApp();
-    const accepted = app.globalData.privacyAccepted;
+    const accepted = !!app.globalData.privacyAccepted;
     this.setData({
       showPrivacy: !accepted,
       supabaseReady: isSupabaseConfigured()
     });
+    if (accepted) this.loadTodos();
   },
 
   onPrivacyAccept() {
@@ -54,6 +77,7 @@ Page({
     app.globalData.privacyAccepted = true;
     wx.setStorageSync("privacy_accepted", true);
     this.setData({ showPrivacy: false });
+    this.loadTodos();
   },
 
   onInput(e) {
@@ -67,6 +91,7 @@ Page({
       { id: String(Date.now()), title: text, done: false }
     ]);
     this.setData({ todos, inputText: "" });
+    this.saveTodos();
   },
 
   todoIdFromEvent(e) {
@@ -79,6 +104,7 @@ Page({
       String(t.id) === id ? { ...t, done: !t.done } : t
     );
     this.setData({ todos });
+    this.saveTodos();
   },
 
   onToggleChange(e) {
@@ -88,6 +114,7 @@ Page({
       String(t.id) === id ? { ...t, done: checked } : t
     );
     this.setData({ todos });
+    this.saveTodos();
   },
 
   onDelete(e) {
@@ -95,6 +122,7 @@ Page({
     this.setData({
       todos: this.data.todos.filter((t) => String(t.id) !== id)
     });
+    this.saveTodos();
   }
 });
 `;
