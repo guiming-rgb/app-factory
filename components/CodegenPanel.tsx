@@ -467,7 +467,7 @@ export function CodegenPanel({
 
       {activeRun?.status === "queued" && isQueuedSlow(activeRun) ? (
         <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          排队超过 90 秒：Inngest 可能未消费。请检查双进程是否同端口，或先用「同步下载」；可点「标记失败」解除占用。
+          排队超过 90 秒：多为旧版后台队列任务。请点「标记失败」后改用「生成小程序 ZIP（同步）」或上方「快速下载」。
         </p>
       ) : null}
 
@@ -504,10 +504,10 @@ export function CodegenPanel({
           className="rounded-lg border border-violet-600 px-4 py-2 text-sm font-medium text-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loadingTarget === "wechat"
-            ? "提交中…"
+            ? "生成中…"
             : activeRun?.target === "wechat"
               ? "小程序生成中…"
-              : "后台生成小程序 ZIP"}
+              : "生成小程序 ZIP（同步）"}
         </button>
 
         <button

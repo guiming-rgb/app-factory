@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getApiUser } from "@/lib/auth/api-user";
-import { enqueueCodegenJob } from "@/lib/codegen/enqueue";
+import { runWechatCodegenSync } from "@/lib/codegen/run-wechat-sync";
 import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** 含 wcc/wcsc 门禁时可能较慢；Vercel Pro 可调高 */
+export const maxDuration = 300;
 
 export async function POST(
   req: NextRequest,
@@ -26,19 +28,15 @@ export async function POST(
       return limited;
     }
 
-    const run = await enqueueCodegenJob({
-      projectId,
-      target: "wechat",
-      userId: user?.id
-    });
+    const run = await runWechatCodegenSync({ projectId });
 
     return NextResponse.json({
       success: true,
-      mode: "async",
+      mode: "sync",
       target: "wechat",
       runId: run.id,
       status: run.status,
-      message: "微信小程序 codegen 已进入后台队列"
+      message: "微信小程序 codegen 已完成（同步生成，无需 Inngest 队列）"
     });
   } catch (err: unknown) {
     const message =
