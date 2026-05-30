@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-30（批次 J：部署 + 生产枪战 8/8 + J4）  
+> **最后更新**：2026-05-30（批次 K：git push + 鸿蒙 Supabase REST）  
 > **明日开工**：[收工记录-20260530-今日收工.md](./收工记录-20260530-今日收工.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
@@ -47,6 +47,9 @@
 - [x] **批次 I2 / 枪战 8/8 本地**：`4fec0ec1-bcd3-4fa9-8386-e930ad3e9c09` · `trigger:shooter:8-8` · `verify:i2:shooter`
 - [x] **生产枪战 8/8 + J4**：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a` · `verify:i2:shooter` ✅
 - [x] **批次 J 部署**：`dpl_Hj7S2SBGQ8jP6jR544SCr4XMAa7v`
+- [x] **批次 K1**：`git push` `c8006cb`（I/J/K 合入 main）
+- [x] **批次 K2**：鸿蒙实体列表 Supabase REST · `verify:g2` 增强
+- [ ] **批次 K3 生产 HTTP**：`verify:v3:production` 本 Agent 环境超时；维护者浏览器或本机网络正常时复跑
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
