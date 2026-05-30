@@ -123,8 +123,8 @@ class ${className} extends StatelessWidget {
   const select = escapeDartString(supabaseSelectColumns(entity));
   return `import "package:flutter/material.dart";
 
-import "../../core/config/env.dart";
-import "../../core/supabase/supabase_client.dart";
+import "../../../core/config/env.dart";
+import "../../../core/supabase/supabase_client.dart";
 
 class _Item {
   const _Item(this.id, this.title, this.subtitle);

@@ -141,10 +141,17 @@ export function CodegenPanel({
   const [pushingAll, setPushingAll] = useState(false);
   const [cancelingRunId, setCancelingRunId] = useState<string | null>(null);
   const [inngestHint, setInngestHint] = useState<string | null>(null);
+  const [hideFailedRuns, setHideFailedRuns] = useState(true);
+  const [copiedRepoRunId, setCopiedRepoRunId] = useState<string | null>(null);
   const [specQuality, setSpecQuality] = useState<SpecQualityPreview | null>(
     null
   );
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const failedRunCount = runs.filter((r) => r.status === "failed").length;
+  const visibleRuns = hideFailedRuns
+    ? runs.filter((r) => r.status !== "failed")
+    : runs;
 
   const fetchRuns = useCallback(async () => {
     const res = await fetch(`/api/projects/${projectId}/codegen/runs`, {
@@ -347,6 +354,16 @@ export function CodegenPanel({
     }
   }
 
+  async function handleCopyGitHubUrl(runId: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedRepoRunId(runId);
+      setTimeout(() => setCopiedRepoRunId(null), 2000);
+    } catch {
+      setError("复制失败，请手动打开 GitHub 链接");
+    }
+  }
+
   async function handleGitHubPush(runId: string) {
     setPushingRunId(runId);
     setError("");
@@ -531,6 +548,18 @@ export function CodegenPanel({
         >
           {refreshing ? "刷新中…" : "刷新记录"}
         </button>
+
+        {failedRunCount > 0 ? (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-violet-800">
+            <input
+              type="checkbox"
+              checked={hideFailedRuns}
+              onChange={(e) => setHideFailedRuns(e.target.checked)}
+              className="rounded border-violet-300"
+            />
+            折叠失败记录（{failedRunCount}）
+          </label>
+        ) : null}
       </div>
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
@@ -545,7 +574,20 @@ export function CodegenPanel({
         </p>
       )}
 
-      {runs.length > 0 && (
+      {runs.length > 0 && visibleRuns.length === 0 && hideFailedRuns ? (
+        <p className="mt-3 text-xs text-violet-700">
+          已折叠 {failedRunCount} 条失败记录。
+          <button
+            type="button"
+            className="ml-1 font-medium text-violet-900 underline"
+            onClick={() => setHideFailedRuns(false)}
+          >
+            展开查看
+          </button>
+        </p>
+      ) : null}
+
+      {visibleRuns.length > 0 && (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[480px] text-left text-xs text-violet-950">
             <thead>
@@ -559,7 +601,7 @@ export function CodegenPanel({
               </tr>
             </thead>
             <tbody>
-              {runs.slice(0, 8).map((run) => {
+              {visibleRuns.slice(0, 8).map((run) => {
                 const meta = (run.metadata ?? {}) as {
                   specWarning?: string;
                   analyzeOutput?: string;
@@ -679,14 +721,28 @@ export function CodegenPanel({
                           </button>
                         ) : null}
                         {meta.githubRepoUrl ? (
-                          <a
-                            href={meta.githubRepoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium text-emerald-700 underline"
-                          >
-                            GitHub
-                          </a>
+                          <>
+                            <a
+                              href={meta.githubRepoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-medium text-emerald-700 underline"
+                            >
+                              GitHub
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleCopyGitHubUrl(
+                                  run.id,
+                                  meta.githubRepoUrl as string
+                                )
+                              }
+                              className="font-medium text-emerald-700 underline"
+                            >
+                              {copiedRepoRunId === run.id ? "已复制" : "复制链接"}
+                            </button>
+                          </>
                         ) : null}
                         {run.status === "failed" ? (
                           <button

@@ -68,6 +68,12 @@ const harmonyIndex = fs.readFileSync(
 );
 assert(harmonyIndex.includes("ForEach"), "harmony Index 无 ForEach 列表");
 assert(!harmonyIndex.includes("justifyContent(FlexAlign.Center)"), "harmony 仍为居中占位");
-console.log("✓ 鸿蒙 Index 实体列表");
+assert(harmonyIndex.includes("loadItems"), "harmony 缺少 loadItems");
+assert(
+  harmonyIndex.includes("@ohos.net.http") || harmonyIndex.includes("http.createHttp"),
+  "harmony 缺少 Supabase HTTP"
+);
+assert(harmonyIndex.includes("/rest/v1/"), "harmony 缺少 PostgREST 路径");
+console.log("✓ 鸿蒙 Index 实体列表 + Supabase REST");
 
 console.log("\n✅ verify:g2:entity-scaffold 通过\n");
