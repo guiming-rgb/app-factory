@@ -2,7 +2,11 @@ import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import {
   buildEntityListRows,
-  resolveEntityForScreen
+  entityTableName,
+  listTitleField,
+  primaryKeyField,
+  resolveEntityForScreen,
+  supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 
@@ -113,8 +117,14 @@ class ${className} extends StatelessWidget {
         `      _Item("${escapeDartString(r.id)}", "${escapeDartString(r.title)}", "${escapeDartString(r.subtitle)}"),`
     )
     .join("\n");
-  const entityName = escapeDartString(entity.name);
+  const table = escapeDartString(entityTableName(entity));
+  const titleField = escapeDartString(listTitleField(entity));
+  const pk = escapeDartString(primaryKeyField(entity));
+  const select = escapeDartString(supabaseSelectColumns(entity));
   return `import "package:flutter/material.dart";
+
+import "../../core/config/env.dart";
+import "../../core/supabase/supabase_client.dart";
 
 class _Item {
   const _Item(this.id, this.title, this.subtitle);
@@ -123,30 +133,128 @@ class _Item {
   final String subtitle;
 }
 
-class ${className} extends StatelessWidget {
+class ${className} extends StatefulWidget {
   const ${className}({super.key});
 
-  static const _items = <_Item>[
+  @override
+  State<${className}> createState() => _${className}State();
+}
+
+class _${className}State extends State<${className}> {
+  static const _fallback = <_Item>[
 ${itemsDart}
   ];
+
+  List<_Item> _items = _fallback;
+  String? _error;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final client = supabaseOrNull;
+    if (client == null) {
+      setState(() => _items = _fallback);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final rows = await client
+          .from("${table}")
+          .select("${select}")
+          .limit(20);
+      final list = rows as List<dynamic>;
+      if (list.isEmpty) {
+        setState(() {
+          _items = _fallback;
+          _loading = false;
+        });
+        return;
+      }
+      final items = <_Item>[];
+      for (var i = 0; i < list.length; i++) {
+        final row = Map<String, dynamic>.from(list[i] as Map);
+        final id = row["${pk}"]?.toString() ?? (i + 1).toString();
+        final title = row["${titleField}"]?.toString() ??
+            row["title"]?.toString() ??
+            "—";
+        items.add(_Item(id, title, "${escapeDartString(entity.name)} · $id"));
+      }
+      setState(() {
+        _items = items;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _items = _fallback;
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  void _openDetail(_Item item) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.title, style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text("id: \${item.id}"),
+            Text("entity: ${escapeDartString(entity.name)}"),
+            if (!Env.hasSupabase)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text("配置 SUPABASE_URL / SUPABASE_ANON_KEY 后可拉取真数据"),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("${title}")),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final item = _items[index];
-          return Card(
-            child: ListTile(
-              title: Text(item.title),
-              subtitle: Text(item.subtitle),
+      body: Column(
+        children: [
+          if (_loading) const LinearProgressIndicator(),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(_error!, style: const TextStyle(color: Colors.orange)),
             ),
-          );
-        },
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: _items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return Card(
+                  child: ListTile(
+                    title: Text(item.title),
+                    subtitle: Text(item.subtitle),
+                    onTap: () => _openDetail(item),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

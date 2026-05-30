@@ -13,7 +13,9 @@ import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
   emitEntityListIndexJs,
   emitEntityListIndexWxml,
-  emitEntityListIndexWxss
+  emitEntityListIndexWxss,
+  ensureEntityDetailInAppJson,
+  writeEntityDetailPage
 } from "./emit-entity-list";
 import {
   emitTodoIndexJs,
@@ -119,9 +121,20 @@ export async function generateWechatProject(
   const baseAppJson = JSON.parse(
     await fs.readFile(appJsonPath, "utf8")
   ) as Record<string, unknown>;
+  const todoMode = isTodoAppSpec(spec);
+  const listScreen = listScreenFromSpec(spec);
+  let appJson = buildAppJson(spec, baseAppJson);
+  const entityForDetail =
+    listScreen && !todoMode
+      ? resolveEntityForScreen(spec, listScreen)
+      : undefined;
+  if (entityForDetail) {
+    appJson = ensureEntityDetailInAppJson(appJson);
+    await writeEntityDetailPage(appDir, entityForDetail, fs, path);
+  }
   await fs.writeFile(
     appJsonPath,
-    JSON.stringify(buildAppJson(spec, baseAppJson), null, 2) + "\n",
+    JSON.stringify(appJson, null, 2) + "\n",
     "utf8"
   );
 
@@ -133,8 +146,6 @@ export async function generateWechatProject(
     "utf8"
   );
 
-  const listScreen = listScreenFromSpec(spec);
-  const todoMode = isTodoAppSpec(spec);
   if (listScreen && todoMode) {
     const indexWxml = path.join(appDir, "pages/index/index.wxml");
     const indexJs = path.join(appDir, "pages/index/index.js");

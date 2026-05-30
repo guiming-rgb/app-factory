@@ -87,6 +87,35 @@ export function resolveEntityForScreen(
   };
 }
 
+/** PostgREST 表名推断（Match → matches） */
+export function entityTableName(entity: AppSpecEntity): string {
+  const raw = entity.name.trim();
+  if (!raw) return "items";
+  const snake = raw
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .toLowerCase();
+  if (snake.endsWith("s")) return snake;
+  if (snake.endsWith("y")) return `${snake.slice(0, -1)}ies`;
+  return `${snake}s`;
+}
+
+export function supabaseSelectColumns(entity: AppSpecEntity): string {
+  const names = entity.fields
+    .map((f) => f.name)
+    .filter((n) => /^[a-z_][a-z0-9_]*$/i.test(n))
+    .slice(0, 8);
+  const set = new Set(names);
+  set.add(listTitleField(entity));
+  const pk = entity.fields.find((f) => f.primary)?.name ?? "id";
+  set.add(pk);
+  return [...set].join(",");
+}
+
+export function primaryKeyField(entity: AppSpecEntity): string {
+  return entity.fields.find((f) => f.primary)?.name ?? "id";
+}
+
 export function listTitleField(entity: AppSpecEntity): string {
   const title = entity.fields.find((f) =>
     ["title", "name", "label"].includes(f.name.toLowerCase())

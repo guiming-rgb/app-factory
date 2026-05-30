@@ -42,7 +42,13 @@ const wechatJs = fs.readFileSync(
 assert(!wechatWxml.includes("列表占位"), "wechat 仍为列表占位");
 assert(wechatWxml.includes("wx:for"), "wechat 缺少列表 ForEach");
 assert(wechatJs.includes("items:"), "wechat 缺少 items 数据");
-console.log("✓ 小程序实体列表 index");
+assert(wechatJs.includes("loadItems"), "wechat 缺少 Supabase loadItems");
+assert(wechatJs.includes("onTapItem"), "wechat 缺少详情导航 onTapItem");
+assert(
+  fs.existsSync("/tmp/app-factory-g2-wechat/pages/entity-detail/entity-detail.js"),
+  "wechat 缺少 entity-detail 页"
+);
+console.log("✓ 小程序实体列表 + 详情导航");
 
 runCodegen("scripts/codegen-flutter.ts", "/tmp/app-factory-g2-flutter");
 const flutterList = fs.readFileSync(
@@ -51,7 +57,9 @@ const flutterList = fs.readFileSync(
 );
 assert(flutterList.includes("ListView"), "flutter match_list 无 ListView");
 assert(!flutterList.includes("列表页占位"), "flutter 仍为列表占位");
-console.log("✓ Flutter match_list 实体列表");
+assert(flutterList.includes("supabaseOrNull"), "flutter 缺少 Supabase 拉取");
+assert(flutterList.includes("onTap"), "flutter 缺少详情 onTap");
+console.log("✓ Flutter match_list 实体列表 + Supabase");
 
 runCodegen("scripts/codegen-harmony.ts", "/tmp/app-factory-g2-harmony");
 const harmonyIndex = fs.readFileSync(

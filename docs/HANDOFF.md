@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-30（T1 小程序 E2 模拟器验收通过）  
+> **最后更新**：2026-05-30（G2 已部署 · G2 续 Supabase/详情导航）  
 > **明日开工**：[收工记录-20260528-今日收工.md](./收工记录-20260528-今日收工.md) §五  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
