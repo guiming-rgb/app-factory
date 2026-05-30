@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
+import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
 import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
@@ -54,7 +55,8 @@ export async function GET(
       spec: result.spec,
       source: result.source,
       warning: result.warning ?? null,
-      hasReport: Boolean(project.final_report?.trim())
+      hasReport: Boolean(project.final_report?.trim()),
+      quality: assessSpecQuality(result.spec)
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Spec 生成失败";

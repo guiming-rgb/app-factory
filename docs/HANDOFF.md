@@ -1,6 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-22  
+> **最后更新**：2026-05-30（T1 小程序 E2 模拟器验收通过）  
+> **明日开工**：[收工记录-20260528-今日收工.md](./收工记录-20260528-今日收工.md) §五  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -27,7 +28,16 @@
 - [x] **v4 Auth + RLS**：v4-1～v4-6 ✅（[v4-Auth-RLS-设计草案.md](./v4-Auth-RLS-设计草案.md)）
 - [x] **v5.1 记忆与 Skills**：V5-6～V5-9 ✅（多 Agent 记忆 · 记忆 UI · Skills 管理 · 技能注入可观测）
 - [x] **C1 Report→Spec 收紧**：prompt + normalize · `verify:c1:report-to-spec`
-- [x] **C4 GitHub OAuth + push**：连接 GitHub · codegen 产物推私有仓库 · `verify:c4:github`
+- [x] **C3 小程序真编译**：wcc/wcsc · `verify:c3:wechat-compile`
+- [x] **C5 App Spec 阶段 C**：wechatMiniProgram + BackendTarget · `verify:c5:app-spec`
+- [x] **C4 GitHub OAuth + push**：连接 GitHub · codegen 产物推私有仓库 · `verify:c4:github` · 环境 `check:c4:github`
+- [x] **S6 发版全链路脚本**：`verify:s6:release` · Auth Cookie · 本地 `verify:s6:local-full`（需 Inngest）
+- [x] **维护者验收闭环**：10/10 done（`maintainer:pending` → 0）
+- [x] **C6 鸿蒙** · **D1 队列** · **D2 质量** · **D3 发版+三栈 GitHub**（2026-05-28）
+- [x] **P0 生产验收**（维护者）：三栈生成/下载/推 GitHub · 鸿蒙待办 `Index.ets` ✅（2026-05-28）
+- [x] **P0 修复**：adm-zip · 鸿蒙同步 codegen · 下载缓存 · `emit-todo`（部署 `dpl_GPRQo24…`）
+- [x] **T1 小程序待办 E2**：微信开发者工具模拟器 · 添加/勾选/删除 ✅（2026-05-30）
+- [ ] **客户端真机补验（可选）**：微信真机预览 · DevEco Run · Flutter run
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -54,7 +64,21 @@
 7. **M1/M2** ✅ Vercel Auth + v4/v5 迁移已应用
 8. **E 本地全链路** ✅ 8/8 · `verify:v13` · `accept`（样本 `833ad678…`）
 9. **记忆约束实测** ✅ 生产/本地 CEO·PRD 均体现「第一版不做联网对战」
-10. **三阶段路线** 🟡 — ① 加固 ~90% · ② v5.1 ✅ · ③ C1/C3/C4 ✅ → **下一波 C5**
+10. **三阶段路线** ✅ ① 加固 · ② v5.1 · ③ C1–C5 · **A+C 收工**（2026-05-27）
+11. **C4 推 GitHub**：代码 ✅ · OAuth/PAT 凭证待配 → [收工记录-20260527-A+C-GitHub-Codegen.md](./收工记录-20260527-A+C-GitHub-Codegen.md)
+
+## 明日维护者待办（真源）
+
+**优先**：[收工记录-20260528-今日收工.md](./收工记录-20260528-今日收工.md) §五 下一步
+
+1. Git commit 本日未提交改动  
+2. （可选）DevEco 跑通 `simple_todo-harmony`  
+3. Flutter/小程序待办 MVP parity  
+
+```bash
+npm run maintainer:pending   # 应为 0
+npm run verify:c6:harmony    # 含待办探针
+```
 
 ## 阻塞 / 风险（简）
 
@@ -68,6 +92,7 @@
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-28 | **P0 验收通过**；adm-zip、鸿蒙同步+待办 emit、下载缓存；生产 `dpl_GPRQo24…` |
 | 2026-05-22 | **C3** 小程序 WXML/WXSS 真编译 · **C1** Report→Spec · V5-8/V5-9 · S1 文档同步 |
 | 2026-05-19 | **三阶段路线** 启动：S5 codegen 清理 · **v5-6** 多 Agent 记忆 · C1 Spec 收紧 |
 | 2026-05-19 | **G5 收工**：`npm run build` + `accept` ✅；**E 本地全链路** 8/8；记忆约束生产/本地实测 ✅ |

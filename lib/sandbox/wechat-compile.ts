@@ -25,11 +25,18 @@ function isCompileDisabled(): boolean {
 }
 
 function loadCompiler(): MiniprogramCompiler | null {
-  try {
-    return require("miniprogram-compiler") as MiniprogramCompiler;
-  } catch {
-    return null;
+  const candidates = [
+    path.join(process.cwd(), "node_modules/miniprogram-compiler"),
+    "miniprogram-compiler"
+  ];
+  for (const id of candidates) {
+    try {
+      return require(id) as MiniprogramCompiler;
+    } catch {
+      // try next
+    }
   }
+  return null;
 }
 
 function countFiles(dir: string, ext: string): number {

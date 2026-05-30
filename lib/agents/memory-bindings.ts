@@ -15,6 +15,20 @@ export function agentReceivesProjectMemories(agentCode: string): boolean {
   return MEMORY_AGENT_SET.has(agentCode);
 }
 
+/** v5-10：注入跨项目用户画像的 Agent */
+export const WORKFLOW_USER_PROFILE_AGENT_CODES = [
+  "ceo",
+  "product_manager"
+] as const;
+
+const USER_PROFILE_AGENT_SET = new Set<string>(
+  WORKFLOW_USER_PROFILE_AGENT_CODES
+);
+
+export function agentReceivesUserProfile(agentCode: string): boolean {
+  return USER_PROFILE_AGENT_SET.has(agentCode);
+}
+
 /** 各 Agent 记忆区块说明（写入 user prompt） */
 export function memorySectionHintForAgent(agentCode: string): string {
   const hints: Record<string, string> = {

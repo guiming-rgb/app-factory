@@ -73,6 +73,39 @@
             "regionHint": { "type": "string" }
           },
           "additionalProperties": true
+        },
+        "wechatMiniProgram": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "tabBar": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+              "minItems": 1
+            },
+            "loginMethod": {
+              "enum": ["wechat", "phone", "none"]
+            },
+            "subPackages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["root", "pages"],
+                "properties": {
+                  "root": { "type": "string", "minLength": 1 },
+                  "pages": {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 },
+                    "minItems": 1
+                  },
+                  "name": { "type": "string" }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true

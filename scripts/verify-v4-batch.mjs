@@ -19,6 +19,7 @@ const STEPS = [
   ["verify:c1:report-to-spec", "C1 Report→Spec 收紧"],
   ["verify:c3:wechat-compile", "C3 小程序真编译"],
   ["verify:c4:github", "C4 GitHub OAuth + push"],
+  ["verify:c5:app-spec", "C5 App Spec 阶段 C"],
   ["verify:v4:production", "生产 Auth 探针"]
 ];
 

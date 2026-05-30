@@ -4,6 +4,7 @@ import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
 import { getGitHubConnectionPublic } from "@/lib/github/connections-server";
 import { isGitHubOAuthEnabled } from "@/lib/github/config";
+import { isGitHubPushConfigured } from "@/lib/github/push-token";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,8 +27,12 @@ export async function GET() {
   const connection = await getGitHubConnectionPublic(user.id);
 
   return NextResponse.json({
-    enabled: isGitHubOAuthEnabled(),
-    configured: isGitHubOAuthEnabled(),
+    enabled: isGitHubPushConfigured(),
+    configured: isGitHubPushConfigured(),
+    oauthConfigured: isGitHubOAuthEnabled(),
+    patConfigured: !!(
+      process.env.GITHUB_PAT?.trim() && process.env.GITHUB_PAT_BIND_USER_ID?.trim()
+    ),
     ...connection
   });
 }

@@ -34,7 +34,9 @@ export function buildMinimalSpecFromProject(project: {
       backend: { provider: "supabase" },
       wechatMiniProgram: {
         enabled: true,
-        tabBar: ["main_list", "profile"]
+        tabBar: ["main_list", "profile"],
+        loginMethod: "wechat",
+        subPackages: []
       }
     },
     entities: [],

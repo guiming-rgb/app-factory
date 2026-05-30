@@ -4,6 +4,7 @@ import { AutoRefreshWhenRunning } from "@/components/AutoRefreshWhenRunning";
 import { CodegenPanel } from "@/components/CodegenPanel";
 import { CopyReportButton } from "@/components/CopyReportButton";
 import { DownloadFlutterButton } from "@/components/DownloadFlutterButton";
+import { DownloadHarmonyButton } from "@/components/DownloadHarmonyButton";
 import { DownloadWechatButton } from "@/components/DownloadWechatButton";
 import { DownloadReportButton } from "@/components/DownloadReportButton";
 import { GenerateProjectButton } from "@/components/GenerateProjectButton";
@@ -202,6 +203,7 @@ export default async function ProjectPage({
               <div className="mt-3 flex flex-wrap gap-2">
                 <DownloadFlutterButton projectId={project.id} />
                 <DownloadWechatButton projectId={project.id} />
+                <DownloadHarmonyButton projectId={project.id} />
               </div>
               <CodegenPanel
                 projectId={project.id}

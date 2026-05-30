@@ -2,7 +2,9 @@ import fs from "fs/promises";
 import path from "path";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
+import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { validateAppSpec } from "@/lib/app-spec/validate";
+import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
 import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
 import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
 import {
@@ -86,6 +88,7 @@ export async function executeWechatCodegen(input: {
     }
 
     const spec = validation.spec;
+    const specQuality = assessSpecQuality(spec);
     const { outputDir, appName, displayName } = await generateWechatProject(spec);
     outputRoot = path.dirname(outputDir);
 
@@ -110,12 +113,17 @@ export async function executeWechatCodegen(input: {
       metadata: {
         fileName,
         displayName,
+        ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
         storageUploaded,
         previewPath,
         ...(storageUploaded
           ? { storageBucket: getCodegenStorageBucket() }
           : {}),
         ...buildWechatMetadata(build),
+        specQualityScore: specQuality.score,
+        ...(specQuality.warnings.length
+          ? { specQualityWarnings: specQuality.warnings.join(" · ") }
+          : {}),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }
     });

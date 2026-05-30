@@ -1,0 +1,59 @@
+{
+  "specVersion": "0.1.0",
+  "appName": "simple_todo",
+  "displayName": "本地待办",
+  "sourceProjectId": "802e1144-57ef-4ff4-b33c-325ebad299ce",
+  "targets": {
+    "flutter": {
+      "enabled": true,
+      "platforms": ["ios", "android"],
+      "formFactors": ["phone"]
+    },
+    "harmony": { "enabled": true, "formFactors": ["phone"] },
+    "backend": { "provider": "supabase" },
+    "wechatMiniProgram": {
+      "enabled": true,
+      "tabBar": ["todo_list", "profile"],
+      "loginMethod": "none",
+      "subPackages": []
+    }
+  },
+  "entities": [
+    {
+      "name": "TodoItem",
+      "fields": [
+        { "name": "id", "type": "uuid", "primary": true },
+        { "name": "title", "type": "string", "required": true },
+        { "name": "done", "type": "int", "required": true }
+      ],
+      "relations": []
+    }
+  ],
+  "screens": [
+    {
+      "id": "home",
+      "title": "首页",
+      "type": "tabRoot",
+      "children": ["todo_list", "profile"]
+    },
+    {
+      "id": "todo_list",
+      "title": "待办",
+      "type": "list",
+      "entity": "TodoItem"
+    },
+    {
+      "id": "profile",
+      "title": "我的",
+      "type": "placeholder"
+    }
+  ],
+  "navigation": { "tabs": ["todo_list", "profile"] },
+  "roles": [{ "name": "user" }],
+  "auth": { "provider": "none", "methods": [], "roles": ["user"] },
+  "api": [],
+  "layoutRules": { "tabletSidebar": "auto" },
+  "complianceFlags": { "templateLimited": false },
+  "limitations": ["首版本地待办，不含登录与云同步"],
+  "metadata": { "locale": "zh-CN" }
+}

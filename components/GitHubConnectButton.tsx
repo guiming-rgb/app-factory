@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 type GitHubStatus = {
   enabled: boolean;
   configured: boolean;
+  oauthConfigured?: boolean;
+  patConfigured?: boolean;
   connected: boolean;
   githubLogin?: string;
 };
@@ -33,7 +35,18 @@ export function GitHubConnectButton({ nextPath }: { nextPath?: string }) {
   if (!status?.configured) {
     return (
       <p className="text-xs text-gray-500">
-        GitHub 推送未配置（需 `GITHUB_OAUTH_CLIENT_ID/SECRET`）
+        GitHub 推送未配置（OAuth 或维护者 GITHUB_PAT）
+      </p>
+    );
+  }
+
+  if (status.connected) {
+    /* fall through to connected UI */
+  } else if (status.patConfigured && !status.oauthConfigured) {
+    return (
+      <p className="text-xs text-amber-800">
+        已配置 PAT 模式；首次推送前请运行{" "}
+        <code className="rounded bg-amber-100 px-1">npm run bootstrap:github:pat</code>
       </p>
     );
   }

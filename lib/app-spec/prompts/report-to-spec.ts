@@ -12,6 +12,9 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 - targets.flutter.formFactors: 必须 ["phone"]
 - targets.backend.provider: "supabase"
 - targets.wechatMiniProgram.enabled: 报告提到小程序则为 true，否则 false
+- targets.wechatMiniProgram.tabBar: 与 navigation.tabs 对齐的 screen id 数组（至少 2 个）
+- targets.wechatMiniProgram.loginMethod: "wechat" | "phone" | "none"（默认 wechat）
+- targets.wechatMiniProgram.subPackages: 可为 []；若有分包则 { root, pages[], name? }
 - screens: 至少 3 个；每个必须有 id、title、type
 - screen.id: 仅小写+下划线，如 home、match_list、profile
 - screen.type: 只能是 tabRoot | list | detail | form | placeholder
@@ -38,7 +41,7 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 
 ## 输出示例（结构参考，内容按报告替换）
 
-{"specVersion":"0.1.0","appName":"kids_soccer","displayName":"少儿足球","targets":{"flutter":{"enabled":true,"platforms":["ios","android"],"formFactors":["phone"]},"harmony":{"enabled":false,"formFactors":["phone"]},"backend":{"provider":"supabase"},"wechatMiniProgram":{"enabled":true}},"entities":[],"screens":[{"id":"home","title":"首页","type":"tabRoot","children":["match_list"]},{"id":"match_list","title":"比赛列表","type":"list"},{"id":"profile","title":"我的","type":"placeholder"}],"navigation":{"tabs":["match_list","profile"]},"roles":[],"auth":{"provider":"supabase","methods":["email"],"roles":["user"]},"api":[],"layoutRules":{},"complianceFlags":{"templateLimited":true},"limitations":["首版不含支付"]}`;
+{"specVersion":"0.1.0","appName":"kids_soccer","displayName":"少儿足球","targets":{"flutter":{"enabled":true,"platforms":["ios","android"],"formFactors":["phone"]},"harmony":{"enabled":false,"formFactors":["phone"]},"backend":{"provider":"supabase"},"wechatMiniProgram":{"enabled":true,"tabBar":["match_list","profile"],"loginMethod":"wechat","subPackages":[]}},"entities":[],"screens":[{"id":"home","title":"首页","type":"tabRoot","children":["match_list"]},{"id":"match_list","title":"比赛列表","type":"list"},{"id":"profile","title":"我的","type":"placeholder"}],"navigation":{"tabs":["match_list","profile"]},"roles":[],"auth":{"provider":"supabase","methods":["email"],"roles":["user"]},"api":[],"layoutRules":{},"complianceFlags":{"templateLimited":true},"limitations":["首版不含支付"]}`;
 
 export const REPORT_SPEC_MAX_ATTEMPTS = 4;
 export const REPORT_SLICE_CHARS = 16000;

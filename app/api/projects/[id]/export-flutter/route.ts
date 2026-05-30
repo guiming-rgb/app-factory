@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";
+import { tryReadLatestCompletedArtifact } from "@/lib/codegen/latest-artifact";
 import { generateFlutterZip } from "@/lib/flutter-codegen/generate";
 
 export const runtime = "nodejs";
@@ -32,6 +33,28 @@ export async function GET(
     }
     const project = access.project;
 
+    const cached = await tryReadLatestCompletedArtifact({
+      projectId,
+      target: "flutter",
+      requireTodoMvp: true
+    });
+    if (cached) {
+      const encoded = encodeURIComponent(cached.fileName);
+      return new NextResponse(new Uint8Array(cached.buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Disposition": `attachment; filename="${safeZipBaseName(cached.fileName)}"; filename*=UTF-8''${encoded}`,
+          ...(cached.displayName
+            ? {
+                "X-App-Display-Name": encodeURIComponent(cached.displayName)
+              }
+            : {}),
+          "X-App-Artifact-Cache": "hit"
+        }
+      });
+    }
+
     const built = await buildSpecForProject({
       id: project.id,
       title: project.title ?? "未命名",
@@ -50,6 +73,7 @@ export async function GET(
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${safeZipBaseName(fileName)}"; filename*=UTF-8''${encoded}`,
         "X-App-Display-Name": encodeURIComponent(displayName),
+        "X-App-Artifact-Cache": "fresh",
         "X-App-Spec-Source": built.source,
         ...(built.warning
           ? { "X-App-Spec-Warning": encodeURIComponent(built.warning.slice(0, 200)) }

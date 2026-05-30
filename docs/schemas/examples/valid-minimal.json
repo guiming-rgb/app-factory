@@ -10,7 +10,13 @@
       "formFactors": ["phone", "tablet"]
     },
     "harmony": { "enabled": false, "formFactors": ["phone"] },
-    "backend": { "provider": "supabase" }
+    "backend": { "provider": "supabase", "regionHint": "ap-east" },
+    "wechatMiniProgram": {
+      "enabled": true,
+      "tabBar": ["match_list", "profile"],
+      "loginMethod": "wechat",
+      "subPackages": []
+    }
   },
   "entities": [],
   "screens": [

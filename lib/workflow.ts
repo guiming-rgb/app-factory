@@ -7,7 +7,12 @@ import {
   listProjectMemoriesForWorkflow
 } from "./memories/server";
 import {
+  formatUserProfileForPrompt,
+  getUserProfileForWorkflow
+} from "./user-profiles/server";
+import {
   agentReceivesProjectMemories,
+  agentReceivesUserProfile,
   memorySectionHintForAgent
 } from "./agents/memory-bindings";
 import { loadAgentSkillBindings } from "./agents/skill-bindings";
@@ -134,6 +139,10 @@ export async function executeProjectWorkflow(projectId: string) {
   const contextOutputs: string[] = [];
   const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
   const memoryBlock = formatMemoriesForPrompt(workflowMemories);
+  const ownerId =
+    (project as { owner_id?: string | null }).owner_id ?? null;
+  const userProfile = await getUserProfileForWorkflow(ownerId);
+  const userProfileBlock = formatUserProfileForPrompt(userProfile);
   const agentSkillBindings = await loadAgentSkillBindings();
   const allSkillCodes = [
     ...new Set(Object.values(agentSkillBindings).flat())
@@ -168,6 +177,9 @@ ${skillsBlock}`
           : undefined,
         memorySectionHint: agentReceivesProjectMemories(agent.code)
           ? memorySectionHintForAgent(agent.code)
+          : undefined,
+        userProfileBlock: agentReceivesUserProfile(agent.code)
+          ? userProfileBlock
           : undefined
       });
 
@@ -301,6 +313,7 @@ function buildAgentInput(params: {
   previousOutputs: string[];
   projectMemoriesBlock?: string;
   memorySectionHint?: string;
+  userProfileBlock?: string;
 }) {
   const previous =
     params.previousOutputs.length > 0
@@ -320,11 +333,22 @@ ${params.projectMemoriesBlock}
 `
       : "";
 
+  const userProfileSection =
+    params.userProfileBlock?.trim()
+      ? `
+---
+
+**用户全局画像（跨项目偏好，须在战略/PRD 中体现）：**
+
+${params.userProfileBlock}
+`
+      : "";
+
   return `
 用户的 App 想法如下：
 
 ${params.projectIdea}
-${memoriesSection}
+${memoriesSection}${userProfileSection}
 ---
 
 之前其他 AI 智能体已经完成的内容如下：

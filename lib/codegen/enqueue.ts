@@ -1,5 +1,7 @@
 import { inngestUserIdFromSession } from "@/lib/auth/inngest-project-auth";
+import { checkCodegenInngestPreflight } from "@/lib/codegen/inngest-preflight";
 import { inngest } from "@/lib/inngest/client";
+import { cleanupStaleCodegenRuns } from "@/lib/codegen/stale-runs";
 import {
   createCodegenRun,
   markCodegenRunFailed,
@@ -8,10 +10,13 @@ import {
 
 const EVENT_BY_TARGET: Record<
   CodegenTarget,
-  "project/codegen.flutter.requested" | "project/codegen.wechat.requested"
+  | "project/codegen.flutter.requested"
+  | "project/codegen.wechat.requested"
+  | "project/codegen.harmony.requested"
 > = {
   flutter: "project/codegen.flutter.requested",
-  wechat: "project/codegen.wechat.requested"
+  wechat: "project/codegen.wechat.requested",
+  harmony: "project/codegen.harmony.requested"
 };
 
 function getErrorMessage(error: unknown) {
@@ -23,6 +28,19 @@ export async function enqueueCodegenJob(input: {
   target: CodegenTarget;
   userId?: string;
 }) {
+  await cleanupStaleCodegenRuns({ projectId: input.projectId });
+
+  const preflight = await checkCodegenInngestPreflight();
+  if (!preflight.ok) {
+    const run = await createCodegenRun({
+      projectId: input.projectId,
+      target: input.target
+    });
+    const msg = `${preflight.message}${preflight.hint ? ` · ${preflight.hint}` : ""}`;
+    await markCodegenRunFailed(run.id, msg.slice(0, 4000));
+    throw new Error(msg);
+  }
+
   const run = await createCodegenRun({
     projectId: input.projectId,
     target: input.target

@@ -2,20 +2,22 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-05-22）
+## 当前事实（截至 2026-05-30）
 
 - **产品**：Next + Supabase + Inngest，8 Agent 异步；**v1.3** `usage_logs` 8/8。
-- **代码生成**：v2a Flutter + v2b 小程序；**MVP v2** ✅；v2.1 auto-fix + Docker 门禁 ✅。
-- **Auth / v5**：v4-1～v4-6 ✅ · v5-1～v5-9 ✅（记忆、Skills 管理、技能注入可观测）。
-- **Codegen C1/C3/C4**：Report→Spec · 小程序真编译 · GitHub OAuth push ✅
-- **生产**：https://app-factory-five.vercel.app（Vercel + Inngest Cloud + 同库 Supabase）。
-- **本地**：http://localhost:3001 · 双进程 `start -p 3001` + `inngest:dev:3001`。
+- **代码生成**：Flutter + 小程序 + **鸿蒙（同步）**；**S6 待办 E2** 三栈 parity（`npm run verify:todo:parity`）。
+- **P0 生产验收** ✅ · **T1 小程序待办** ✅（微信开发者工具模拟器）。
+- **导出缓存**：`X-App-Artifact-Cache: hit|fresh`；待办项目 `requireTodoMvp` 仅命中 `metadata.codegenTodoMvp` 的 run，避免旧占位 ZIP。
+- **ZIP**：Vercel 用 **adm-zip**（无系统 unzip）。
+- **生产**：https://app-factory-five.vercel.app
+- **本地**：`npm run dev:codegen:3001`（Next 3001 + Inngest 8288）或双终端 `start -p 3001` + `inngest:dev:3001`。
 
-## 近期待办（三阶段）
+## 近期待办（批次 G）
 
-1. **① 加固（可选）**：S6 发版前全链路 `verify:v3:production`
-2. **③ Codegen 主线**：**C5** App Spec 阶段 C
-3. **后置**：V5-10 跨项目用户画像
+1. **G0** ✅ 落盘 · `verify:todo:parity` · `maintainer:pending` → 0
+2. **G1** Codegen 成功率（`stats:codegen`）：小程序目标 >75%；鸿蒙改同步后观察新 run
+3. **G2** Spec→Screen 深化 · 质量门禁 UI
+4. **维护者可选**：DevEco Run · Flutter run · 微信真机预览
 
 详表：[三阶段-执行计划-20260519.md](./三阶段-执行计划-20260519.md)
 
@@ -25,7 +27,7 @@
 |------|------------|
 | **生产 Web** | https://app-factory-five.vercel.app |
 | 本地 Web | http://localhost:3001 |
-| 门禁 | `verify:c1:report-to-spec` · `verify:c3:wechat-compile` · `verify:v4:batch:local` · `accept` |
+| 门禁 | `verify:todo:parity` · `verify:c6:harmony` · `verify:c3:wechat-compile` · `stats:codegen:failures` |
 | 部署 | `deploy:vercel:env` · `deploy:vercel` |
 
 ## 必读

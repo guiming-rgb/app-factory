@@ -1,6 +1,7 @@
 import type { AppSpec } from "./types";
 import { normalizeSpecNavigation } from "./normalize-navigation";
 import { normalizeSpecScreens } from "./normalize-screens";
+import { normalizeWechatMiniProgramTarget } from "./normalize-wechat-target";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -28,6 +29,11 @@ export function mergeSpecWithMinimal(
     screens,
     partial.navigation,
     minimal
+  );
+  const wechatMiniProgram = normalizeWechatMiniProgramTarget(
+    wechat,
+    minWechat,
+    navigation?.tabs
   );
 
   return {
@@ -58,10 +64,7 @@ export function mergeSpecWithMinimal(
             ? flutter.formFactors
             : minFlutter.formFactors ?? ["phone"]
       },
-      wechatMiniProgram: {
-        ...minWechat,
-        ...wechat
-      },
+      wechatMiniProgram,
       backend: {
         ...minBackend,
         ...backend,

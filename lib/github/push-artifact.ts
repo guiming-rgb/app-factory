@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import { Octokit } from "@octokit/rest";
 
+import { sanitizeRepoName } from "./repo-name";
 import {
   listProjectFiles,
   removeTempDirectory,
@@ -16,15 +17,7 @@ export type GitHubPushResult = {
   fileCount: number;
 };
 
-function sanitizeRepoName(raw: string): string {
-  const slug = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 90);
-  return slug || "app-factory-generated";
-}
+export { sanitizeRepoName };
 
 async function ensureRepository(
   octokit: Octokit,

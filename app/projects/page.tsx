@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AuthHeader } from "@/components/AuthHeader";
+import { UserProfilePanel } from "@/components/UserProfilePanel";
 import { listProjectsForPage } from "@/lib/projects-server";
 import { getServerUser } from "@/lib/supabase/server";
 
@@ -32,6 +33,12 @@ export default async function ProjectsListPage() {
             新建项目
           </Link>
         </div>
+
+        {user ? (
+          <div className="mb-6">
+            <UserProfilePanel />
+          </div>
+        ) : null}
 
         {projects === null ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">

@@ -63,4 +63,37 @@ export const wechatCodegen = inngest.createFunction(
   }
 );
 
-export const codegenInngestFunctions = [flutterCodegen, wechatCodegen];
+export const harmonyCodegen = inngest.createFunction(
+  {
+    id: "codegen-harmony",
+    name: "Codegen Harmony ArkTS ZIP",
+    retries: 0,
+    triggers: [{ event: "project/codegen.harmony.requested" }]
+  },
+  async ({ event, step }) => {
+    const projectId = event.data.projectId as string;
+    const runId = event.data.runId as string;
+    const userId = event.data.userId as string | undefined;
+
+    if (!projectId || !runId) {
+      throw new Error("缺少 projectId 或 runId");
+    }
+
+    await assertInngestProjectOwner(projectId, userId);
+
+    const result = await step.run("execute-harmony-codegen", async () => {
+      const { executeHarmonyCodegen } = await import(
+        "@/lib/codegen/execute-harmony"
+      );
+      return executeHarmonyCodegen({ projectId, runId });
+    });
+
+    return { ...result, projectId };
+  }
+);
+
+export const codegenInngestFunctions = [
+  flutterCodegen,
+  wechatCodegen,
+  harmonyCodegen
+];

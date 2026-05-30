@@ -1,0 +1,6 @@
+{
+  "templateId": "harmony-minimal",
+  "version": "0.1.0",
+  "pages": ["pages/Index"],
+  "notes": "ArkTS 最小工程 · DevEco Studio 导入后需 sync"
+}

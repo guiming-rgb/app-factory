@@ -1,8 +1,47 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readWechatSubPackages(spec: AppSpec): Array<{
+  root: string;
+  pages: string[];
+  name?: string;
+}> {
+  const targets = asRecord(spec.targets);
+  const wechat = asRecord(targets.wechatMiniProgram);
+  if (!Array.isArray(wechat.subPackages)) return [];
+  const out: Array<{ root: string; pages: string[]; name?: string }> = [];
+  for (const item of wechat.subPackages) {
+    const rec = asRecord(item);
+    const root = typeof rec.root === "string" ? rec.root.trim() : "";
+    const pages = Array.isArray(rec.pages)
+      ? rec.pages.filter((p): p is string => typeof p === "string" && !!p.trim())
+      : [];
+    if (!root || pages.length === 0) continue;
+    out.push({
+      root,
+      pages,
+      name: typeof rec.name === "string" ? rec.name : undefined
+    });
+  }
+  return out;
+}
+
 const PROFILE_TAB_ID = "profile";
-const LIST_PAGE_IDS = new Set(["match_list", "main_list", "index", "home"]);
+const LIST_PAGE_IDS = new Set([
+  "match_list",
+  "main_list",
+  "index",
+  "home",
+  "todo_list",
+  "task_list"
+]);
 
 export function wechatPagePath(screenId: string): string {
   if (screenId === PROFILE_TAB_ID) return "pages/profile/profile";
@@ -33,7 +72,7 @@ export function buildAppJson(
 ): Record<string, unknown> {
   const tabs = resolveTabScreens(spec);
   const pagePathSet = new Set<string>(["pages/index/index", "pages/profile/profile"]);
-  for (const screen of tabs) {
+  for (const screen of resolveCodegenScreens(spec)) {
     pagePathSet.add(wechatPagePath(screen.id));
   }
   const pages = [...pagePathSet].sort((a, b) => {
@@ -58,11 +97,24 @@ export function buildAppJson(
     }))
   };
 
+  const subPackages = readWechatSubPackages(spec);
+  const subPackageBlock =
+    subPackages.length > 0
+      ? {
+          subPackages: subPackages.map((pkg) => ({
+            root: pkg.root,
+            pages: pkg.pages,
+            ...(pkg.name ? { name: pkg.name } : {})
+          }))
+        }
+      : {};
+
   return {
     ...base,
     pages,
     window,
-    tabBar
+    tabBar,
+    ...subPackageBlock
   };
 }
 

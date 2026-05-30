@@ -4,7 +4,17 @@ import os from "os";
 
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { validateAppSpec } from "@/lib/app-spec/validate";
+import {
+  formatBackendTargetMarkdown,
+  resolveBackendTarget
+} from "@/lib/app-spec/backend-target";
+import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import {
+  emitTodoIndexJs,
+  emitTodoIndexWxml,
+  emitTodoIndexWxss
+} from "./emit-todo";
 import {
   buildAppJson,
   emitGeneratedPageJs,
@@ -16,7 +26,7 @@ import {
   patchProjectConfigName,
   wechatPagePath
 } from "./emit";
-import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
+import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 
 const TEMPLATE_DIR = path.join(
   process.cwd(),
@@ -81,6 +91,13 @@ export async function generateWechatProject(
     "utf8"
   );
 
+  const backendTarget = resolveBackendTarget(spec);
+  await fs.writeFile(
+    path.join(appDir, "BACKEND.md"),
+    formatBackendTargetMarkdown(spec, backendTarget),
+    "utf8"
+  );
+
   const appJsonPath = path.join(appDir, "app.json");
   const baseAppJson = JSON.parse(
     await fs.readFile(appJsonPath, "utf8")
@@ -100,7 +117,36 @@ export async function generateWechatProject(
   );
 
   const listScreen = listScreenFromSpec(spec);
-  if (listScreen) {
+  const todoMode = isTodoAppSpec(spec);
+  if (listScreen && todoMode) {
+    const indexWxml = path.join(appDir, "pages/index/index.wxml");
+    const indexJs = path.join(appDir, "pages/index/index.js");
+    const indexWxss = path.join(appDir, "pages/index/index.wxss");
+    const indexJson = path.join(appDir, "pages/index/index.json");
+    await fs.writeFile(
+      indexWxml,
+      emitTodoIndexWxml(spec.displayName),
+      "utf8"
+    );
+    await fs.writeFile(indexJs, emitTodoIndexJs(), "utf8");
+    const baseWxss = await fs.readFile(
+      path.join(appDir, "app.wxss"),
+      "utf8"
+    );
+    await fs.writeFile(
+      indexWxss,
+      `${baseWxss}\n${emitTodoIndexWxss()}`,
+      "utf8"
+    );
+    await fs.writeFile(
+      indexJson,
+      patchIndexJsonTitle(
+        await fs.readFile(indexJson, "utf8"),
+        listScreen.title
+      ),
+      "utf8"
+    );
+  } else if (listScreen) {
     const indexWxml = path.join(appDir, "pages/index/index.wxml");
     const indexJson = path.join(appDir, "pages/index/index.json");
     await fs.writeFile(
@@ -118,7 +164,7 @@ export async function generateWechatProject(
     );
   }
 
-  for (const screen of resolveTabScreens(spec)) {
+  for (const screen of resolveCodegenScreens(spec)) {
     await ensureGeneratedPage(appDir, screen);
   }
 

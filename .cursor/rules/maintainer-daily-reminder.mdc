@@ -1,0 +1,25 @@
+---
+description: 维护者必须人工验收项 — 每次会话提醒待办与验收命令
+alwaysApply: true
+---
+
+# 维护者待办提醒
+
+开工或收工前，**先读** [`docs/维护者-必须人工验收清单.md`](docs/维护者-必须人工验收清单.md) 与 [`docs/maintainer-pending-state.json`](docs/maintainer-pending-state.json)。
+
+## Agent 必须做
+
+1. 运行 `npm run maintainer:pending`，列出 **必须您亲自跑** 的未完成项（`mustHuman: true`）。
+2. 若用户说「我跑完了 / 已通过」，要求对应 **verify 命令输出** 或截图结论，再执行：
+   `npm run maintainer:done -- <ID> "备注"`
+3. **禁止**把 mustHuman 项标为完成而未验证。
+4. 会话开始时用 1～3 条 bullet 提醒最高优先级待办（S6 本地全链路、C4 OAuth、生产冒烟）。
+
+## 用户侧每日 5 次提醒
+
+用户应已执行 `npm run maintainer:install-reminders`（默认 9/12/15/18/21 点 macOS 通知）。若未安装，提示一次安装命令。
+
+## 真源
+
+- 清单说明：`docs/维护者-必须人工验收清单.md`
+- 状态 JSON：`docs/maintainer-pending-state.json`

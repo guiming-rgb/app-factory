@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { enrichCodegenRuns } from "@/lib/codegen/run-response";
+import { checkCodegenInngestPreflight } from "@/lib/codegen/inngest-preflight";
 import { listCodegenRuns } from "@/lib/codegen/runs";
+import { cleanupStaleCodegenRuns } from "@/lib/codegen/stale-runs";
 import {
   guardProjectAccess,
   getSupabaseForUserRead
@@ -27,8 +29,10 @@ export async function GET(
     }
 
     const runs = await listCodegenRuns(projectId, 20, supabase);
+    await cleanupStaleCodegenRuns({ projectId });
     const enriched = await enrichCodegenRuns(runs, projectId);
-    return NextResponse.json({ runs: enriched }, {
+    const inngestPreflight = await checkCodegenInngestPreflight();
+    return NextResponse.json({ runs: enriched, inngestPreflight }, {
       headers: { "Cache-Control": "no-store" }
     });
   } catch (err: unknown) {

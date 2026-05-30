@@ -5,6 +5,11 @@ import os from "os";
 import type { AppSpec } from "@/lib/app-spec/types";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import {
+  formatBackendTargetMarkdown,
+  resolveBackendTarget
+} from "@/lib/app-spec/backend-target";
+import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
+import {
   emitAppRouterDart,
   emitGeneratedListPage,
   emitGeneratedPlaceholderPage,
@@ -14,6 +19,7 @@ import {
   patchPubspecName,
   resolveTabScreens
 } from "./dart-emit";
+import { emitTodoListPageDart } from "./emit-todo";
 import { zipDirectory } from "./zip";
 
 const TEMPLATE_DIR = path.join(
@@ -91,6 +97,13 @@ export async function generateFlutterProject(
     "utf8"
   );
 
+  const backendTarget = resolveBackendTarget(spec);
+  await fs.writeFile(
+    path.join(appDir, "BACKEND.md"),
+    formatBackendTargetMarkdown(spec, backendTarget),
+    "utf8"
+  );
+
   const pubspecPath = path.join(appDir, "pubspec.yaml");
   const pubspec = await fs.readFile(pubspecPath, "utf8");
   await fs.writeFile(
@@ -107,31 +120,48 @@ export async function generateFlutterProject(
     "utf8"
   );
 
-  const listScreen = spec.screens.find(
-    (s) => s.id === "match_list" || s.id === "main_list"
-  );
-  if (listScreen) {
-    const listPath = path.join(
+  const todoMode = isTodoAppSpec(spec);
+  if (todoMode) {
+    const todoDir = path.join(
       appDir,
       "lib",
       "features",
-      "match_list",
-      "presentation",
-      "list_page.dart"
+      "todo_list",
+      "presentation"
     );
-    const listContent = await fs.readFile(listPath, "utf8");
+    await fs.mkdir(todoDir, { recursive: true });
     await fs.writeFile(
-      listPath,
-      patchListPageTitle(listContent, listScreen.title),
+      path.join(todoDir, "todo_list_page.dart"),
+      emitTodoListPageDart(spec.displayName),
       "utf8"
     );
+  } else {
+    const listScreen = spec.screens.find(
+      (s) => s.id === "match_list" || s.id === "main_list"
+    );
+    if (listScreen) {
+      const listPath = path.join(
+        appDir,
+        "lib",
+        "features",
+        "match_list",
+        "presentation",
+        "list_page.dart"
+      );
+      const listContent = await fs.readFile(listPath, "utf8");
+      await fs.writeFile(
+        listPath,
+        patchListPageTitle(listContent, listScreen.title),
+        "utf8"
+      );
+    }
   }
 
   const generatedPagesDir = path.join(appDir, "lib", "generated", "pages");
   await fs.mkdir(generatedPagesDir, { recursive: true });
 
   for (const screen of resolveTabScreens(spec)) {
-    const ref = pageWidgetRef(screen);
+    const ref = pageWidgetRef(screen, { spec });
     if (!ref.needsGenerated) continue;
     const content =
       screen.type === "list"

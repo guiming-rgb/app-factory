@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-export type CodegenTarget = "flutter" | "wechat";
+export type CodegenTarget = "flutter" | "wechat" | "harmony";
 export type CodegenRunStatus = "queued" | "running" | "completed" | "failed";
 
 export type CodegenRunRow = {

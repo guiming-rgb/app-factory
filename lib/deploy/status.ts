@@ -2,6 +2,7 @@ import {
   getCodegenStorageBucket,
   isCodegenStorageEnabled
 } from "@/lib/codegen/storage";
+import { isInngestDevServerUp } from "@/lib/codegen/inngest-preflight";
 
 export type DeployCheck = {
   id: string;
@@ -10,12 +11,12 @@ export type DeployCheck = {
   detail: string;
 };
 
-export function getDeployStatus(): {
+export async function getDeployStatus(): Promise<{
   mode: "local" | "production";
   ready: boolean;
   checks: DeployCheck[];
   appUrl: string | null;
-} {
+}> {
   const isDev = process.env.INNGEST_DEV === "1";
   const mode = isDev ? "local" : "production";
 
@@ -49,7 +50,9 @@ export function getDeployStatus(): {
     id: "anon_key",
     label: "Supabase Anon Key（Auth）",
     ok: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim(),
-    detail: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "已配置" : "未配置（v4 Auth UI 未启用）"
+    detail: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      ? "已配置"
+      : "未配置（v4 Auth UI 未启用）"
   });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? null;
@@ -61,11 +64,14 @@ export function getDeployStatus(): {
   });
 
   if (isDev) {
+    const devUp = await isInngestDevServerUp();
     checks.push({
       id: "inngest_dev",
       label: "Inngest 本地模式",
-      ok: true,
-      detail: "INNGEST_DEV=1 · 需 inngest:dev:3001"
+      ok: devUp,
+      detail: devUp
+        ? "INNGEST_DEV=1 · 8288 已响应"
+        : "INNGEST_DEV=1 · 8288 未响应 — 请 npm run dev:codegen:3001"
     });
   } else {
     const eventKey = !!process.env.INNGEST_EVENT_KEY?.trim();
@@ -90,8 +96,7 @@ export function getDeployStatus(): {
       : "CODEGEN_STORAGE_DISABLED=1"
   });
 
-  const dockerAnalyze =
-    process.env.CODEGEN_DOCKER_ANALYZE_DISABLED !== "1";
+  const dockerAnalyze = process.env.CODEGEN_DOCKER_ANALYZE_DISABLED !== "1";
   checks.push({
     id: "docker_analyze",
     label: "Docker analyze（codegen）",

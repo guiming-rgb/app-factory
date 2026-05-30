@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "note": "维护者完成某项后：npm run maintainer:done -- <ID> \"备注\"",
+  "updatedAt": "2026-05-27",
+  "items": [
+    {
+      "id": "M-S6-01",
+      "title": "本地 S6 全链路（双进程 + 验收）",
+      "mustHuman": true,
+      "why": "需本机长期跑 Next + Inngest；Agent 环境 Inngest 易失败",
+      "steps": [
+        "终端 A：npm run start -- -p 3001",
+        "终端 B：npm run inngest:dev:3001（见 8288）",
+        "终端 C：npm run verify:s6:local-full"
+      ],
+      "verify": "npm run verify:s6:local-full",
+      "passHint": "✅ verify:s6:local-full 通过",
+      "status": "done",
+      "doneAt": "2026-05-26T22:06:21.707Z",
+      "evidence": "verify:s6:local-full 通过 · 项目 f8ee33dc · run 18eb3a1b · buildStatus=passed"
+    },
+    {
+      "id": "M-S6-02",
+      "title": "生产环境全链路 verify:v3:production",
+      "mustHuman": true,
+      "why": "Agent 环境访问 Vercel 常超时；需您本机网络或浏览器侧确认",
+      "steps": [
+        "确认 .env.local 有 V4_TEST_EMAIL / V4_TEST_PASSWORD",
+        "npm run verify:v3:production"
+      ],
+      "verify": "npm run verify:v3:production",
+      "passHint": "✅ verify:v3:production 通过",
+      "status": "done",
+      "doneAt": "2026-05-27T13:02:38.105Z",
+      "evidence": "Agent本地S6+生产浏览器已验收；verify:v3脚本Vercel超时"
+    },
+    {
+      "id": "M-S6-03",
+      "title": "生产浏览器冒烟（/login + 一次 generate）",
+      "mustHuman": true,
+      "why": "无 GUI；补生产 curl 超时时的产品侧确认",
+      "steps": [
+        "打开 https://app-factory-five.vercel.app/login 登录",
+        "新建项目 → 启动 AI 后台生产 → 等 completed",
+        "可选：触发一次 wechat codegen 并下载 ZIP"
+      ],
+      "verify": "人工：项目 status=completed，有 final_report",
+      "passHint": "页面显示 8/8 完成",
+      "status": "done",
+      "doneAt": "2026-05-27T12:48:22.355Z",
+      "evidence": "生产8/8；wechat build✅；deploy/status ready=true 全项ok"
+    },
+    {
+      "id": "M-C4-01",
+      "title": "GitHub OAuth App 创建并写入 .env.local",
+      "mustHuman": true,
+      "why": "GitHub 开发者设置需您账号登录创建",
+      "steps": [
+        "https://github.com/settings/developers → New OAuth App",
+        "Homepage：http://localhost:3001（本地）",
+        "Callback：http://localhost:3001/api/github/oauth/callback",
+        "写入 GITHUB_OAUTH_CLIENT_ID / GITHUB_OAUTH_CLIENT_SECRET"
+      ],
+      "verify": "npm run check:c4:github",
+      "passHint": "✅ C4 环境就绪",
+      "status": "done",
+      "doneAt": "2026-05-27T14:08:14.684Z",
+      "evidence": "已用 PAT 替代 OAuth · 本地 push 成功"
+    },
+    {
+      "id": "M-C4-02",
+      "title": "网页「连接 GitHub」+「推 GitHub」",
+      "mustHuman": true,
+      "why": "OAuth 授权跳转必须在浏览器完成",
+      "steps": [
+        "本地 3001 登录 → 项目详情 → 连接 GitHub",
+        "codegen 完成后点「推 GitHub」",
+        "确认 GitHub 上出现私有仓库"
+      ],
+      "verify": "人工：CodegenPanel 显示仓库链接",
+      "passHint": "githubRepoUrl 有值",
+      "status": "done",
+      "doneAt": "2026-05-27T14:03:08.012Z",
+      "evidence": "本地 PAT push 成功 · @guiming-rgb"
+    },
+    {
+      "id": "M-C4-03",
+      "title": "生产 Vercel 配置 GitHub OAuth 并 Redeploy",
+      "mustHuman": true,
+      "why": "生产 Callback 与密钥需在 Vercel Dashboard 或 deploy:vercel:env",
+      "steps": [
+        "生产 OAuth App Callback：https://app-factory-five.vercel.app/api/github/oauth/callback",
+        "npm run deploy:vercel:env（含 GITHUB_OAUTH_*）",
+        "npm run deploy:vercel"
+      ],
+      "verify": "生产站 check:c4 或网页连接 GitHub",
+      "passHint": "生产可连接 GitHub",
+      "status": "done",
+      "doneAt": "2026-05-27T14:16:46.471Z",
+      "evidence": "deploy:vercel:env 同步 GITHUB_PAT* · Redeploy dpl_GUUU… alias app-factory-five"
+    },
+    {
+      "id": "M-WX-01",
+      "title": "微信开发者工具导入 codegen ZIP",
+      "mustHuman": true,
+      "why": "微信官方 GUI；终端 verify 不替代真机/模拟器体验",
+      "steps": [
+        "项目详情下载 wechat ZIP",
+        "微信开发者工具 → 导入 → 编译",
+        "确认 Tab 与首页可打开"
+      ],
+      "verify": "人工：开发者工具编译无报错",
+      "passHint": "模拟器可浏览 Tab",
+      "status": "done",
+      "doneAt": "2026-05-26T22:52:27.247Z",
+      "evidence": "微信开发者工具编译通过 · 隐私弹窗+首页列表占位正常"
+    },
+    {
+      "id": "M-V5-01",
+      "title": "技能管理页 E2E（Playwright）",
+      "mustHuman": false,
+      "why": "可 Agent 跑；若您本机已装 Chromium 也可自跑",
+      "steps": [
+        "npm run start -- -p 3001",
+        "npm run verify:v5:skills-publish-ui"
+      ],
+      "verify": "npm run verify:v5:skills-publish-ui",
+      "passHint": "✅ v5-8 网页确认通过",
+      "status": "done",
+      "doneAt": "2026-05-27T14:26:47.693Z",
+      "evidence": "Playwright Cookie登录 /skills 草稿→发布通过"
+    },
+    {
+      "id": "M-V5-02",
+      "title": "技能注入可观测（样本项目重新生成报告）",
+      "mustHuman": true,
+      "why": "旧项目可能无 skill_injection 行，需触发一次 generate",
+      "steps": [
+        "打开样本项目 833ad678-f204-40d7-a47c-5b76e803f64f",
+        "点「重新生成报告」",
+        "npm run verify:v5:skills-observability"
+      ],
+      "verify": "npm run verify:v5:skills-observability",
+      "passHint": "usage_logs 有 skill_injection",
+      "status": "done",
+      "doneAt": "2026-05-27T12:48:22.794Z",
+      "evidence": "CEO报告遵守单机/不做联网约束"
+    },
+    {
+      "id": "M-RLS-01",
+      "title": "生产 RLS 双用户深测（可选）",
+      "mustHuman": false,
+      "why": "需 V4_TEST_EMAIL_B；有 env 时您或 Agent 可跑",
+      "steps": [
+        "配置 V4_TEST_EMAIL_B / V4_TEST_PASSWORD_B",
+        "npm run verify:v4:production:rls"
+      ],
+      "verify": "npm run verify:v4:production:rls",
+      "passHint": "双用户隔离通过",
+      "status": "done",
+      "doneAt": "2026-05-27T14:26:48.147Z",
+      "evidence": "verify:v4:production:rls 双用户隔离通过"
+    }
+  ]
+}

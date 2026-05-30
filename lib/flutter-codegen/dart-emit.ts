@@ -1,9 +1,18 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 
 export { resolveTabScreens };
 
 const PROFILE_TAB_ID = "profile";
+const LIST_TAB_IDS = new Set([
+  "match_list",
+  "main_list",
+  "index",
+  "home",
+  "todo_list",
+  "task_list"
+]);
 
 function routePath(screenId: string): string {
   if (screenId === "match_list" || screenId === "main_list") return "/matches";
@@ -11,11 +20,25 @@ function routePath(screenId: string): string {
   return `/${screenId.replace(/_/g, "-")}`;
 }
 
-export function pageWidgetRef(screen: AppSpecScreen): {
+export function pageWidgetRef(
+  screen: AppSpecScreen,
+  options?: { spec?: AppSpec }
+): {
   importPath: string;
   className: string;
   needsGenerated: boolean;
 } {
+  if (
+    options?.spec &&
+    isTodoAppSpec(options.spec) &&
+    (LIST_TAB_IDS.has(screen.id) || screen.type === "list")
+  ) {
+    return {
+      importPath: "../features/todo_list/presentation/todo_list_page.dart",
+      className: "TodoListPage",
+      needsGenerated: false
+    };
+  }
   if (screen.id === "match_list" || screen.id === "main_list") {
     return {
       importPath: "../features/match_list/presentation/list_page.dart",
@@ -100,7 +123,7 @@ export function emitAppRouterDart(spec: AppSpec): string {
   const branches: string[] = [];
 
   for (const screen of tabs) {
-    const ref = pageWidgetRef(screen);
+    const ref = pageWidgetRef(screen, { spec });
     imports.add(`import "${ref.importPath}";`);
     const path = routePath(screen.id);
     branches.push(`          StatefulShellBranch(

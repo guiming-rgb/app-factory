@@ -2,7 +2,9 @@ import fs from "fs/promises";
 import path from "path";
 
 import { buildSpecForProject } from "@/lib/app-spec/from-report";
+import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { validateAppSpec } from "@/lib/app-spec/validate";
+import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
 import { runAutoFixAnalyzeLoop } from "@/lib/codegen/auto-fix-flutter";
 import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
 import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
@@ -19,6 +21,7 @@ import {
   shouldFailCodegenOnAnalyze,
   type DockerAnalyzeResult
 } from "@/lib/sandbox/docker-analyze";
+import { hasDocker } from "@/lib/sandbox/flutter";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export type FlutterCodegenExecuteResult = {
@@ -34,8 +37,14 @@ function buildAnalyzeMetadata(
   analyze: DockerAnalyzeResult,
   autoFix?: { rounds: number; log: string[] }
 ) {
+  const analyzeEnvironment = hasDocker()
+    ? "docker-local"
+    : process.env.VERCEL
+      ? "vercel-no-docker"
+      : "no-docker";
   return {
     analyzeStatus: analyze.status,
+    analyzeEnvironment,
     ...(analyze.reason ? { analyzeReason: analyze.reason.slice(0, 200) } : {}),
     ...(analyze.output
       ? { analyzeOutput: analyze.output.slice(0, 1500) }
@@ -90,6 +99,7 @@ export async function executeFlutterCodegen(input: {
     }
 
     const spec = validation.spec;
+    const specQuality = assessSpecQuality(spec);
     const { outputDir, appName, displayName } = await generateFlutterProject(
       spec
     );
@@ -122,12 +132,17 @@ export async function executeFlutterCodegen(input: {
       metadata: {
         fileName,
         displayName,
+        ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
         storageUploaded,
         previewPath,
         ...(storageUploaded
           ? { storageBucket: getCodegenStorageBucket() }
           : {}),
         ...buildAnalyzeMetadata(analyze, autoFix),
+        specQualityScore: specQuality.score,
+        ...(specQuality.warnings.length
+          ? { specQualityWarnings: specQuality.warnings.join(" · ") }
+          : {}),
         ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
       }
     });

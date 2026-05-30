@@ -1,22 +1,20 @@
-import { execFile } from "child_process";
+import AdmZip from "adm-zip";
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
-import { promisify } from "util";
-
-const execFileAsync = promisify(execFile);
 
 export async function unzipArtifactToDirectory(
   zipBuffer: Buffer,
   label: string
 ): Promise<string> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), `app-factory-github-${label}-`));
-  const zipPath = path.join(root, "artifact.zip");
-  await fs.writeFile(zipPath, zipBuffer);
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), `app-factory-github-${label}-`)
+  );
   const outDir = path.join(root, "src");
   await fs.mkdir(outDir, { recursive: true });
-  await execFileAsync("unzip", ["-q", zipPath, "-d", outDir]);
-  await fs.rm(zipPath, { force: true }).catch(() => {});
+
+  const zip = new AdmZip(zipBuffer);
+  zip.extractAllTo(outDir, true);
 
   const entries = await fs.readdir(outDir);
   if (entries.length === 1) {
@@ -55,8 +53,10 @@ export async function listProjectFiles(
 
 export async function removeTempDirectory(dir: string) {
   const parent = path.dirname(dir);
-  await fs.rm(parent.startsWith(os.tmpdir()) ? parent : dir, {
-    recursive: true,
-    force: true
-  }).catch(() => {});
+  await fs
+    .rm(parent.startsWith(os.tmpdir()) ? parent : dir, {
+      recursive: true,
+      force: true
+    })
+    .catch(() => {});
 }

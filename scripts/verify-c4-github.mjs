@@ -22,8 +22,11 @@ function checkStatic() {
     "app/api/github/oauth/callback/route.ts",
     "app/api/github/disconnect/route.ts",
     "app/api/projects/[id]/codegen/runs/[runId]/github-push/route.ts",
+    "app/api/projects/[id]/codegen/runs/[runId]/cancel/route.ts",
     "components/GitHubConnectButton.tsx",
     "components/CodegenPanel.tsx",
+    "lib/github/push-token.ts",
+    "lib/github/repo-name.ts",
     "scripts/apply-c4-github-migration.mjs"
   ];
 
@@ -55,8 +58,10 @@ function checkStatic() {
   for (const [token, haystack] of [
     ["pushArtifactZipToGitHub", pushRoute],
     ["createGitHubOAuthState", oauthStart],
+    ["resolveGitHubPushCredentials", fs.readFileSync(path.join(root, "lib/github/push-token.ts"), "utf8")],
     ["githubRepoUrl", `${pushRoute}\n${panel}`],
-    ["推 GitHub", panel]
+    ["推 GitHub", panel],
+    ["标记失败", panel]
   ]) {
     if (!haystack.includes(token)) {
       console.error(`❌ 缺少关键接线: ${token}`);
@@ -72,9 +77,9 @@ function checkStatic() {
   console.log("✓ dependency @octokit/rest");
 
   console.log("\n✅ C4 静态接线通过");
-  console.log(
-    "   维护者：配置 GITHUB_OAUTH_CLIENT_ID/SECRET → npm run db:apply:c4-github"
-  );
+  console.log("   环境：npm run check:c4:github");
+  console.log("   单元：npm run verify:c4:github:push-unit");
+  console.log("   PAT：npm run bootstrap:github:pat（可选）");
 }
 
 function checkRepoNameSanitizer() {

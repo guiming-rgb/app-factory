@@ -1,20 +1,28 @@
-import { execFile } from "child_process";
+import AdmZip from "adm-zip";
 import fs from "fs/promises";
-import os from "os";
 import path from "path";
-import { promisify } from "util";
 
-const execFileAsync = promisify(execFile);
+async function addDirectoryToZip(
+  zip: AdmZip,
+  dir: string,
+  zipPath: string
+): Promise<void> {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    const entryZipPath = zipPath ? `${zipPath}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      await addDirectoryToZip(zip, fullPath, entryZipPath);
+    } else if (entry.isFile()) {
+      const data = await fs.readFile(fullPath);
+      zip.addFile(entryZipPath.replace(/\\/g, "/"), data);
+    }
+  }
+}
 
-/** 使用系统 zip（macOS/Linux 常见）；避免 Next 打包 archiver */
+/** 纯 JS 打包目录，Vercel/serverless 无系统 zip 时可用 */
 export async function zipDirectory(sourceDir: string): Promise<Buffer> {
-  const tmpZip = path.join(
-    os.tmpdir(),
-    `app-factory-${Date.now()}-${path.basename(sourceDir)}.zip`
-  );
-  await fs.rm(tmpZip, { force: true }).catch(() => {});
-  await execFileAsync("zip", ["-r", "-q", tmpZip, "."], { cwd: sourceDir });
-  const buffer = await fs.readFile(tmpZip);
-  await fs.rm(tmpZip, { force: true }).catch(() => {});
-  return buffer;
+  const zip = new AdmZip();
+  await addDirectoryToZip(zip, sourceDir, "");
+  return zip.toBuffer();
 }

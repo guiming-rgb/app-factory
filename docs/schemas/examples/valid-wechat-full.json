@@ -1,0 +1,59 @@
+{
+  "specVersion": "0.1.0",
+  "appName": "kids_soccer",
+  "displayName": "少儿足球",
+  "sourceProjectId": "833ad678-f204-40d7-a47c-5b76e803f64f",
+  "targets": {
+    "flutter": {
+      "enabled": true,
+      "platforms": ["ios", "android"],
+      "formFactors": ["phone", "tablet"]
+    },
+    "harmony": { "enabled": false, "formFactors": ["phone"] },
+    "backend": { "provider": "supabase", "regionHint": "ap-east" },
+    "wechatMiniProgram": {
+      "enabled": true,
+      "tabBar": ["match_list", "profile"],
+      "loginMethod": "wechat",
+      "subPackages": [
+        {
+          "root": "packageExtra",
+          "name": "扩展",
+          "pages": ["pages/stats/stats"]
+        }
+      ]
+    }
+  },
+  "entities": [],
+  "screens": [
+    {
+      "id": "home",
+      "title": "首页",
+      "type": "tabRoot",
+      "children": ["match_list"]
+    },
+    {
+      "id": "match_list",
+      "title": "比赛",
+      "type": "list",
+      "entity": "Match"
+    },
+    {
+      "id": "profile",
+      "title": "我的",
+      "type": "placeholder"
+    }
+  ],
+  "navigation": { "tabs": ["match_list", "profile"] },
+  "roles": [{ "name": "player" }],
+  "auth": { "provider": "supabase", "methods": ["email"], "roles": ["player"] },
+  "api": [],
+  "layoutRules": { "tabletSidebar": "auto" },
+  "complianceFlags": { "templateLimited": false },
+  "limitations": ["首版不含支付与实时对战"],
+  "metadata": {
+    "locale": "zh-CN",
+    "flutterTemplateVersion": "minimal-0.1.0",
+    "wechatTemplateVersion": "minimal-0.1.0"
+  }
+}
