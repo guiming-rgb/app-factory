@@ -31,6 +31,8 @@ type CodegenRun = {
   metadata: Record<string, unknown> | null;
   created_at: string;
   downloadUrl?: string | null;
+  downloadMacUrl?: string | null;
+  downloadWinUrl?: string | null;
   previewUrl?: string | null;
 };
 
@@ -452,10 +454,9 @@ export function CodegenPanel({
         <p className="text-sm font-medium text-violet-950">同步生成与历史记录</p>
       )}
       <p className="mt-1 text-xs text-violet-800/80">
-        三栈默认<strong>同步生成</strong>（无需 Inngest 队列）；产物可预览、下载 ZIP、推
-        GitHub。仅「启动 AI 后台生产」方案流水线需要本地 Inngest：
-        <code className="rounded bg-violet-100 px-1">npm run dev:codegen:3001</code>
-        。
+        三栈默认<strong>同步生成</strong>。Flutter 可额外产出
+        <strong> Mac .app / Win .exe 可双击包</strong>（需在对应系统或 GitHub Actions
+        上构建；云端 Vercel 仅含源码 +「双击运行」说明）。产物可预览、下载、推 GitHub。
       </p>
 
       {inngestHint ? (
@@ -758,16 +759,32 @@ export function CodegenPanel({
                               href={run.downloadUrl}
                               className="font-medium text-violet-700 underline"
                             >
-                              下载 ZIP
+                              源码 ZIP
                             </a>
                             {absoluteDownloadUrl(run) ? (
                               <CopyTextButton
                                 text={absoluteDownloadUrl(run)!}
-                                label="复制下载链"
+                                label="复制链"
                                 className="font-medium text-violet-600 underline"
                               />
                             ) : null}
                           </>
+                        ) : null}
+                        {run.target === "flutter" && run.downloadMacUrl ? (
+                          <a
+                            href={run.downloadMacUrl}
+                            className="font-medium text-teal-800 underline"
+                          >
+                            Mac .app
+                          </a>
+                        ) : null}
+                        {run.target === "flutter" && run.downloadWinUrl ? (
+                          <a
+                            href={run.downloadWinUrl}
+                            className="font-medium text-teal-800 underline"
+                          >
+                            Win .exe 包
+                          </a>
                         ) : null}
                         {run.status === "completed" && run.downloadUrl ? (
                           <button

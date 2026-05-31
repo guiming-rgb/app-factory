@@ -25,6 +25,7 @@ import {
   ensureFlutterPlatformFolders,
   resolveFlutterPlatforms
 } from "./ensure-flutter-platforms";
+import { attachDesktopReleases } from "./attach-desktop-releases";
 import { zipDirectory } from "./zip";
 
 const TEMPLATE_DIR = path.join(
@@ -222,6 +223,7 @@ export async function generateFlutterZip(specInput: unknown): Promise<{
   const { outputDir, appName, displayName } =
     await generateFlutterProject(specInput);
   try {
+    await attachDesktopReleases({ appDir: outputDir, appName });
     const buffer = await zipDirectory(outputDir);
     return {
       buffer,

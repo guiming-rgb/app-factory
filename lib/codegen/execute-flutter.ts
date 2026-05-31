@@ -14,7 +14,9 @@ import {
   markCodegenRunRunning
 } from "@/lib/codegen/runs";
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
+import { attachDesktopReleases } from "@/lib/flutter-codegen/attach-desktop-releases";
 import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
+import { shouldAttemptDesktopBuild } from "@/lib/sandbox/flutter-desktop-build";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
   runDockerFlutterAnalyze,
@@ -121,6 +123,12 @@ export async function executeFlutterCodegen(input: {
     const previewHtml = generateSpecPreviewHtml(spec);
     const previewPath = await writePreviewHtml(runId, previewHtml);
 
+    const desktop = await attachDesktopReleases({
+      appDir: outputDir,
+      appName,
+      runId
+    });
+
     const buffer = await zipDirectory(outputDir);
     const fileName = `${appName}-flutter.zip`;
     const { relativePath: artifact_path, storageUploaded } =
@@ -143,7 +151,9 @@ export async function executeFlutterCodegen(input: {
         ...(specQuality.warnings.length
           ? { specQualityWarnings: specQuality.warnings.join(" · ") }
           : {}),
-        ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
+        ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {}),
+        ...(desktop?.metadata ?? {}),
+        desktopBuildAttempted: shouldAttemptDesktopBuild()
       }
     });
 

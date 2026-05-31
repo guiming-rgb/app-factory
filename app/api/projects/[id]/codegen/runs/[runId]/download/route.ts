@@ -15,11 +15,12 @@ function safeZipBaseName(name: string) {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string; runId: string } }
 ) {
   try {
     const { id: projectId, runId } = params;
+    const kind = req.nextUrl.searchParams.get("kind")?.trim().toLowerCase();
 
     const denied = await guardProjectAccess(projectId);
     if (denied) {
@@ -39,19 +40,42 @@ export async function GET(
       );
     }
 
-    if (!(await artifactExists(run.artifact_path))) {
+    const meta = (run.metadata ?? {}) as {
+      fileName?: string;
+      desktopMacArtifactPath?: string;
+      desktopWinArtifactPath?: string;
+    };
+
+    let relativePath = run.artifact_path;
+    if (kind === "macos" && meta.desktopMacArtifactPath) {
+      relativePath = meta.desktopMacArtifactPath;
+    } else if (kind === "windows" && meta.desktopWinArtifactPath) {
+      relativePath = meta.desktopWinArtifactPath;
+    } else if (kind === "macos" || kind === "windows") {
+      return NextResponse.json(
+        {
+          error:
+            kind === "macos"
+              ? "暂无 Mac 可双击包（需在 macOS 构建机生成或跑 GitHub Actions 工作流）"
+              : "暂无 Windows 可双击包（需在 Windows 11 构建机生成或跑 GitHub Actions 工作流）"
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!(await artifactExists(relativePath))) {
       return NextResponse.json(
         { error: "产物文件不存在（本地与 Storage 均无，请重新生成）" },
         { status: 410 }
       );
     }
 
-    const buffer = await readArtifactFile(run.artifact_path);
-    const meta = (run.metadata ?? {}) as { fileName?: string };
+    const buffer = await readArtifactFile(relativePath);
     const fileName =
-      typeof meta.fileName === "string"
+      relativePath.split("/").pop() ??
+      (typeof meta.fileName === "string"
         ? meta.fileName
-        : run.artifact_path.split("/").pop() ?? "artifact.zip";
+        : "artifact.zip");
     const encoded = encodeURIComponent(fileName);
 
     return new NextResponse(new Uint8Array(buffer), {
