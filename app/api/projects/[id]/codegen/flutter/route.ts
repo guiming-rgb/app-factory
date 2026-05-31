@@ -27,7 +27,23 @@ export async function POST(
       return limited;
     }
 
-    const run = await runFlutterCodegenSync({ projectId });
+    const run = await runFlutterCodegenSync({
+      projectId,
+      userId: user?.id
+    });
+
+    const gha = (
+      run.metadata as { desktopGha?: { status?: string; message?: string } } | null
+    )?.desktopGha;
+    const message =
+      gha?.status === "queued" || gha?.status === "running"
+        ? "Flutter 源码 ZIP 已就绪；Mac/Win 可双击包由 GitHub Actions 构建中（页面自动刷新）"
+        : gha?.status === "completed"
+          ? "Flutter 与 Mac/Win 可双击包均已就绪"
+          : gha?.status === "failed"
+            ? (gha.message ??
+              "Flutter 源码 ZIP 已就绪；桌面包构建失败，见 Actions 或日志")
+            : "Flutter 源码 ZIP 已就绪";
 
     return NextResponse.json({
       success: true,
@@ -35,7 +51,7 @@ export async function POST(
       target: "flutter",
       runId: run.id,
       status: run.status,
-      message: "Flutter codegen 已完成（同步生成，无需 Inngest 队列）"
+      message
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "启动 Flutter codegen 失败";

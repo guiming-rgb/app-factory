@@ -92,8 +92,82 @@ export const harmonyCodegen = inngest.createFunction(
   }
 );
 
+export const flutterDesktopGhaPoll = inngest.createFunction(
+  {
+    id: "codegen-flutter-desktop-gha",
+    name: "Poll Flutter desktop GHA artifacts",
+    retries: 0,
+    triggers: [{ event: "project/codegen.flutter.desktop-gha.requested" }]
+  },
+  async ({ event, step }) => {
+    const projectId = event.data.projectId as string;
+    const runId = event.data.runId as string;
+    const appName = event.data.appName as string;
+    const workflowRunId = Number(event.data.workflowRunId);
+    const userId = event.data.userId as string | undefined;
+
+    if (!projectId || !runId || !appName || !workflowRunId) {
+      throw new Error("desktop-gha 事件缺少必要字段");
+    }
+
+    await assertInngestProjectOwner(projectId, userId);
+
+    const maxRounds = 40;
+
+    for (let i = 0; i < maxRounds; i++) {
+      const outcome = await step.run(`poll-gha-${i}`, async () => {
+        const { pollDesktopGhaOnce, finalizeDesktopGhaArtifacts } =
+          await import("@/lib/codegen/desktop-gha-orchestrator");
+        const { mergeCodegenRunNestedMetadata } = await import(
+          "@/lib/codegen/merge-run-metadata"
+        );
+
+        const state = await pollDesktopGhaOnce(workflowRunId);
+        if (state === "pending") {
+          await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
+            status: "running",
+            workflowRunId,
+            message: "GitHub Actions 正在构建 Mac .app 与 Windows .exe…"
+          });
+          return { done: false as const };
+        }
+        if (state === "failure") {
+          await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
+            status: "failed",
+            workflowRunId,
+            message: "GitHub Actions 桌面构建失败，见 Actions 日志"
+          });
+          return { done: true as const, ok: false };
+        }
+        await finalizeDesktopGhaArtifacts({ runId, appName, workflowRunId });
+        return { done: true as const, ok: true };
+      });
+
+      if (outcome.done) {
+        return { projectId, runId, workflowRunId, ok: outcome.ok };
+      }
+
+      await step.sleep(`wait-gha-${i}`, "30s");
+    }
+
+    await step.run("gha-timeout", async () => {
+      const { mergeCodegenRunNestedMetadata } = await import(
+        "@/lib/codegen/merge-run-metadata"
+      );
+      await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
+        status: "failed",
+        workflowRunId,
+        message: "GitHub Actions 构建超时（>20 分钟）"
+      });
+    });
+
+    return { projectId, runId, workflowRunId, ok: false, reason: "timeout" };
+  }
+);
+
 export const codegenInngestFunctions = [
   flutterCodegen,
   wechatCodegen,
-  harmonyCodegen
+  harmonyCodegen,
+  flutterDesktopGhaPoll
 ];

@@ -14,8 +14,10 @@ import {
   markCodegenRunRunning
 } from "@/lib/codegen/runs";
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
+import { scheduleDesktopGhaAfterFlutter } from "@/lib/codegen/desktop-gha-orchestrator";
 import { attachDesktopReleases } from "@/lib/flutter-codegen/attach-desktop-releases";
 import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
+import { preferDesktopGhaOverLocalBuild } from "@/lib/github/desktop-gha-config";
 import { shouldAttemptDesktopBuild } from "@/lib/sandbox/flutter-desktop-build";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
@@ -63,8 +65,9 @@ function buildAnalyzeMetadata(
 export async function executeFlutterCodegen(input: {
   projectId: string;
   runId: string;
+  userId?: string;
 }): Promise<FlutterCodegenExecuteResult> {
-  const { projectId, runId } = input;
+  const { projectId, runId, userId } = input;
 
   const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
   await cleanupStaleCodegenRuns({ projectId });
@@ -123,11 +126,13 @@ export async function executeFlutterCodegen(input: {
     const previewHtml = generateSpecPreviewHtml(spec);
     const previewPath = await writePreviewHtml(runId, previewHtml);
 
-    const desktop = await attachDesktopReleases({
-      appDir: outputDir,
-      appName,
-      runId
-    });
+    const desktop = preferDesktopGhaOverLocalBuild()
+      ? null
+      : await attachDesktopReleases({
+          appDir: outputDir,
+          appName,
+          runId
+        });
 
     const buffer = await zipDirectory(outputDir);
     const fileName = `${appName}-flutter.zip`;
@@ -156,6 +161,30 @@ export async function executeFlutterCodegen(input: {
         desktopBuildAttempted: shouldAttemptDesktopBuild()
       }
     });
+
+    try {
+      const ghaScheduled = await scheduleDesktopGhaAfterFlutter({
+        projectId,
+        runId,
+        appName,
+        spec,
+        userId
+      });
+      if (!ghaScheduled.scheduled) {
+        /* 未配置 GHA 或本地构建 */
+      }
+    } catch (err: unknown) {
+      const { mergeCodegenRunNestedMetadata } = await import(
+        "@/lib/codegen/merge-run-metadata"
+      );
+      await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
+        status: "failed",
+        message: (err instanceof Error ? err.message : String(err)).slice(
+          0,
+          400
+        )
+      });
+    }
 
     return {
       runId,

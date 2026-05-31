@@ -106,6 +106,24 @@ function isQueuedSlow(run: CodegenRun): boolean {
   return run.status === "queued" && runAgeMs(run) > QUEUED_SLOW_MS;
 }
 
+type DesktopGhaMeta = {
+  status?: string;
+  message?: string;
+  htmlUrl?: string;
+};
+
+function getDesktopGha(meta: Record<string, unknown>): DesktopGhaMeta | null {
+  const raw = meta.desktopGha;
+  if (!raw || typeof raw !== "object") return null;
+  return raw as DesktopGhaMeta;
+}
+
+function isDesktopGhaPending(run: CodegenRun): boolean {
+  if (run.target !== "flutter" || run.status !== "completed") return false;
+  const s = getDesktopGha(run.metadata ?? {})?.status;
+  return s === "queued" || s === "running";
+}
+
 function failureHint(run: CodegenRun, meta: Record<string, unknown>): string {
   const breakdown = classifyCodegenFailure(meta, run.log);
   if (run.log) {
@@ -197,6 +215,10 @@ export function CodegenPanel({
 
       const updated = data.run as CodegenRun;
       updated.downloadUrl = data.downloadUrl ?? updated.downloadUrl ?? null;
+      updated.downloadMacUrl =
+        data.downloadMacUrl ?? updated.downloadMacUrl ?? null;
+      updated.downloadWinUrl =
+        data.downloadWinUrl ?? updated.downloadWinUrl ?? null;
       updated.previewUrl = data.previewUrl ?? updated.previewUrl ?? null;
 
       setRuns((prev) => {
@@ -220,6 +242,14 @@ export function CodegenPanel({
       })
       .catch(() => {});
   }, [fetchRuns, projectId]);
+
+  useEffect(() => {
+    if (!runs.some(isDesktopGhaPending)) return;
+    const id = setInterval(() => {
+      void fetchRuns().catch(() => {});
+    }, 15000);
+    return () => clearInterval(id);
+  }, [runs, fetchRuns]);
 
   useEffect(() => {
     return () => {
@@ -255,13 +285,24 @@ export function CodegenPanel({
     pollRef.current = setInterval(async () => {
       try {
         const run = await pollRun(runId);
-        if (run.status === "completed" || run.status === "failed") {
+        const ghaPending = isDesktopGhaPending(run);
+        if (
+          (run.status === "completed" || run.status === "failed") &&
+          !ghaPending
+        ) {
           if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
           }
           if (run.status === "completed") {
-            showSuccess(`${TARGET_LABEL[run.target]} 已完成，可下载 ZIP`);
+            const gha = getDesktopGha(run.metadata ?? {});
+            if (gha?.status === "completed") {
+              showSuccess(
+                `${TARGET_LABEL[run.target]} 已完成，Mac/Win 可双击包已就绪`
+              );
+            } else {
+              showSuccess(`${TARGET_LABEL[run.target]} 已完成，可下载 ZIP`);
+            }
           }
           await fetchRuns();
         }
@@ -784,6 +825,35 @@ export function CodegenPanel({
                             className="font-medium text-teal-800 underline"
                           >
                             Win .exe 包
+                          </a>
+                        ) : null}
+                        {run.target === "flutter" &&
+                        isDesktopGhaPending(run) ? (
+                          <span
+                            className="text-teal-700"
+                            title={getDesktopGha(meta)?.message ?? ""}
+                          >
+                            GHA 构建中…
+                          </span>
+                        ) : null}
+                        {run.target === "flutter" &&
+                        getDesktopGha(meta)?.status === "failed" ? (
+                          <span
+                            className="text-amber-800"
+                            title={getDesktopGha(meta)?.message ?? ""}
+                          >
+                            桌面包失败
+                          </span>
+                        ) : null}
+                        {run.target === "flutter" &&
+                        getDesktopGha(meta)?.htmlUrl ? (
+                          <a
+                            href={getDesktopGha(meta)!.htmlUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-slate-600 underline"
+                          >
+                            Actions
                           </a>
                         ) : null}
                         {run.status === "completed" && run.downloadUrl ? (

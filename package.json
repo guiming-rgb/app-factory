@@ -105,6 +105,7 @@
     "verify:qr:production:artifacts": "NODE_USE_ENV_PROXY=1 node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-qr-production-artifacts.mjs",
     "verify:s:ux": "node scripts/verify-s-ux-codegen-panel.mjs",
     "verify:t:desktop:build": "node scripts/verify-t-desktop-build.mjs",
+    "check:desktop:gha": "node scripts/check-desktop-gha.mjs",
     "git:push": "node scripts/git-push-no-proxy.mjs",
     "verify:s6:local-full": "node scripts/verify-s6-local-full.mjs",
     "verify:s6:release": "node scripts/verify-s6-release.mjs",

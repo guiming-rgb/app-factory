@@ -29,6 +29,8 @@ export async function GET(
     return NextResponse.json({
       run: enriched,
       downloadUrl: enriched.downloadUrl,
+      downloadMacUrl: enriched.downloadMacUrl,
+      downloadWinUrl: enriched.downloadWinUrl,
       previewUrl: enriched.previewUrl
     }, {
       headers: { "Cache-Control": "no-store" }
