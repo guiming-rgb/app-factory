@@ -7,6 +7,39 @@ const DEFAULT_TIMEOUT_MS = Math.max(
 );
 const DEFAULT_RETRIES = 3;
 
+let fetchProxyConfigured = false;
+
+/** 从环境变量让 Node fetch 走代理（需 Node 18+ 且 NODE_USE_ENV_PROXY=1） */
+export function configureFetchProxyFromEnv() {
+  if (fetchProxyConfigured) {
+    return process.env._V3_PROBE_PROXY ?? null;
+  }
+  const proxy =
+    process.env.V3_HTTP_PROXY?.trim() ||
+    process.env.HTTPS_PROXY?.trim() ||
+    process.env.https_proxy?.trim() ||
+    process.env.HTTP_PROXY?.trim() ||
+    process.env.http_proxy?.trim() ||
+    process.env.ALL_PROXY?.trim() ||
+    process.env.all_proxy?.trim() ||
+    "";
+  if (!proxy) return null;
+  fetchProxyConfigured = true;
+  process.env._V3_PROBE_PROXY = proxy;
+  // NODE_USE_ENV_PROXY 须在进程启动时设置（见 preload-fetch-proxy.mjs）
+  return proxy;
+}
+
+export function proxyHintLines() {
+  return [
+    "本机访问 Vercel 需代理（端口多为 7897），任选其一：",
+    "  nc -zv 127.0.0.1 7897",
+    "  export http_proxy=http://127.0.0.1:7897 https_proxy=http://127.0.0.1:7897",
+    "  npm run verify:v3:production:quick",
+    "或在 .env.local 增加：V3_HTTP_PROXY=http://127.0.0.1:7897"
+  ];
+}
+
 export async function sleep(ms) {
   await new Promise((r) => setTimeout(r, ms));
 }
@@ -17,6 +50,7 @@ export async function sleep(ms) {
  * @param {RequestInit & { cookieHeader?: string | null }} [init]
  */
 export async function fetchJsonWithRetry(base, path, init = {}) {
+  configureFetchProxyFromEnv();
   const { cookieHeader, headers, ...rest } = init;
   let lastError;
 
@@ -60,6 +94,7 @@ export async function fetchJsonWithRetry(base, path, init = {}) {
  * @param {{ cookieHeader?: string | null }} [opts]
  */
 export async function fetchStatusWithRetry(base, path, opts = {}) {
+  configureFetchProxyFromEnv();
   let lastError;
   for (let attempt = 1; attempt <= DEFAULT_RETRIES; attempt++) {
     const controller = new AbortController();

@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-31（今日收工：push + 浏览器生产验收 ✅）  
-> **今日收工**：[收工记录-20260531-今日收工.md](./收工记录-20260531-今日收工.md)  
+> **最后更新**：2026-06-01（今日收工：鸿蒙 ZIP 真源 + 生产探针 ✅）  
+> **今日收工**：[收工记录-20260601-今日收工.md](./收工记录-20260601-今日收工.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -50,7 +50,7 @@
 - [x] **批次 K1**：`git push` `c8006cb`（I/J/K 合入 main）
 - [x] **批次 K2**：鸿蒙实体列表 Supabase REST · `verify:g2` 增强
 - [x] **维护者本地 S6**：`verify:s6:local-full` ✅（2026-05-31 · `faa13b44-…`）
-- [ ] **批次 K3 生产 HTTP**：`verify:v3:production` 可选（维护者本地 S6 已通过）
+- [x] **批次 K3 / M 生产 HTTP**：`verify:v3:production:quick` ✅（`V3_HTTP_PROXY` · 7897）
 - [x] **K+部署**：`dpl_JBiWLbLoaofPqx3hGHacude43bii`（含 K2 鸿蒙 REST codegen）
 - [x] **批次 L0**：`verify:i0:batch`（2026-05-31）
 - [x] **批次 L1**：鸿蒙 codegen 注入 `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` · `85652e2`
@@ -58,7 +58,8 @@
 - [x] **L2 本地**：`verify:s6:local-full` ✅
 - [x] **L2 生产**：curl `ready:true` + 浏览器 8/8 三栈 ✅（维护者）
 - [x] **git push**：`85652e2` + 收尾 `7e0385c` on `main`
-- [x] **收尾脚本**：`npm run git:push` · `verify:v3:production:quick`（Node 未走代理可 ETIMEDOUT，curl 等价）
+- [x] **收尾脚本**：`git:push` · `verify:v3:production:quick` + `preload-fetch-proxy`（`.env.local` 设 `V3_HTTP_PROXY`，勿提交）
+- [x] **M 鸿蒙真源**：生产下载 ZIP 含 Supabase 注入（维护者 2026-06-01）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 

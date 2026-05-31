@@ -8,9 +8,11 @@ import {
   loadEnvLocal
 } from "./lib/production-auth.mjs";
 import {
+  configureFetchProxyFromEnv,
   fetchJsonWithRetry,
   fetchStatusWithRetry,
-  isNetworkError
+  isNetworkError,
+  proxyHintLines
 } from "./lib/full-chain-probe.mjs";
 
 const BASE =
@@ -22,10 +24,25 @@ const TIMEOUT_HINT =
 
 async function main() {
   loadEnvLocal();
+  if (process.env.V3_HTTP_PROXY?.trim()) {
+    const p = process.env.V3_HTTP_PROXY.trim();
+    process.env.HTTP_PROXY = process.env.HTTP_PROXY ?? p;
+    process.env.HTTPS_PROXY = process.env.HTTPS_PROXY ?? p;
+  }
   process.env.V3_PROBE_TIMEOUT_MS = process.env.V3_PROBE_TIMEOUT_MS ?? "120000";
+
+  const proxy =
+    process.env._V3_PROBE_PROXY?.trim() || configureFetchProxyFromEnv();
 
   console.log("══ v3 生产轻量探针 ══\n");
   console.log(`URL: ${BASE}\n`);
+  if (proxy) {
+    console.log(`✓ 使用代理 ${proxy}\n`);
+  } else if (!process.env.NODE_USE_ENV_PROXY) {
+    console.log(
+      "ℹ  未检测到代理（export http_proxy 或在 .env.local 设 V3_HTTP_PROXY=http://127.0.0.1:7897）\n"
+    );
+  }
 
   let cookieHeader = null;
   if (isAuthConfigured()) {
@@ -52,6 +69,11 @@ async function main() {
   } catch (e) {
     if (isNetworkError(e)) {
       console.error("\n⚠️  无法连接生产站（网络/DNS/防火墙/需代理）");
+      if (!proxy) {
+        for (const line of proxyHintLines()) {
+          console.error("   " + line);
+        }
+      }
       console.error("   您已完成 verify:s6:local-full ✅ → 可视为本地链路已验收");
       console.error("   浏览器验收：", BASE);
       process.exit(2);
