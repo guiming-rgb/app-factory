@@ -68,14 +68,19 @@ export async function finalizeDesktopGhaArtifacts(input: {
   runId: string;
   appName: string;
   workflowRunId: number;
+  /** 仅补拉缺失平台（刷新时 Mac 大包可能首次失败） */
+  onlyPlatforms?: Array<"macos" | "windows">;
+  existingMacPath?: string | null;
+  existingWinPath?: string | null;
 }): Promise<{ macPath?: string; winPath?: string }> {
   const blobs = await downloadDesktopGhaArtifacts(
     input.workflowRunId,
-    input.runId
+    input.runId,
+    { platforms: input.onlyPlatforms }
   );
 
-  let macPath: string | undefined;
-  let winPath: string | undefined;
+  let macPath: string | undefined = input.existingMacPath ?? undefined;
+  let winPath: string | undefined = input.existingWinPath ?? undefined;
 
   if (blobs.macos?.length) {
     const fileName = `${input.appName}-macos.app.zip`;
@@ -106,9 +111,9 @@ export async function finalizeDesktopGhaArtifacts(input: {
       macPath && winPath
         ? "Mac .app 与 Windows .exe 包已就绪"
         : macPath
-          ? "Mac .app 已就绪（Windows 构建失败或未上传）"
+          ? "Mac .app 已就绪（Windows 未拉回，可再点刷新记录）"
           : winPath
-            ? "Windows 包已就绪（Mac 构建失败或未上传）"
+            ? "Windows 包已就绪（Mac 约 50MB，请再点刷新记录或从 GitHub Artifacts 下载）"
             : "未从 GHA 下载到桌面产物"
   };
 

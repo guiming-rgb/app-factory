@@ -94,7 +94,8 @@ export async function pollDesktopGhaWorkflow(
 
 export async function downloadDesktopGhaArtifacts(
   workflowRunId: number,
-  codegenRunId: string
+  codegenRunId: string,
+  options?: { platforms?: Array<"macos" | "windows"> }
 ): Promise<{ macos?: Buffer; windows?: Buffer }> {
   const { octokit, cfg } = createOctokit();
   const { data } = await octokit.rest.actions.listWorkflowRunArtifacts({
@@ -105,43 +106,72 @@ export async function downloadDesktopGhaArtifacts(
 
   const out: { macos?: Buffer; windows?: Buffer } = {};
   const artifacts = data.artifacts ?? [];
+  const wantMac = !options?.platforms || options.platforms.includes("macos");
+  const wantWin = !options?.platforms || options.platforms.includes("windows");
 
-  const macArt =
-    artifacts.find((a) => a.name === `macos-${codegenRunId}`) ??
-    artifacts.find((a) => a.name?.startsWith("macos-"));
-  const winArt =
-    artifacts.find((a) => a.name === `windows-${codegenRunId}`) ??
-    artifacts.find((a) => a.name?.startsWith("windows-"));
+  const macArt = artifacts.find((a) => a.name === `macos-${codegenRunId}`);
+  const winArt = artifacts.find((a) => a.name === `windows-${codegenRunId}`);
 
-  if (macArt?.id) {
-    out.macos = await downloadArtifactZip(octokit, cfg.owner, cfg.repo, macArt.id);
+  if (wantMac && macArt?.id) {
+    try {
+      out.macos = await downloadArtifactZip(cfg.token, macArt.id, octokit, cfg);
+    } catch (err: unknown) {
+      console.warn(
+        "[desktop-gha] macos artifact download failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
   }
-  if (winArt?.id) {
-    out.windows = await downloadArtifactZip(
-      octokit,
-      cfg.owner,
-      cfg.repo,
-      winArt.id
-    );
+  if (wantWin && winArt?.id) {
+    try {
+      out.windows = await downloadArtifactZip(cfg.token, winArt.id, octokit, cfg);
+    } catch (err: unknown) {
+      console.warn(
+        "[desktop-gha] windows artifact download failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
   return out;
 }
 
 async function downloadArtifactZip(
+  token: string,
+  artifactId: number,
   octokit: Octokit,
-  owner: string,
-  repo: string,
-  artifactId: number
+  cfg: { owner: string; repo: string }
 ): Promise<Buffer> {
-  const res = await octokit.rest.actions.downloadArtifact({
-    owner,
-    repo,
-    artifact_id: artifactId,
-    archive_format: "zip"
+  const { data: artifact } = await octokit.rest.actions.getArtifact({
+    owner: cfg.owner,
+    repo: cfg.repo,
+    artifact_id: artifactId
   });
-  const data = res.data as ArrayBuffer | Buffer;
-  return Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+  const url = artifact.archive_download_url;
+  if (!url) {
+    throw new Error("artifact 无 archive_download_url");
+  }
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(180_000)
+  });
+
+  if (!res.ok) {
+    throw new Error(`下载 artifact HTTP ${res.status}`);
+  }
+
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 1024) {
+    throw new Error(`artifact 过小（${buf.length} bytes）`);
+  }
+  return buf;
 }
 
 function sleep(ms: number) {

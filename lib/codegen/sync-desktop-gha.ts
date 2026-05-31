@@ -1,3 +1,4 @@
+import { artifactExists } from "@/lib/codegen/artifacts";
 import {
   finalizeDesktopGhaArtifacts,
   pollDesktopGhaOnce
@@ -19,6 +20,11 @@ function resolveAppName(metadata: Record<string, unknown>): string {
   return "app_factory_minimal";
 }
 
+async function hasStoredArtifact(path: string | null | undefined): Promise<boolean> {
+  if (!path || typeof path !== "string") return false;
+  return artifactExists(path);
+}
+
 /** 刷新列表时：若 GHA 已跑完而 Inngest 未回传，则从 GitHub 拉产物并写入下载路径 */
 export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolean> {
   if (!isDesktopGhaEnabled()) return false;
@@ -28,11 +34,44 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
   const gha = metadata.desktopGha as DesktopGhaMeta | undefined;
   if (!gha?.workflowRunId) return false;
 
-  const status = gha.status;
-  if (status === "completed" || status === "failed") return false;
-
   const workflowRunId = gha.workflowRunId;
   const appName = resolveAppName(metadata);
+  const status = gha.status;
+
+  const macPath =
+    typeof metadata.desktopMacArtifactPath === "string"
+      ? metadata.desktopMacArtifactPath
+      : null;
+  const winPath =
+    typeof metadata.desktopWinArtifactPath === "string"
+      ? metadata.desktopWinArtifactPath
+      : null;
+
+  const hasMac = await hasStoredArtifact(macPath);
+  const hasWin = await hasStoredArtifact(winPath);
+
+  if (status === "completed" && hasMac && hasWin) {
+    return false;
+  }
+
+  if (status === "completed" && (hasMac || hasWin)) {
+    const onlyPlatforms: Array<"macos" | "windows"> = [];
+    if (!hasMac) onlyPlatforms.push("macos");
+    if (!hasWin) onlyPlatforms.push("windows");
+    await finalizeDesktopGhaArtifacts({
+      runId: run.id,
+      appName,
+      workflowRunId,
+      onlyPlatforms,
+      existingMacPath: hasMac ? macPath : null,
+      existingWinPath: hasWin ? winPath : null
+    });
+    return true;
+  }
+
+  if (status === "failed") {
+    return false;
+  }
 
   const state = await pollDesktopGhaOnce(workflowRunId);
   if (state === "pending") {
@@ -58,30 +97,31 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
   await finalizeDesktopGhaArtifacts({
     runId: run.id,
     appName,
-    workflowRunId
+    workflowRunId,
+    existingMacPath: hasMac ? macPath : null,
+    existingWinPath: hasWin ? winPath : null
   });
   return true;
 }
 
 export async function syncDesktopGhaForRuns(runs: CodegenRunRow[]): Promise<void> {
-  const pending = runs.filter((r) => {
+  const candidates = runs.filter((r) => {
     if (r.target !== "flutter" || r.status !== "completed") return false;
     const gha = (r.metadata as { desktopGha?: DesktopGhaMeta } | null)
       ?.desktopGha;
-    const s = gha?.status;
-    return (
-      !!gha?.workflowRunId &&
-      s !== "completed" &&
-      s !== "failed"
-    );
+    return !!gha?.workflowRunId;
   });
 
-  const slice = pending.slice(0, 5);
+  const slice = candidates.slice(0, 3);
   for (const run of slice) {
     try {
       await syncDesktopGhaIfNeeded(run);
-    } catch {
-      /* 单条失败不阻塞列表 */
+    } catch (err: unknown) {
+      console.warn(
+        "[sync-desktop-gha]",
+        run.id,
+        err instanceof Error ? err.message : err
+      );
     }
   }
 }

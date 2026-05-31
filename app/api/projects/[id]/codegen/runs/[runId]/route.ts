@@ -7,6 +7,7 @@ import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function GET(
   _req: NextRequest,
