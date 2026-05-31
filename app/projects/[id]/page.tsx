@@ -197,8 +197,9 @@ export default async function ProjectPage({
             <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50/80 p-5">
               <h2 className="text-lg font-semibold text-gray-900">代码生成</h2>
               <p className="mt-1 text-xs text-gray-600">
-                「快速下载」为同步即时导出；「后台生成」经 Inngest 队列，产物写入
-                Supabase Storage（若已配置），可重复下载历史记录。
+                「快速下载」为即时导出当前 Spec；下方三按钮为<strong>同步生成</strong>
+                （约 10–30 秒/栈，无需 Inngest 队列），产物可预览、下载 ZIP、推 GitHub。
+                历史记录写入 Supabase（若已配置 Storage）。
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <DownloadFlutterButton projectId={project.id} />

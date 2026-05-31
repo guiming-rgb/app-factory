@@ -103,6 +103,7 @@
     "verify:p:desktop:flutter": "node scripts/verify-p-desktop-flutter.mjs",
     "verify:qr:batch": "NODE_USE_ENV_PROXY=1 node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-qr-batch.mjs",
     "verify:qr:production:artifacts": "NODE_USE_ENV_PROXY=1 node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-qr-production-artifacts.mjs",
+    "verify:s:ux": "node scripts/verify-s-ux-codegen-panel.mjs",
     "git:push": "node scripts/git-push-no-proxy.mjs",
     "verify:s6:local-full": "node scripts/verify-s6-local-full.mjs",
     "verify:s6:release": "node scripts/verify-s6-release.mjs",

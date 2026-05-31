@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CopyTextButton } from "@/components/CopyTextButton";
 import { GitHubConnectButton } from "@/components/GitHubConnectButton";
 import {
   classifyCodegenFailure,
+  failureRemediation,
   latestRunByTarget,
   qualityGateBadges,
   type CodegenTarget as QualityTarget,
@@ -146,7 +148,10 @@ export function CodegenPanel({
   const [specQuality, setSpecQuality] = useState<SpecQualityPreview | null>(
     null
   );
+  const [syncProgress, setSyncProgress] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const failedRunCount = runs.filter((r) => r.status === "failed").length;
   const visibleRuns = hideFailedRuns
@@ -219,8 +224,26 @@ export function CodegenPanel({
       if (pollRef.current) {
         clearInterval(pollRef.current);
       }
+      if (successTimerRef.current) {
+        clearTimeout(successTimerRef.current);
+      }
     };
   }, []);
+
+  function showSuccess(message: string) {
+    setSuccessMsg(message);
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+    }
+    successTimerRef.current = setTimeout(() => setSuccessMsg(null), 8000);
+  }
+
+  function absoluteDownloadUrl(run: CodegenRun): string | null {
+    if (!run.downloadUrl) return null;
+    if (run.downloadUrl.startsWith("http")) return run.downloadUrl;
+    if (typeof window === "undefined") return run.downloadUrl;
+    return `${window.location.origin}${run.downloadUrl}`;
+  }
 
   function startPolling(runId: string) {
     if (pollRef.current) {
@@ -234,6 +257,9 @@ export function CodegenPanel({
           if (pollRef.current) {
             clearInterval(pollRef.current);
             pollRef.current = null;
+          }
+          if (run.status === "completed") {
+            showSuccess(`${TARGET_LABEL[run.target]} 已完成，可下载 ZIP`);
           }
           await fetchRuns();
         }
@@ -260,12 +286,16 @@ export function CodegenPanel({
           if (specData.quality.score < SPEC_QUALITY_WARN) {
             const warnText = specData.quality.warnings.slice(0, 3).join("；");
             const ok = window.confirm(
-              `Spec 质量 ${specData.quality.score}/100 偏低，生成结果可能仅为占位页。\n${warnText || ""}\n\n仍要提交后台生成吗？`
+              `Spec 质量 ${specData.quality.score}/100 偏低，生成结果可能仅为占位页。\n${warnText || ""}\n\n仍要同步生成吗？`
             );
             if (!ok) return;
           }
         }
       }
+
+      setSyncProgress(
+        `${TARGET_LABEL[target]} 同步生成中（通常 10–30 秒，请勿关闭本页）…`
+      );
 
       const res = await fetch(
         `/api/projects/${projectId}/codegen/${target}`,
@@ -279,15 +309,26 @@ export function CodegenPanel({
 
       const runId = data.runId as string;
       const updated = await pollRun(runId);
-      if (updated.status !== "completed" && updated.status !== "failed") {
-        startPolling(runId);
-      } else {
+      if (updated.status === "completed") {
+        const msg =
+          typeof data.message === "string"
+            ? data.message
+            : `${TARGET_LABEL[target]} 已完成，可下载 ZIP`;
+        showSuccess(msg);
         await fetchRuns();
+      } else if (updated.status === "failed") {
+        const meta = (updated.metadata ?? {}) as Record<string, unknown>;
+        const fb = classifyCodegenFailure(meta, updated.log);
+        setError(`${fb.category}：${fb.detail}`);
+        await fetchRuns();
+      } else {
+        startPolling(runId);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "启动 codegen 失败");
     } finally {
       setLoadingTarget(null);
+      setSyncProgress(null);
     }
   }
 
@@ -405,20 +446,16 @@ export function CodegenPanel({
   return (
     <div className={shellClass}>
       {!embedded && (
-        <p className="text-sm font-medium text-violet-950">代码生成（后台队列）</p>
+        <p className="text-sm font-medium text-violet-950">代码生成（同步优先）</p>
       )}
       {embedded && (
-        <p className="text-sm font-medium text-violet-950">后台队列</p>
+        <p className="text-sm font-medium text-violet-950">同步生成与历史记录</p>
       )}
       <p className="mt-1 text-xs text-violet-800/80">
-        通过 Inngest 异步生成 ZIP；产物持久化至 Supabase Storage（若已配置）。
-        本地一键双进程：
+        三栈默认<strong>同步生成</strong>（无需 Inngest 队列）；产物可预览、下载 ZIP、推
+        GitHub。仅「启动 AI 后台生产」方案流水线需要本地 Inngest：
         <code className="rounded bg-violet-100 px-1">npm run dev:codegen:3001</code>
-        （或手动
-        <code className="rounded bg-violet-100 px-1">start -p 3001</code>
-        +
-        <code className="rounded bg-violet-100 px-1">inngest:dev:3001</code>
-        ）。
+        。
       </p>
 
       {inngestHint ? (
@@ -472,19 +509,34 @@ export function CodegenPanel({
               {fail ? (
                 <p
                   className="mt-1 text-[10px] leading-snug text-red-700"
-                  title={failureHint(run!, meta)}
+                  title={failureRemediation(fail)}
                 >
                   {fail.category}：{fail.detail}
                 </p>
+              ) : null}
+              {run?.status === "completed" && run.downloadUrl ? (
+                <p className="mt-1 text-[10px] text-emerald-800">可下载 ZIP</p>
               ) : null}
             </div>
           );
         })}
       </div>
 
+      {successMsg ? (
+        <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+          ✅ {successMsg}
+        </p>
+      ) : null}
+
+      {syncProgress ? (
+        <p className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+          <span className="inline-block animate-pulse">●</span> {syncProgress}
+        </p>
+      ) : null}
+
       {activeRun?.status === "queued" && isQueuedSlow(activeRun) ? (
         <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          排队超过 90 秒：多为旧版后台队列任务。请点「标记失败」后改用「生成小程序 ZIP（同步）」或上方「快速下载」。
+          排队超过 90 秒：多为旧版 Inngest 队列任务。请点「标记失败」后改用「生成 ×× ZIP（同步）」。
         </p>
       ) : null}
 
@@ -636,14 +688,16 @@ export function CodegenPanel({
                         </span>
                       ) : null}
                       {run.status === "failed" && failBreakdown ? (
-                        <p
-                          className="mt-1 max-w-xs text-[10px] leading-snug text-red-600"
-                          title={failText}
-                        >
-                          <span className="font-medium">{failBreakdown.category}</span>
-                          {" — "}
-                          {failBreakdown.detail}
-                        </p>
+                        <div className="mt-1 max-w-xs text-[10px] leading-snug text-red-600">
+                          <p>
+                            <span className="font-medium">{failBreakdown.category}</span>
+                            {" — "}
+                            {failBreakdown.detail}
+                          </p>
+                          <p className="mt-0.5 text-amber-900">
+                            {failureRemediation(failBreakdown)}
+                          </p>
+                        </div>
                       ) : null}
                     </td>
                     <td className="py-2 pr-2">
@@ -699,12 +753,21 @@ export function CodegenPanel({
                           </a>
                         ) : null}
                         {run.downloadUrl ? (
-                          <a
-                            href={run.downloadUrl}
-                            className="font-medium text-violet-700 underline"
-                          >
-                            下载 ZIP
-                          </a>
+                          <>
+                            <a
+                              href={run.downloadUrl}
+                              className="font-medium text-violet-700 underline"
+                            >
+                              下载 ZIP
+                            </a>
+                            {absoluteDownloadUrl(run) ? (
+                              <CopyTextButton
+                                text={absoluteDownloadUrl(run)!}
+                                label="复制下载链"
+                                className="font-medium text-violet-600 underline"
+                              />
+                            ) : null}
+                          </>
                         ) : null}
                         {run.status === "completed" && run.downloadUrl ? (
                           <button
@@ -745,14 +808,23 @@ export function CodegenPanel({
                           </>
                         ) : null}
                         {run.status === "failed" ? (
-                          <button
-                            type="button"
-                            disabled={!!loadingTarget || !!activeRun}
-                            onClick={() => void handleGenerate(run.target)}
-                            className="font-medium text-amber-800 underline disabled:opacity-50"
-                          >
-                            重试
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              disabled={!!loadingTarget || !!activeRun}
+                              onClick={() => void handleGenerate(run.target)}
+                              className="font-medium text-amber-800 underline disabled:opacity-50"
+                            >
+                              重试
+                            </button>
+                            {failText ? (
+                              <CopyTextButton
+                                text={failText}
+                                label="复制日志"
+                                className="font-medium text-red-700 underline"
+                              />
+                            ) : null}
+                          </>
                         ) : null}
                         {(run.status === "queued" || run.status === "running") &&
                         (stuck || run.status === "queued") ? (
@@ -782,6 +854,39 @@ export function CodegenPanel({
               })}
             </tbody>
           </table>
+          {visibleRuns.some((r) => r.status === "failed") && !hideFailedRuns ? (
+            <div className="mt-3 space-y-2">
+              {visibleRuns
+                .filter((r) => r.status === "failed")
+                .slice(0, 3)
+                .map((run) => {
+                  const meta = (run.metadata ?? {}) as Record<string, unknown>;
+                  const fb = classifyCodegenFailure(meta, run.log);
+                  const logBody = failureHint(run, meta);
+                  return (
+                    <details
+                      key={`log-${run.id}`}
+                      className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs text-red-950"
+                    >
+                      <summary className="cursor-pointer font-medium">
+                        {TARGET_LABEL[run.target]} 失败日志
+                      </summary>
+                      <p className="mt-2 text-amber-900">{failureRemediation(fb)}</p>
+                      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-white/80 p-2 text-[10px] leading-snug text-red-900">
+                        {logBody}
+                      </pre>
+                      <div className="mt-2">
+                        <CopyTextButton
+                          text={logBody}
+                          label="复制完整日志"
+                          className="text-xs font-medium text-red-800 underline"
+                        />
+                      </div>
+                    </details>
+                  );
+                })}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

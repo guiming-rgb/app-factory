@@ -51,6 +51,28 @@ export function classifyCodegenFailure(
   return { category: "未知", detail: "见运行日志或 metadata" };
 }
 
+/** 失败分类对应的界面操作建议（批次 S UX） */
+export function failureRemediation(breakdown: FailureBreakdown): string {
+  switch (breakdown.category) {
+    case "Inngest 队列":
+      return "旧任务卡在队列：点该行的「标记失败」，再点上方「生成 ×× ZIP（同步）」。";
+    case "App Spec":
+      return "先完善方案报告或 Spec 质量，再重新生成；Spec 分低于 60 时界面会提示。";
+    case "小程序编译":
+      return "多为模板或 Spec 字段不全；可本地跑 npm run verify:c3:wechat-compile 对照日志。";
+    case "Flutter analyze":
+      return "检查 Spec 导航/实体是否与模板匹配；生产无 Docker 时 analyze 可能跳过。";
+    case "鸿蒙结构":
+      return "检查 main_pages、列表/详情路由；可跑 npm run verify:c6:harmony。";
+    case "Storage":
+      return "检查 Supabase Storage 桶与 Vercel 环境变量；ZIP 可能仍在「下载」链路上。";
+    case "超时/取消":
+      return "任务过久已自动失败：直接点「重试」或改用同步生成按钮。";
+    default:
+      return "展开下方日志；仍失败可复制日志发给维护者。";
+  }
+}
+
 export function qualityGateBadges(meta: RunQualityMeta): QualityGateBadge[] {
   const badges: QualityGateBadge[] = [];
   const analyze = meta.analyzeStatus;
