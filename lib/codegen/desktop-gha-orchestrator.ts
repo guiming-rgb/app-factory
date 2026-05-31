@@ -10,9 +10,12 @@ import {
   triggerDesktopGhaWorkflow
 } from "@/lib/github/desktop-gha";
 import {
+  deliverMacViaGithubArtifacts,
   getDesktopGhaConfig,
+  githubActionsRunArtifactsUrl,
   isDesktopGhaEnabled
 } from "@/lib/github/desktop-gha-config";
+import { ghaMacArtifactExists } from "@/lib/github/desktop-gha";
 import { inngest } from "@/lib/inngest/client";
 
 export type ScheduleDesktopGhaInput = {
@@ -72,15 +75,34 @@ export async function finalizeDesktopGhaArtifacts(input: {
   onlyPlatforms?: Array<"macos" | "windows">;
   existingMacPath?: string | null;
   existingWinPath?: string | null;
-}): Promise<{ macPath?: string; winPath?: string }> {
+}): Promise<{ macPath?: string; winPath?: string; macOnGithub?: boolean }> {
+  const macViaGithub = deliverMacViaGithubArtifacts();
+  const wantMac =
+    !macViaGithub &&
+    (!input.onlyPlatforms || input.onlyPlatforms.includes("macos"));
+  const wantWin = !input.onlyPlatforms || input.onlyPlatforms.includes("windows");
+
   const blobs = await downloadDesktopGhaArtifacts(
     input.workflowRunId,
     input.runId,
-    { platforms: input.onlyPlatforms }
+    {
+      platforms: [
+        ...(wantMac ? (["macos"] as const) : []),
+        ...(wantWin ? (["windows"] as const) : [])
+      ]
+    }
   );
 
   let macPath: string | undefined = input.existingMacPath ?? undefined;
   let winPath: string | undefined = input.existingWinPath ?? undefined;
+  let macOnGithub = false;
+
+  if (macViaGithub) {
+    macOnGithub = await ghaMacArtifactExists(
+      input.workflowRunId,
+      input.runId
+    );
+  }
 
   if (blobs.macos?.length) {
     const fileName = `${input.appName}-macos.app.zip`;
@@ -102,33 +124,55 @@ export async function finalizeDesktopGhaArtifacts(input: {
     winPath = relativePath;
   }
 
+  const macReady = !!macPath || macOnGithub;
+  const artifactsUrl = githubActionsRunArtifactsUrl(input.workflowRunId);
+
   const patch: Record<string, unknown> = {
-    status: macPath || winPath ? "completed" : "failed",
+    status: macReady || winPath ? "completed" : "failed",
     completedAt: new Date().toISOString(),
     ...(macPath ? { desktopMacArtifactPath: macPath } : {}),
     ...(winPath ? { desktopWinArtifactPath: winPath } : {}),
+    ...(macOnGithub
+      ? {
+          desktopMacOnGithub: true,
+          desktopMacGithubUrl: artifactsUrl
+        }
+      : {}),
     message:
       macPath && winPath
         ? "Mac .app 与 Windows .exe 包已就绪"
         : macPath
           ? "Mac .app 已就绪（Windows 未拉回，可再点刷新记录）"
-          : winPath
-            ? "Windows 包已就绪（Mac 约 50MB，请再点刷新记录或从 GitHub Artifacts 下载）"
-            : "未从 GHA 下载到桌面产物"
+          : winPath && macOnGithub
+            ? "Win 包已在本页下载；Mac .app 约 50MB，请点「Mac(GitHub)」在 Artifacts 里下载"
+            : winPath
+              ? "Windows 包已就绪"
+              : macOnGithub
+                ? "Mac 包请在 GitHub Artifacts 下载（见 Mac(GitHub) 链接）"
+                : "未从 GHA 下载到桌面产物"
   };
 
   await mergeCodegenRunNestedMetadata(input.runId, "desktopGha", patch);
 
   await mergeCodegenRunMetadata(input.runId, {
     ...(macPath ? { desktopMacArtifactPath: macPath } : {}),
-    ...(winPath ? { desktopWinArtifactPath: winPath } : {})
+    ...(winPath ? { desktopWinArtifactPath: winPath } : {}),
+    ...(macOnGithub
+      ? {
+          desktopMacOnGithub: true,
+          desktopMacGithubUrl: artifactsUrl
+        }
+      : {})
   });
 
   if (macPath || winPath) {
     await mergeCodegenRunNestedMetadata(input.runId, "desktopBuild", {
       macos: {
-        status: macPath ? "passed" : "skipped",
-        fileName: `${input.appName}-macos.app.zip`
+        status: macPath || macOnGithub ? "passed" : "skipped",
+        fileName: `${input.appName}-macos.app.zip`,
+        ...(macOnGithub && artifactsUrl
+          ? { downloadVia: "github-artifacts", url: artifactsUrl }
+          : {})
       },
       windows: {
         status: winPath ? "passed" : "skipped",
@@ -137,7 +181,7 @@ export async function finalizeDesktopGhaArtifacts(input: {
     });
   }
 
-  return { macPath, winPath };
+  return { macPath, winPath, macOnGithub };
 }
 
 export async function pollDesktopGhaOnce(

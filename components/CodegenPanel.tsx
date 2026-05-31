@@ -32,6 +32,7 @@ type CodegenRun = {
   created_at: string;
   downloadUrl?: string | null;
   downloadMacUrl?: string | null;
+  downloadMacGithubUrl?: string | null;
   downloadWinUrl?: string | null;
   previewUrl?: string | null;
 };
@@ -217,6 +218,8 @@ export function CodegenPanel({
       updated.downloadUrl = data.downloadUrl ?? updated.downloadUrl ?? null;
       updated.downloadMacUrl =
         data.downloadMacUrl ?? updated.downloadMacUrl ?? null;
+      updated.downloadMacGithubUrl =
+        data.downloadMacGithubUrl ?? updated.downloadMacGithubUrl ?? null;
       updated.downloadWinUrl =
         data.downloadWinUrl ?? updated.downloadWinUrl ?? null;
       updated.previewUrl = data.previewUrl ?? updated.previewUrl ?? null;
@@ -817,6 +820,18 @@ export function CodegenPanel({
                             className="font-medium text-teal-800 underline"
                           >
                             Mac .app
+                          </a>
+                        ) : null}
+                        {run.target === "flutter" &&
+                        run.downloadMacGithubUrl ? (
+                          <a
+                            href={run.downloadMacGithubUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-teal-800 underline"
+                            title="Mac 包约 50MB，在 GitHub Actions 页底部 Artifacts 下载 macos-…"
+                          >
+                            Mac(GitHub)
                           </a>
                         ) : null}
                         {run.target === "flutter" && run.downloadWinUrl ? (

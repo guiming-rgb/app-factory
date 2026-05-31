@@ -1,7 +1,25 @@
 import { Octokit } from "@octokit/rest";
 
 import type { AppSpec } from "@/lib/app-spec/types";
-import { getDesktopGhaConfig } from "@/lib/github/desktop-gha-config";
+import {
+  getDesktopGhaConfig,
+  githubActionsRunArtifactsUrl
+} from "@/lib/github/desktop-gha-config";
+
+export { githubActionsRunArtifactsUrl };
+
+export async function ghaMacArtifactExists(
+  workflowRunId: number,
+  codegenRunId: string
+): Promise<boolean> {
+  const { octokit, cfg } = createOctokit();
+  const { data } = await octokit.rest.actions.listWorkflowRunArtifacts({
+    owner: cfg.owner,
+    repo: cfg.repo,
+    run_id: workflowRunId
+  });
+  return (data.artifacts ?? []).some((a) => a.name === `macos-${codegenRunId}`);
+}
 
 export type DesktopGhaTriggerResult = {
   workflowRunId: number;

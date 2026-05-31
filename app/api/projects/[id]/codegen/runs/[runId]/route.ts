@@ -35,6 +35,7 @@ export async function GET(
       run: enriched,
       downloadUrl: enriched.downloadUrl,
       downloadMacUrl: enriched.downloadMacUrl,
+      downloadMacGithubUrl: enriched.downloadMacGithubUrl,
       downloadWinUrl: enriched.downloadWinUrl,
       previewUrl: enriched.previewUrl
     }, {

@@ -47,23 +47,28 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
       ? metadata.desktopWinArtifactPath
       : null;
 
-  const hasMac = await hasStoredArtifact(macPath);
+  const hasMacStored = await hasStoredArtifact(macPath);
+  const hasMacGithub = metadata.desktopMacOnGithub === true;
+  const hasMac = hasMacStored || hasMacGithub;
   const hasWin = await hasStoredArtifact(winPath);
 
   if (status === "completed" && hasMac && hasWin) {
     return false;
   }
 
-  if (status === "completed" && (hasMac || hasWin)) {
+  if (status === "completed" && (hasMacStored || hasWin)) {
     const onlyPlatforms: Array<"macos" | "windows"> = [];
-    if (!hasMac) onlyPlatforms.push("macos");
     if (!hasWin) onlyPlatforms.push("windows");
+    if (!hasMacGithub && !hasMacStored) {
+      /* Vercel 上 Mac 只记 GitHub 链，不拉 50MB blob */
+      onlyPlatforms.push("macos");
+    }
     await finalizeDesktopGhaArtifacts({
       runId: run.id,
       appName,
       workflowRunId,
       onlyPlatforms,
-      existingMacPath: hasMac ? macPath : null,
+      existingMacPath: hasMacStored ? macPath : null,
       existingWinPath: hasWin ? winPath : null
     });
     return true;
@@ -98,7 +103,7 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
     runId: run.id,
     appName,
     workflowRunId,
-    existingMacPath: hasMac ? macPath : null,
+    existingMacPath: hasMacStored ? macPath : null,
     existingWinPath: hasWin ? winPath : null
   });
   return true;

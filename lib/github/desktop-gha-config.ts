@@ -42,3 +42,19 @@ export function isDesktopGhaEnabled(): boolean {
 export function preferDesktopGhaOverLocalBuild(): boolean {
   return isDesktopGhaEnabled() && process.env.VERCEL === "1";
 }
+
+/**
+ * Mac .app.zip 约 50MB+，Vercel 函数响应上限约 4.5MB，生产站 Mac 走 GitHub Artifacts 直链。
+ */
+export function deliverMacViaGithubArtifacts(): boolean {
+  const raw = process.env.CODEGEN_DESKTOP_MAC_VIA_GITHUB?.trim();
+  if (raw === "0") return false;
+  if (raw === "1") return true;
+  return process.env.VERCEL === "1";
+}
+
+export function githubActionsRunArtifactsUrl(workflowRunId: number): string | null {
+  const cfg = getDesktopGhaConfig();
+  if (!cfg || !workflowRunId) return null;
+  return `https://github.com/${cfg.owner}/${cfg.repo}/actions/runs/${workflowRunId}#artifacts`;
+}
