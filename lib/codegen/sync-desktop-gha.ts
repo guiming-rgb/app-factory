@@ -17,6 +17,7 @@ import {
 type DesktopGhaMeta = {
   status?: string;
   workflowRunId?: number;
+  htmlUrl?: string;
 };
 
 function resolveAppName(metadata: Record<string, unknown>): string {
@@ -138,16 +139,48 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
   return true;
 }
 
+async function backfillMacGithubLink(run: CodegenRunRow): Promise<void> {
+  if (run.target !== "flutter" || run.status !== "completed") return;
+  const metadata = (run.metadata ?? {}) as Record<string, unknown>;
+  if (resolveMacGithubUrl(metadata)) return;
+
+  const gha = metadata.desktopGha as DesktopGhaMeta | undefined;
+  const workflowRunId = gha?.workflowRunId;
+  if (!workflowRunId) return;
+
+  const url = githubActionsRunArtifactsUrl(workflowRunId);
+  if (!url) return;
+
+  await mergeCodegenRunMetadata(run.id, {
+    desktopMacOnGithub: true,
+    desktopMacGithubUrl: url
+  });
+  await mergeCodegenRunNestedMetadata(run.id, "desktopGha", {
+    desktopMacOnGithub: true,
+    desktopMacGithubUrl: url
+  });
+}
+
 export async function syncDesktopGhaForRuns(runs: CodegenRunRow[]): Promise<void> {
-  const candidates = runs.filter((r) => {
-    if (r.target !== "flutter" || r.status !== "completed") return false;
+  const flutterDone = runs.filter(
+    (r) => r.target === "flutter" && r.status === "completed"
+  );
+
+  for (const run of flutterDone.slice(0, 8)) {
+    try {
+      await backfillMacGithubLink(run);
+    } catch {
+      /* 忽略 */
+    }
+  }
+
+  const candidates = flutterDone.filter((r) => {
     const gha = (r.metadata as { desktopGha?: DesktopGhaMeta } | null)
       ?.desktopGha;
     return !!gha?.workflowRunId;
   });
 
-  const slice = candidates.slice(0, 3);
-  for (const run of slice) {
+  for (const run of candidates.slice(0, 3)) {
     try {
       await syncDesktopGhaIfNeeded(run);
     } catch (err: unknown) {

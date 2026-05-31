@@ -41,9 +41,10 @@ export async function enrichCodegenRun(
     typeof meta.desktopWinArtifactPath === "string"
       ? meta.desktopWinArtifactPath
       : null;
+  const macGithubUrl = resolveMacGithubUrl(meta);
+  const macUseGithub = shouldUseMacGithubDownload(meta) || !!macGithubUrl;
   const hasMacStored =
     run.status === "completed" && !!macPath && (await artifactExists(macPath));
-  const macUseGithub = shouldUseMacGithubDownload(meta);
   const hasMac = hasMacStored && !macUseGithub;
   const hasWin =
     run.status === "completed" && !!winPath && (await artifactExists(winPath));
@@ -57,11 +58,10 @@ export async function enrichCodegenRun(
 
   const base = `/api/projects/${projectId}/codegen/runs/${run.id}/download`;
 
-  const macGithubUrl = resolveMacGithubUrl(meta);
   const showMacGithub =
+    run.target === "flutter" &&
     run.status === "completed" &&
-    !!macGithubUrl &&
-    (macUseGithub || !hasMacStored);
+    !!macGithubUrl;
 
   return {
     ...run,

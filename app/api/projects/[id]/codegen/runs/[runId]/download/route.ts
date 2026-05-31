@@ -52,8 +52,17 @@ export async function GET(
 
     if (kind === "macos") {
       const macGithub = resolveMacGithubUrl(meta);
-      if (shouldUseMacGithubDownload(meta) && macGithub) {
+      if (macGithub) {
         return NextResponse.redirect(macGithub, 302);
+      }
+      if (shouldUseMacGithubDownload(meta)) {
+        return NextResponse.json(
+          {
+            error:
+              "Mac 包约 50MB，请在本页点「Mac .app(GitHub)」→ Artifacts 下载 macos- 开头的文件"
+          },
+          { status: 404 }
+        );
       }
     }
 
