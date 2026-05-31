@@ -1,0 +1,78 @@
+# 由 App 生产工厂网页触发：构建 Mac .app.zip + Windows .exe 包
+name: Flutter 桌面双平台构建
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_b64:
+        description: "Base64 编码的 App Spec JSON"
+        required: true
+      run_id:
+        description: "codegen_runs.id（用于产物命名）"
+        required: true
+      app_name:
+        description: "Flutter 工程名（bundle）"
+        required: true
+        default: "app_factory_minimal"
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: 解码 Spec 并生成 macOS 发行包
+        env:
+          SPEC_B64: ${{ inputs.spec_b64 }}
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          echo "$SPEC_B64" | base64 -d > /tmp/spec.json
+          npm ci
+          npx tsx scripts/codegen-flutter.ts --spec /tmp/spec.json --out /tmp/out --verify
+          cd /tmp/out/*/
+          flutter pub get
+          flutter build macos --release
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)
+          cd "$(dirname "$APP")"
+          zip -r "${{ github.workspace }}/macos-desktop.zip" "$(basename "$APP")"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ inputs.run_id }}
+          path: macos-desktop.zip
+          retention-days: 5
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: 解码 Spec 并生成 Windows 发行包
+        shell: bash
+        env:
+          SPEC_B64: ${{ inputs.spec_b64 }}
+        run: |
+          echo "$SPEC_B64" | base64 -d > /tmp/spec.json
+          npm ci
+          npx tsx scripts/codegen-flutter.ts --spec /tmp/spec.json --out /tmp/out --verify
+          cd /tmp/out/*/
+          flutter pub get
+          flutter build windows --release
+          RELEASE="build/windows/x64/runner/Release"
+          powershell -Command "Compress-Archive -Path \"$RELEASE/*\" -DestinationPath \"$GITHUB_WORKSPACE/windows-desktop.zip\" -Force"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ inputs.run_id }}
+          path: windows-desktop.zip
+          retention-days: 5
