@@ -22,6 +22,9 @@ export async function createCodegenRun(input: {
   projectId: string;
   target: CodegenTarget;
 }): Promise<CodegenRunRow> {
+  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
+  await cleanupStaleCodegenRuns({ projectId: input.projectId });
+
   const { data, error } = await getSupabaseAdmin()
     .from("codegen_runs")
     .insert({

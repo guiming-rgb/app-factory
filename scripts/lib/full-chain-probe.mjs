@@ -5,7 +5,10 @@ const DEFAULT_TIMEOUT_MS = Math.max(
   30_000,
   Number(process.env.V3_PROBE_TIMEOUT_MS) || 60_000
 );
-const DEFAULT_RETRIES = 3;
+const DEFAULT_RETRIES = Math.min(
+  8,
+  Math.max(3, Number(process.env.V3_PROBE_RETRIES) || 5)
+);
 
 let fetchProxyConfigured = false;
 
@@ -78,8 +81,11 @@ export async function fetchJsonWithRetry(base, path, init = {}) {
     } catch (e) {
       lastError = e;
       if (attempt < DEFAULT_RETRIES) {
-        process.stdout.write(`  重试 ${attempt}/${DEFAULT_RETRIES}…\n`);
-        await sleep(2000);
+        const waitMs = Math.min(15_000, 2000 * 2 ** (attempt - 1));
+        process.stdout.write(
+          `  重试 ${attempt}/${DEFAULT_RETRIES}（${waitMs}ms）…\n`
+        );
+        await sleep(waitMs);
       }
     } finally {
       clearTimeout(timer);
@@ -109,7 +115,8 @@ export async function fetchStatusWithRetry(base, path, opts = {}) {
     } catch (e) {
       lastError = e;
       if (attempt < DEFAULT_RETRIES) {
-        await sleep(2000);
+        const waitMs = Math.min(15_000, 2000 * 2 ** (attempt - 1));
+        await sleep(waitMs);
       }
     } finally {
       clearTimeout(timer);

@@ -24,6 +24,40 @@ function isCompileDisabled(): boolean {
   return process.env.CODEGEN_WECHAT_COMPILE_DISABLED === "1";
 }
 
+function maxCompileAttempts(): number {
+  const raw = process.env.CODEGEN_WECHAT_COMPILE_RETRIES?.trim();
+  const n = raw ? Number(raw) : 2;
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(4, Math.floor(n));
+}
+
+function compileOnce(
+  compiler: MiniprogramCompiler,
+  appDir: string
+): { errors: string[]; wxmlFiles: number; wxssFiles: number } {
+  const wxmlFiles = countFiles(appDir, ".wxml");
+  const wxssFiles = countFiles(appDir, ".wxss");
+  const errors: string[] = [];
+
+  try {
+    compiler.wxmlToJs(appDir);
+  } catch (err) {
+    errors.push(
+      `WXML 编译失败：${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  try {
+    compiler.wxssToJs(appDir);
+  } catch (err) {
+    errors.push(
+      `WXSS 编译失败：${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  return { errors, wxmlFiles, wxssFiles };
+}
+
 function loadCompiler(): MiniprogramCompiler | null {
   const candidates = [
     path.join(process.cwd(), "node_modules/miniprogram-compiler"),
@@ -80,25 +114,22 @@ export function runWechatCompilerValidate(options: {
     return { status: "failed", reason: "目录不存在", output: appDir };
   }
 
-  const wxmlFiles = countFiles(appDir, ".wxml");
-  const wxssFiles = countFiles(appDir, ".wxss");
-  const errors: string[] = [];
+  const attempts = maxCompileAttempts();
+  let last: ReturnType<typeof compileOnce> | null = null;
 
-  try {
-    compiler.wxmlToJs(appDir);
-  } catch (err) {
-    errors.push(
-      `WXML 编译失败：${err instanceof Error ? err.message : String(err)}`
-    );
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    last = compileOnce(compiler, appDir);
+    if (last.errors.length === 0) {
+      break;
+    }
+    if (attempt < attempts) {
+      console.warn(
+        `[wechat-compile] attempt ${attempt}/${attempts} failed, retrying…`
+      );
+    }
   }
 
-  try {
-    compiler.wxssToJs(appDir);
-  } catch (err) {
-    errors.push(
-      `WXSS 编译失败：${err instanceof Error ? err.message : String(err)}`
-    );
-  }
+  const { errors, wxmlFiles, wxssFiles } = last!;
 
   if (errors.length > 0) {
     return {

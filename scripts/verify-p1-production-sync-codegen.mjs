@@ -9,7 +9,11 @@ import {
   isAuthConfigured,
   loadEnvLocal
 } from "./lib/production-auth.mjs";
-import { fetchJsonWithRetry, sleep } from "./lib/full-chain-probe.mjs";
+import {
+  fetchJsonWithRetry,
+  proxyHintLines,
+  sleep
+} from "./lib/full-chain-probe.mjs";
 
 const BASE =
   process.env.V3_PRODUCTION_URL?.trim() ??
@@ -117,6 +121,16 @@ async function main() {
   const session = await createSessionCookieHeader();
   console.log(`✓ 已登录 ${session.email}\n`);
 
+  const deploy = await fetchJsonWithRetry(BASE, "/api/deploy/status", {
+    cookieHeader: session.cookieHeader
+  });
+  if (deploy.status !== 200 || !deploy.body?.ready) {
+    throw new Error(
+      `生产 deploy/status 未就绪: ${deploy.status} ${JSON.stringify(deploy.body)}`
+    );
+  }
+  console.log(`✓ deploy/status ready=true mode=${deploy.body.mode ?? "?"}\n`);
+
   const results = [];
   for (const target of TARGETS) {
     results.push(await runOneTarget(target, session.cookieHeader));
@@ -130,6 +144,12 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
+  const msg = e instanceof Error ? e.message : String(e);
+  console.error(msg);
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|abort/i.test(msg)) {
+    for (const line of proxyHintLines()) {
+      console.error(line);
+    }
+  }
   process.exit(1);
 });

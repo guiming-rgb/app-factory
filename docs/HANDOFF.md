@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-02（批次 P：跨平台默认 + 部署 ✅）  
-> **今日收工**：[收工记录-20260602-批次P-跨平台.md](./收工记录-20260602-批次P-跨平台.md) · [批次 O](./收工记录-20260602-批次O.md)  
+> **最后更新**：2026-06-02（批次 Q+R：生产基线 + 稳定 1.0 ✅）  
+> **今日收工**：[收工记录-20260602-批次QR.md](./收工记录-20260602-批次QR.md) · [批次 P](./收工记录-20260602-批次P-跨平台.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -64,6 +64,7 @@
 - [x] **P1 生产同步**：`verify:p1:production:sync` ✅（枪战 harmony ~12.7s）
 - [x] **批次 O**：三栈 `verify:p1:production:sync:all` · 鸿蒙 `EntityDetail` · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc`
 - [x] **批次 P**：Flutter `macos`/`windows` 模板 · Spec 默认四平台 · 鸿蒙默认 `enabled: true` · `verify:p:desktop:flutter` · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W`
+- [x] **批次 Q+R**：`verify:qr:batch` · 生产 P1 三栈 · 枪战 ZIP 探针 · 小程序编译重试 · stale 创建前清理 · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd`
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -87,8 +88,10 @@
 **一键复验**
 
 ```bash
+npm run verify:qr:batch                  # Q 门禁（含可选生产，需 V3_HTTP_PROXY）
 npm run verify:p:desktop:flutter
 npm run verify:c6:harmony
+npm run stats:codegen -- 7
 npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
 ```
 
@@ -147,6 +150,7 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-02 | **批次 Q+R**：生产 P1 + ZIP 探针 · 稳定 1.0（重试/清理/stats REST）· `verify:qr:batch` · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd` |
 | 2026-06-02 | **批次 P**：Flutter 桌面 `macos/windows` · 鸿蒙 Spec 默认开启 · [跨平台运行说明](./跨平台运行说明.md) · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W` |
 | 2026-06-02 | **批次 O**：三栈 P1 · 鸿蒙 EntityDetail · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc` |
 | 2026-05-28 | **P0 验收通过**；adm-zip、鸿蒙同步+待办 emit、下载缓存；生产 `dpl_GPRQo24…` |

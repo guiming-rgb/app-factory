@@ -2,18 +2,18 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-06-02 批次 P）
+## 当前事实（截至 2026-06-02 批次 Q+R）
 
 - **跨平台**：工厂 Mac/Win 浏览器；生成 App → Flutter 桌面 + 鸿蒙系统 + 小程序（见 [跨平台运行说明.md](./跨平台运行说明.md)）
-- **生产**：https://app-factory-five.vercel.app
-- **门禁**：`verify:p:desktop:flutter` · `verify:p1:production:sync:all` · `verify:v3:production:quick`
+- **生产**：https://app-factory-five.vercel.app · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd`
+- **门禁**：`verify:qr:batch` · `verify:p1:production:sync:all` · `stats:codegen -- 7`
 - **策略**：自动化兜底；真机 E1–E5 / DevEco **可选**（HANDOFF §跨平台策略）
 - **枪战**：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
 - **目录**：`cd "/Users/guiming/Desktop/app生产工厂/app-factory"`
 
 ## 可选下一批
 
-- DevEco E4 · 体验 E1–E5 · `stats:codegen` 观察新 run
+- 观察部署后 7 天 `stats:codegen`（harmony 目标 >70%）· DevEco E4 · 体验 E1–E5
 
 详表：[三阶段-执行计划-20260519.md](./三阶段-执行计划-20260519.md)
 
@@ -29,4 +29,4 @@
 ## 必读
 
 - **[验收大纲-自动与必做.md](./验收大纲-自动与必做.md)** — 自动 vs 必做（当前 **0 阻塞**）
-- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次P-跨平台.md](./收工记录-20260602-批次P-跨平台.md)
+- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次QR.md](./收工记录-20260602-批次QR.md)
