@@ -55,9 +55,10 @@
 - [x] **批次 L0**：`verify:i0:batch`（2026-05-31）
 - [x] **批次 L1**：鸿蒙 codegen 注入 `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` · `85652e2`
 - [x] **L+部署**：`dpl_7DvhbvZtTGCBxqWwSCSLHZjCwsY2`
-- [x] **L2 本地**：`verify:s6:local-full` ✅（2026-05-31 Agent）
-- [ ] **L2 生产 HTTP**：`verify:v3:production` — 仅维护者本机（Agent 无外网至 Vercel）
-- [ ] **git push**：`6572708`+`85652e2` — 仅维护者本机（Agent 无本地代理 7897）
+- [x] **L2 本地**：`verify:s6:local-full` ✅
+- [x] **L2 生产**：curl `ready:true` + 浏览器 8/8 三栈 ✅（维护者）
+- [x] **git push**：`85652e2` + 收尾 `7e0385c` on `main`
+- [x] **收尾脚本**：`npm run git:push` · `verify:v3:production:quick`（Node 未走代理可 ETIMEDOUT，curl 等价）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
