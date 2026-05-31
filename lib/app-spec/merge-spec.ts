@@ -16,11 +16,13 @@ export function mergeSpecWithMinimal(
 ): AppSpec {
   const minTargets = asRecord(minimal.targets);
   const minFlutter = asRecord(minTargets.flutter);
+  const minHarmony = asRecord(minTargets.harmony);
   const minWechat = asRecord(minTargets.wechatMiniProgram);
   const minBackend = asRecord(minTargets.backend);
 
   const targets = asRecord(partial.targets);
   const flutter = asRecord(targets.flutter);
+  const harmony = asRecord(targets.harmony);
   const wechat = asRecord(targets.wechatMiniProgram);
   const backend = asRecord(targets.backend);
 
@@ -58,11 +60,20 @@ export function mergeSpecWithMinimal(
         platforms:
           Array.isArray(flutter.platforms) && flutter.platforms.length > 0
             ? flutter.platforms
-            : minFlutter.platforms ?? ["ios", "android"],
+            : minFlutter.platforms ?? ["ios", "android", "macos", "windows"],
         formFactors:
           Array.isArray(flutter.formFactors) && flutter.formFactors.length > 0
             ? flutter.formFactors
             : minFlutter.formFactors ?? ["phone"]
+      },
+      harmony: {
+        ...minHarmony,
+        ...harmony,
+        enabled: harmony.enabled !== false,
+        formFactors:
+          Array.isArray(harmony.formFactors) && harmony.formFactors.length > 0
+            ? harmony.formFactors
+            : minHarmony.formFactors ?? ["phone", "tablet"]
       },
       wechatMiniProgram,
       backend: {

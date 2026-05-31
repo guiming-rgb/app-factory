@@ -100,6 +100,7 @@
     "verify:v3:production:quick": "NODE_USE_ENV_PROXY=1 node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-v3-production-quick.mjs",
     "verify:p1:production:sync": "NODE_USE_ENV_PROXY=1 node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-p1-production-sync-codegen.mjs",
     "verify:p1:production:sync:all": "NODE_USE_ENV_PROXY=1 P1_TARGETS=harmony,wechat,flutter node --import ./scripts/preload-fetch-proxy.mjs scripts/verify-p1-production-sync-codegen.mjs",
+    "verify:p:desktop:flutter": "node scripts/verify-p-desktop-flutter.mjs",
     "git:push": "node scripts/git-push-no-proxy.mjs",
     "verify:s6:local-full": "node scripts/verify-s6-local-full.mjs",
     "verify:s6:release": "node scripts/verify-s6-release.mjs",

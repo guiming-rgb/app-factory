@@ -2,12 +2,12 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-06-02 批次 O）
+## 当前事实（截至 2026-06-02 批次 P）
 
-- **生产就绪 ≈ 100%**：三栈 P1 + 鸿蒙详情页已部署
-- **生产**：https://app-factory-five.vercel.app · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc`
-- **P1 三栈**：`npm run verify:p1:production:sync:all`
-- **生产探针**：`npm run verify:v3:production:quick`
+- **跨平台**：工厂 Mac/Win 浏览器；生成 App → Flutter 桌面 + 鸿蒙系统 + 小程序（见 [跨平台运行说明.md](./跨平台运行说明.md)）
+- **生产**：https://app-factory-five.vercel.app
+- **门禁**：`verify:p:desktop:flutter` · `verify:p1:production:sync:all` · `verify:v3:production:quick`
+- **策略**：自动化兜底；真机 E1–E5 / DevEco **可选**（HANDOFF §跨平台策略）
 - **枪战**：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
 - **目录**：`cd "/Users/guiming/Desktop/app生产工厂/app-factory"`
 
@@ -29,4 +29,4 @@
 ## 必读
 
 - **[验收大纲-自动与必做.md](./验收大纲-自动与必做.md)** — 自动 vs 必做（当前 **0 阻塞**）
-- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次O.md](./收工记录-20260602-批次O.md)
+- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次P-跨平台.md](./收工记录-20260602-批次P-跨平台.md)

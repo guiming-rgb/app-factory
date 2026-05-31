@@ -21,6 +21,10 @@ import {
   resolveTabScreens
 } from "./dart-emit";
 import { emitTodoListPageDart } from "./emit-todo";
+import {
+  ensureFlutterPlatformFolders,
+  resolveFlutterPlatforms
+} from "./ensure-flutter-platforms";
 import { zipDirectory } from "./zip";
 
 const TEMPLATE_DIR = path.join(
@@ -83,6 +87,12 @@ export async function generateFlutterProject(
   const appDir = path.join(outRoot, spec.appName);
   await copyTemplate(appDir);
 
+  const flutterPlatforms = resolveFlutterPlatforms(spec);
+  const platformEnsure = await ensureFlutterPlatformFolders(
+    appDir,
+    flutterPlatforms
+  );
+
   await fs.writeFile(
     path.join(appDir, "app_spec.json"),
     JSON.stringify(spec, null, 2),
@@ -92,9 +102,13 @@ export async function generateFlutterProject(
   const limitations = spec.limitations?.length
     ? spec.limitations.map((l) => `- ${l}`).join("\n")
     : "- （无）";
+  const desktopNote = platformEnsure.ok
+    ? `- Flutter 平台: ${flutterPlatforms.join(", ")}（含 macOS / Windows 桌面）\n- macOS 运行: \`flutter run -d macos\`（需 Mac + Xcode）\n- Windows 运行: \`flutter run -d windows\`（需 Windows + Visual Studio 桌面开发）\n`
+    : `- Flutter 平台: ${flutterPlatforms.join(", ")}（桌面目录生成: ${platformEnsure.message ?? "未完成"}，可在工程根目录执行 \`flutter create . --platforms=macos,windows\`）\n`;
+
   await fs.writeFile(
     path.join(appDir, "LIMITATIONS.md"),
-    `# 生成说明\n\n- displayName: ${spec.displayName}\n- sourceProjectId: ${spec.sourceProjectId ?? "—"}\n- generatedAt: ${new Date().toISOString()}\n\n## limitations\n\n${limitations}\n`,
+    `# 生成说明\n\n- displayName: ${spec.displayName}\n- sourceProjectId: ${spec.sourceProjectId ?? "—"}\n- generatedAt: ${new Date().toISOString()}\n${desktopNote}\n## limitations\n\n${limitations}\n`,
     "utf8"
   );
 

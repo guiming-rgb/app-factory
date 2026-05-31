@@ -20,7 +20,9 @@ export function formatValidationErrorsForLlm(errors: string[]): string[] {
       hints.push("→ screen.id 必须匹配 ^[a-z][a-z0-9_]*$，如 match_list、profile");
     }
     if (raw.includes("targets/flutter") && raw.includes("platforms")) {
-      hints.push('→ targets.flutter.platforms 必须包含 ["ios","android"]');
+      hints.push(
+        '→ targets.flutter.platforms 须含 ios/android，建议含 macos/windows 以支持桌面安装'
+      );
     }
     if (raw.includes("targets/flutter") && raw.includes("formFactors")) {
       hints.push('→ targets.flutter.formFactors 必须包含 ["phone"]');

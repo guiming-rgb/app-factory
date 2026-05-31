@@ -27,10 +27,10 @@ export function buildMinimalSpecFromProject(project: {
     targets: {
       flutter: {
         enabled: true,
-        platforms: ["ios", "android"],
-        formFactors: ["phone"]
+        platforms: ["ios", "android", "macos", "windows"],
+        formFactors: ["phone", "tablet"]
       },
-      harmony: { enabled: false, formFactors: ["phone"] },
+      harmony: { enabled: true, formFactors: ["phone", "tablet"] },
       backend: { provider: "supabase" },
       wechatMiniProgram: {
         enabled: true,

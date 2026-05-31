@@ -6,10 +6,10 @@
   "targets": {
     "flutter": {
       "enabled": true,
-      "platforms": ["ios", "android"],
+      "platforms": ["ios", "android", "macos", "windows"],
       "formFactors": ["phone", "tablet"]
     },
-    "harmony": { "enabled": false, "formFactors": ["phone"] },
+    "harmony": { "enabled": true, "formFactors": ["phone", "tablet"] },
     "backend": { "provider": "supabase", "regionHint": "ap-east" },
     "wechatMiniProgram": {
       "enabled": true,

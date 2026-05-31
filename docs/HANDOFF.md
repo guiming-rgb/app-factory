@@ -1,8 +1,8 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-02（批次 O：三栈 P1 + 鸿蒙详情页 ✅）  
-> **今日收工**：[收工记录-20260602-批次O.md](./收工记录-20260602-批次O.md)  
-> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
+> **最后更新**：2026-06-02（批次 P：跨平台默认 + 部署 ✅）  
+> **今日收工**：[收工记录-20260602-批次P-跨平台.md](./收工记录-20260602-批次P-跨平台.md) · [批次 O](./收工记录-20260602-批次O.md)  
+> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
 
@@ -63,6 +63,34 @@
 - [x] **批次 N**：排队 stale 90s · 鸿蒙 `maxDuration=300` · fallback 文案 · `dpl_5Wou91AcnngP6ioU4DDNzD6rxW2c`
 - [x] **P1 生产同步**：`verify:p1:production:sync` ✅（枪战 harmony ~12.7s）
 - [x] **批次 O**：三栈 `verify:p1:production:sync:all` · 鸿蒙 `EntityDetail` · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc`
+- [x] **批次 P**：Flutter `macos`/`windows` 模板 · Spec 默认四平台 · 鸿蒙默认 `enabled: true` · `verify:p:desktop:flutter` · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W`
+
+## 跨平台策略（批次 P · 维护者必读）
+
+> 详表：[跨平台运行说明.md](./跨平台运行说明.md)
+
+| 对象 | Mac 笔记本 / iMac | Windows | 鸿蒙手机/平板 |
+|------|-------------------|---------|---------------|
+| **App 生产工厂（Web）** | ✅ 浏览器 + 本地双进程 | ✅ 同上 | —（用浏览器即可） |
+| **生成 · Flutter ZIP** | ✅ `flutter run -d macos` | ✅ `flutter run -d windows` | —（用鸿蒙栈） |
+| **生成 · 鸿蒙 ZIP** | DevEco 开发 | DevEco 开发 | ✅ **装到鸿蒙系统 Run** |
+| **生成 · 小程序** | 微信 Mac 版 | 微信 PC 版 | 微信鸿蒙版（视机型） |
+
+**原则（控制任务量，不膨胀）**
+
+1. **默认全开**：新 Spec / Report→Spec → `flutter.platforms` 含 `ios,android,macos,windows`；`harmony.enabled: true`。  
+2. **自动化兜底**：发版前 Agent 跑 `verify:p:desktop:flutter` + `verify:c6:harmony` +（可选）`verify:p1:production:sync:all`。  
+3. **人工验收从宽**：**不强制**全员真机 E1–E5；DevEco / 桌面 Flutter **可选**；以脚本 + 生产抽样为准。  
+4. **老项目**：旧 Spec/ZIP 行为不变；重要项目 **重新生成** Flutter/鸿蒙 ZIP 即获新平台目录。  
+5. **对外表述**：工厂在 Mac/Win 可用；生成 App 可在 Mac/Win **桌面（Flutter）** 与 **鸿蒙系统（鸿蒙 ZIP）** 运行——鸿蒙 ZIP **不能**在 Windows/Mac 上当普通 exe 双击。
+
+**一键复验**
+
+```bash
+npm run verify:p:desktop:flutter
+npm run verify:c6:harmony
+npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
+```
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 
@@ -94,15 +122,17 @@
 
 ## 明日维护者待办（真源）
 
-**优先**：[收工记录-20260528-今日收工.md](./收工记录-20260528-今日收工.md) §五 下一步
+**维护者必做**：**0**（`npm run maintainer:pending`）
 
-1. Git commit 本日未提交改动  
-2. （可选）DevEco 跑通 `simple_todo-harmony`  
-3. Flutter/小程序待办 MVP parity  
+**可选**
+
+1. 枪战项目重新「生成 Flutter / 鸿蒙 ZIP（同步）」→ 解压确认 `macos/`、`windows/`、`EntityDetail.ets`  
+2. （可选）DevEco / `flutter run -d macos|windows` 真机感受  
+3. `npm run stats:codegen -- 7` 看近 7 天成功率  
 
 ```bash
-npm run maintainer:pending   # 应为 0
-npm run verify:c6:harmony    # 含待办探针
+npm run maintainer:pending
+npm run verify:p:desktop:flutter
 ```
 
 ## 阻塞 / 风险（简）
@@ -117,6 +147,8 @@ npm run verify:c6:harmony    # 含待办探针
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-02 | **批次 P**：Flutter 桌面 `macos/windows` · 鸿蒙 Spec 默认开启 · [跨平台运行说明](./跨平台运行说明.md) · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W` |
+| 2026-06-02 | **批次 O**：三栈 P1 · 鸿蒙 EntityDetail · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc` |
 | 2026-05-28 | **P0 验收通过**；adm-zip、鸿蒙同步+待办 emit、下载缓存；生产 `dpl_GPRQo24…` |
 | 2026-05-22 | **C3** 小程序 WXML/WXSS 真编译 · **C1** Report→Spec · V5-8/V5-9 · S1 文档同步 |
 | 2026-05-19 | **三阶段路线** 启动：S5 codegen 清理 · **v5-6** 多 Agent 记忆 · C1 Spec 收紧 |

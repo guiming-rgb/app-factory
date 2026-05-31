@@ -3,7 +3,7 @@
   "appName": "kids_shooter",
   "displayName": "少年枪战",
   "targets": {
-    "flutter": { "enabled": true, "platforms": ["ios", "android"], "formFactors": ["phone"] },
+    "flutter": { "enabled": true, "platforms": ["ios", "android", "macos", "windows"], "formFactors": ["phone", "tablet"] },
     "harmony": { "enabled": true, "formFactors": ["phone"] },
     "backend": { "provider": "supabase" },
     "wechatMiniProgram": {

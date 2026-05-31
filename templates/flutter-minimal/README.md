@@ -11,6 +11,15 @@ dart analyze
 flutter test
 ```
 
+### 桌面（Mac 笔记本 / iMac / Windows）
+
+```bash
+flutter run -d macos      # 苹果电脑
+flutter run -d windows    # Windows 10/11
+flutter build macos
+flutter build windows
+```
+
 ## Supabase（可选）
 
 构建时传入（与工厂 `.env.local` 对齐）：

@@ -42,7 +42,7 @@
             "enabled": { "type": "boolean" },
             "platforms": {
               "type": "array",
-              "items": { "enum": ["ios", "android"] },
+              "items": { "enum": ["ios", "android", "macos", "windows"] },
               "minItems": 1
             },
             "formFactors": {

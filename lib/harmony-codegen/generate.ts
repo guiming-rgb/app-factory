@@ -106,7 +106,7 @@ export async function generateHarmonyProject(
 
   await fs.writeFile(
     path.join(appDir, "LIMITATIONS.md"),
-    `# Harmony 生成说明\n\n- displayName: ${spec.displayName}\n- bundleName: ${bundleName}\n- screens: ${screenCount}\n- generatedAt: ${new Date().toISOString()}\n${supabaseNote}\n## limitations\n\n${limitations}\n`,
+    `# Harmony 生成说明\n\n- displayName: ${spec.displayName}\n- bundleName: ${bundleName}\n- screens: ${screenCount}\n- generatedAt: ${new Date().toISOString()}\n${supabaseNote}\n## 在鸿蒙系统上运行\n\n1. 用 DevEco Studio 打开本工程根目录（含 entry、AppScope）\n2. 连接鸿蒙手机或启动鸿蒙模拟器\n3. 点击 Run 安装到设备\n4. 需网络时确认设备可访问 Supabase（工厂已注入常量时直连 REST）\n\n## limitations\n\n${limitations}\n`,
     "utf8"
   );
 

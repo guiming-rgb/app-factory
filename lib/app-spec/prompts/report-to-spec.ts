@@ -8,9 +8,11 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 - appName: 小写英文+下划线，^[a-z][a-z0-9_]*$，2～48 字符
 - displayName: 中文或英文产品名（非空）
 - targets.flutter.enabled: true
-- targets.flutter.platforms: 必须 ["ios","android"]
+- targets.flutter.platforms: 必须 ["ios","android","macos","windows"]（含苹果电脑与 Windows 桌面）
 - targets.flutter.formFactors: 必须 ["phone"]
 - targets.backend.provider: "supabase"
+- targets.harmony.enabled: 默认 true（华为鸿蒙手机/平板可安装运行）；仅当报告明确不做鸿蒙时为 false
+- targets.harmony.formFactors: 必须 ["phone"] 或 ["phone","tablet"]
 - targets.wechatMiniProgram.enabled: 报告提到小程序则为 true，否则 false
 - targets.wechatMiniProgram.tabBar: 与 navigation.tabs 对齐的 screen id 数组（至少 2 个）
 - targets.wechatMiniProgram.loginMethod: "wechat" | "phone" | "none"（默认 wechat）
@@ -41,7 +43,7 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 
 ## 输出示例（结构参考，内容按报告替换）
 
-{"specVersion":"0.1.0","appName":"kids_soccer","displayName":"少儿足球","targets":{"flutter":{"enabled":true,"platforms":["ios","android"],"formFactors":["phone"]},"harmony":{"enabled":false,"formFactors":["phone"]},"backend":{"provider":"supabase"},"wechatMiniProgram":{"enabled":true,"tabBar":["match_list","profile"],"loginMethod":"wechat","subPackages":[]}},"entities":[],"screens":[{"id":"home","title":"首页","type":"tabRoot","children":["match_list"]},{"id":"match_list","title":"比赛列表","type":"list"},{"id":"profile","title":"我的","type":"placeholder"}],"navigation":{"tabs":["match_list","profile"]},"roles":[],"auth":{"provider":"supabase","methods":["email"],"roles":["user"]},"api":[],"layoutRules":{},"complianceFlags":{"templateLimited":true},"limitations":["首版不含支付"]}`;
+{"specVersion":"0.1.0","appName":"kids_soccer","displayName":"少儿足球","targets":{"flutter":{"enabled":true,"platforms":["ios","android","macos","windows"],"formFactors":["phone","tablet"]},"harmony":{"enabled":true,"formFactors":["phone","tablet"]},"backend":{"provider":"supabase"},"wechatMiniProgram":{"enabled":true,"tabBar":["match_list","profile"],"loginMethod":"wechat","subPackages":[]}},"entities":[],"screens":[{"id":"home","title":"首页","type":"tabRoot","children":["match_list"]},{"id":"match_list","title":"比赛列表","type":"list"},{"id":"profile","title":"我的","type":"placeholder"}],"navigation":{"tabs":["match_list","profile"]},"roles":[],"auth":{"provider":"supabase","methods":["email"],"roles":["user"]},"api":[],"layoutRules":{},"complianceFlags":{"templateLimited":true},"limitations":["首版不含支付"]}`;
 
 export const REPORT_SPEC_MAX_ATTEMPTS = 4;
 export const REPORT_SLICE_CHARS = 16000;
