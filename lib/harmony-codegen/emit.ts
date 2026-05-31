@@ -2,8 +2,19 @@ import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import { emitHarmonyEntityListEts } from "./emit-entity-list";
+import { HARMONY_ENTITY_DETAIL_ROUTE } from "./emit-entity-detail";
 import { emitHarmonyTodoIndexEts } from "./emit-todo";
 import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
+
+/** 首个带实体的列表屏（用于详情页路由） */
+export function findEntityListScreen(spec: AppSpec): AppSpecScreen | undefined {
+  for (const screen of resolveCodegenScreens(spec)) {
+    if (screen.type === "list" && resolveEntityForScreen(spec, screen)) {
+      return screen;
+    }
+  }
+  return undefined;
+}
 
 /** screen id → Harmony 页面组件名（首屏固定 Index） */
 export function harmonyPageComponentName(
@@ -24,9 +35,13 @@ export function harmonyPageRoute(componentName: string): string {
 
 export function buildHarmonyMainPages(spec: AppSpec): string[] {
   const screens = resolveCodegenScreens(spec);
-  return screens.map((screen, i) =>
+  const pages = screens.map((screen, i) =>
     harmonyPageRoute(harmonyPageComponentName(screen.id, i))
   );
+  if (findEntityListScreen(spec)) {
+    pages.push(HARMONY_ENTITY_DETAIL_ROUTE);
+  }
+  return pages;
 }
 
 export function emitHarmonyPageEts(

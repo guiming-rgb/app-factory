@@ -1,10 +1,8 @@
-import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import type { AppSpecEntity } from "@/lib/app-spec/entity-scaffold";
 import {
-  buildEntityListRows,
   entityTableName,
   listTitleField,
   primaryKeyField,
-  resolveEntityForScreen,
   supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
 import {
@@ -12,80 +10,87 @@ import {
   resolveHarmonySupabaseForCodegen
 } from "./supabase-env";
 
+export const HARMONY_ENTITY_DETAIL_ROUTE = "pages/EntityDetail";
+export const HARMONY_ENTITY_DETAIL_COMPONENT = "EntityDetail";
+
 function esc(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-export function emitHarmonyEntityListEts(
-  spec: AppSpec,
-  screen: AppSpecScreen,
-  options: { entry: boolean }
-): string {
-  const entity = resolveEntityForScreen(spec, screen);
-  if (!entity) return "";
-  const rows = buildEntityListRows(entity, screen, spec);
-  const entry = options.entry ? "@Entry\n" : "";
-  const items = rows
-    .map(
-      (r) =>
-        `    { id: '${esc(r.id)}', title: '${esc(r.title)}', subtitle: '${esc(r.subtitle)}' }`
-    )
-    .join(",\n");
+export function emitHarmonyEntityDetailEts(entity: AppSpecEntity): string {
   const table = esc(entityTableName(entity));
   const titleField = esc(listTitleField(entity));
   const pk = esc(primaryKeyField(entity));
   const select = esc(supabaseSelectColumns(entity));
-  const entityLabel = esc(entity.name);
+  const entityName = esc(entity.name);
+  const fieldLines = entity.fields
+    .map(
+      (f) =>
+        `    { key: '${esc(f.name)}', prop: '${esc(f.name)}' }`
+    )
+    .join(",\n");
+
   const supabase = resolveHarmonySupabaseForCodegen();
   const supabaseUrl = escapeHarmonyStringLiteral(supabase.url);
   const supabaseKey = escapeHarmonyStringLiteral(supabase.anonKey);
 
-  return `${entry}import http from '@ohos.net.http';
+  return `import http from '@ohos.net.http';
 import router from '@ohos.router';
 
 const SUPABASE_URL: string = '${supabaseUrl}'
 const SUPABASE_ANON_KEY: string = '${supabaseKey}'
 
+@Entry
 @Component
-struct Index {
-  @State pageTitle: string = '${esc(screen.title)}'
-  @State items: Array<{ id: string; title: string; subtitle: string }> = [
-${items}
-  ]
+struct ${HARMONY_ENTITY_DETAIL_COMPONENT} {
+  @State recordId: string = ''
+  @State entityName: string = '${entityName}'
+  @State displayTitle: string = '详情'
   @State loading: boolean = false
   @State loadError: string = ''
-  private readonly fallback: Array<{ id: string; title: string; subtitle: string }> = [
-${items}
-  ]
+  @State fieldRows: Array<{ key: string; value: string }> = []
   private readonly tableName: string = '${table}'
   private readonly titleField: string = '${titleField}'
   private readonly pkField: string = '${pk}'
   private readonly selectCols: string = '${select}'
-  private readonly entityLabel: string = '${entityLabel}'
+  private readonly fieldDefs: Array<{ key: string; prop: string }> = [
+${fieldLines}
+  ]
 
   aboutToAppear(): void {
-    void this.loadItems()
+    const params = router.getParams() as Record<string, Object>
+    const id = params['id'] != null ? String(params['id']) : ''
+    const ent = params['entity'] != null ? String(params['entity']) : this.entityName
+    this.recordId = id
+    this.entityName = ent
+    if (id.length > 0) {
+      void this.loadRecord(id)
+    } else {
+      this.loadError = '缺少记录 id'
+    }
   }
 
   private supabaseReady(): boolean {
     return SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0
   }
 
-  async loadItems(): Promise<void> {
+  async loadRecord(recordId: string): Promise<void> {
     if (!this.supabaseReady()) {
-      this.items = this.fallback
+      this.loadError = 'Supabase 未配置'
       return
     }
     this.loading = true
     this.loadError = ''
     const httpRequest = http.createHttp()
+    const filter = encodeURIComponent(this.pkField + '=eq.' + recordId)
     const url =
       SUPABASE_URL.replace(/\\/$/, '') +
       '/rest/v1/' +
       this.tableName +
       '?select=' +
       encodeURIComponent(this.selectCols) +
-      '&limit=20'
+      '&' +
+      filter
     try {
       const res = await httpRequest.request(url, {
         method: http.RequestMethod.GET,
@@ -102,34 +107,30 @@ ${items}
       if (res.responseCode === 200 && res.result) {
         const raw = res.result as string
         const rows = JSON.parse(raw) as Array<Record<string, Object>>
-        if (Array.isArray(rows) && rows.length > 0) {
-          const mapped: Array<{ id: string; title: string; subtitle: string }> = []
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i]
-            const idVal = row[this.pkField] != null ? String(row[this.pkField]) : String(i + 1)
-            const titleVal =
-              row[this.titleField] != null
-                ? String(row[this.titleField])
-                : row['title'] != null
-                  ? String(row['title'])
-                  : '—'
-            mapped.push({
-              id: idVal,
-              title: titleVal,
-              subtitle: this.entityLabel + ' · ' + idVal
-            })
+        const row = Array.isArray(rows) && rows.length > 0 ? rows[0] : null
+        if (row) {
+          const titleVal =
+            row[this.titleField] != null
+              ? String(row[this.titleField])
+              : row['title'] != null
+                ? String(row['title'])
+                : '—'
+          this.displayTitle = titleVal
+          const mapped: Array<{ key: string; value: string }> = []
+          for (let i = 0; i < this.fieldDefs.length; i++) {
+            const f = this.fieldDefs[i]
+            const v = row[f.prop] != null ? String(row[f.prop]) : '—'
+            mapped.push({ key: f.key, value: v })
           }
-          this.items = mapped
+          this.fieldRows = mapped
         } else {
-          this.items = this.fallback
+          this.loadError = '未找到记录'
         }
       } else {
-        this.items = this.fallback
         this.loadError = 'HTTP ' + res.responseCode
       }
     } catch (_e) {
-      this.items = this.fallback
-      this.loadError = '拉取失败，已显示示例'
+      this.loadError = '加载失败'
     } finally {
       httpRequest.destroy()
       this.loading = false
@@ -138,41 +139,29 @@ ${items}
 
   build() {
     Column() {
-      Text(this.pageTitle)
+      Text(this.displayTitle)
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
         .margin({ bottom: 8 })
-      Text(this.entityLabel + ' · ${esc(spec.displayName)}')
+      Text(this.entityName + ' · ' + this.recordId)
         .fontSize(14)
         .opacity(0.7)
-        .margin({ bottom: 8 })
+        .margin({ bottom: 12 })
       if (this.loading) {
         Text('加载中…').fontSize(12).opacity(0.6).margin({ bottom: 8 })
       }
       if (this.loadError.length > 0) {
         Text(this.loadError).fontSize(12).fontColor('#b45309').margin({ bottom: 8 })
       }
-      List() {
-        ForEach(this.items, (item: { id: string; title: string; subtitle: string }) => {
-          ListItem() {
-            Column() {
-              Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-              Text(item.subtitle).fontSize(12).opacity(0.65).margin({ top: 4 })
-            }
-            .width('100%')
-            .alignItems(HorizontalAlign.Start)
-            .padding(12)
-          }
-          .onClick(() => {
-            router.pushUrl({
-              url: 'pages/EntityDetail',
-              params: { id: item.id, entity: this.entityLabel }
-            })
-          })
-        }, (item: { id: string }) => item.id)
-      }
-      .layoutWeight(1)
-      .width('100%')
+      ForEach(this.fieldRows, (row: { key: string; value: string }) => {
+        Column() {
+          Text(row.key).fontSize(12).opacity(0.6)
+          Text(row.value).fontSize(16).margin({ top: 4 })
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .padding({ top: 8, bottom: 8 })
+      }, (row: { key: string }) => row.key)
     }
     .width('100%')
     .height('100%')

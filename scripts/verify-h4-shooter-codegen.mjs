@@ -52,6 +52,11 @@ const ets = fs.readFileSync(
   "utf8"
 );
 assert(ets.includes("ForEach"), "harmony 无列表");
-console.log("✓ 鸿蒙 Index 列表");
+assert(ets.includes("pages/EntityDetail"), "harmony 无详情路由");
+assert(
+  fs.existsSync("/tmp/app-factory-h4-harmony/entry/src/main/ets/pages/EntityDetail.ets"),
+  "harmony 无 EntityDetail.ets"
+);
+console.log("✓ 鸿蒙 Index 列表 + 详情页");
 
 console.log("\n✅ verify:h4:shooter 通过（生产 8/8 请维护者在项目 0ea7a53c… 点生成）");

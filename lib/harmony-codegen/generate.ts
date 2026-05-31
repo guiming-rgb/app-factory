@@ -10,8 +10,14 @@ import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
   buildHarmonyMainPagesJson,
   emitHarmonyPageEts,
+  findEntityListScreen,
   harmonyPageComponentName
 } from "./emit";
+import {
+  emitHarmonyEntityDetailEts,
+  HARMONY_ENTITY_DETAIL_COMPONENT
+} from "./emit-entity-detail";
+import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
 import { resolveHarmonySupabaseForCodegen } from "./supabase-env";
 
 const TEMPLATE_DIR = path.join(process.cwd(), "templates", "harmony-minimal");
@@ -117,6 +123,19 @@ export async function generateHarmonyProject(
   await fs.writeFile(appScopePath, appScope, "utf8");
 
   const emitted = await emitHarmonyScreens(appDir, spec);
+
+  const listScreen = findEntityListScreen(spec);
+  if (listScreen) {
+    const entity = resolveEntityForScreen(spec, listScreen);
+    if (entity) {
+      const pagesDir = path.join(appDir, "entry/src/main/ets/pages");
+      await fs.writeFile(
+        path.join(pagesDir, `${HARMONY_ENTITY_DETAIL_COMPONENT}.ets`),
+        emitHarmonyEntityDetailEts(entity),
+        "utf8"
+      );
+    }
+  }
 
   return {
     outputDir: appDir,

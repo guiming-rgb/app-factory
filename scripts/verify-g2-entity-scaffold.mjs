@@ -78,6 +78,27 @@ assert(
   !harmonyIndex.includes("待接 Supabase"),
   "harmony fallback 仍含过时文案"
 );
-console.log("✓ 鸿蒙 Index 实体列表 + Supabase REST");
+assert(
+  harmonyIndex.includes("router.pushUrl") &&
+    harmonyIndex.includes("pages/EntityDetail"),
+  "harmony 列表缺少详情导航"
+);
+const harmonyDetail = fs.readFileSync(
+  "/tmp/app-factory-g2-harmony/entry/src/main/ets/pages/EntityDetail.ets",
+  "utf8"
+);
+const harmonyPages = JSON.parse(
+  fs.readFileSync(
+    "/tmp/app-factory-g2-harmony/entry/src/main/resources/base/profile/main_pages.json",
+    "utf8"
+  )
+);
+assert(
+  harmonyPages.src.includes("pages/EntityDetail"),
+  "harmony main_pages 无 EntityDetail"
+);
+assert(harmonyDetail.includes("router.getParams"), "harmony 详情无 getParams");
+assert(harmonyDetail.includes("/rest/v1/"), "harmony 详情无 PostgREST");
+console.log("✓ 鸿蒙 Index 列表 + EntityDetail + Supabase REST");
 
 console.log("\n✅ verify:g2:entity-scaffold 通过\n");

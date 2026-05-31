@@ -2,11 +2,11 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-06-02 批次 N）
+## 当前事实（截至 2026-06-02 批次 O）
 
-- **生产就绪 ≈ 100%**：P1 同步 codegen 脚本验收 ✅
-- **生产**：https://app-factory-five.vercel.app · `dpl_5Wou91AcnngP6ioU4DDNzD6rxW2c`
-- **P1 复验**：`npm run verify:p1:production:sync`（需 `V3_HTTP_PROXY` 7897）
+- **生产就绪 ≈ 100%**：三栈 P1 + 鸿蒙详情页已部署
+- **生产**：https://app-factory-five.vercel.app · `dpl_9cKbfQNeZTZyXJdxxoxYYgnJwvKc`
+- **P1 三栈**：`npm run verify:p1:production:sync:all`
 - **生产探针**：`npm run verify:v3:production:quick`
 - **枪战**：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
 - **目录**：`cd "/Users/guiming/Desktop/app生产工厂/app-factory"`
@@ -29,4 +29,4 @@
 ## 必读
 
 - **[验收大纲-自动与必做.md](./验收大纲-自动与必做.md)** — 自动 vs 必做（当前 **0 阻塞**）
-- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次N.md](./收工记录-20260602-批次N.md)
+- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次O.md](./收工记录-20260602-批次O.md)
