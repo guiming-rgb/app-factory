@@ -3,9 +3,16 @@ import {
   finalizeDesktopGhaArtifacts,
   pollDesktopGhaOnce
 } from "@/lib/codegen/desktop-gha-orchestrator";
-import { mergeCodegenRunNestedMetadata } from "@/lib/codegen/merge-run-metadata";
+import {
+  mergeCodegenRunMetadata,
+  mergeCodegenRunNestedMetadata
+} from "@/lib/codegen/merge-run-metadata";
+import { resolveMacGithubUrl } from "@/lib/codegen/mac-download";
 import type { CodegenRunRow } from "@/lib/codegen/runs";
-import { isDesktopGhaEnabled } from "@/lib/github/desktop-gha-config";
+import {
+  githubActionsRunArtifactsUrl,
+  isDesktopGhaEnabled
+} from "@/lib/github/desktop-gha-config";
 
 type DesktopGhaMeta = {
   status?: string;
@@ -54,6 +61,28 @@ export async function syncDesktopGhaIfNeeded(run: CodegenRunRow): Promise<boolea
 
   if (status === "completed" && hasMac && hasWin) {
     return false;
+  }
+
+  if (
+    status === "completed" &&
+    hasWin &&
+    !resolveMacGithubUrl(metadata) &&
+    workflowRunId
+  ) {
+    const url = githubActionsRunArtifactsUrl(workflowRunId);
+    if (url) {
+      await mergeCodegenRunMetadata(run.id, {
+        desktopMacOnGithub: true,
+        desktopMacGithubUrl: url
+      });
+      await mergeCodegenRunNestedMetadata(run.id, "desktopGha", {
+        desktopMacOnGithub: true,
+        desktopMacGithubUrl: url,
+        message:
+          "Win 包已在本页下载；Mac .app 约 50MB，请点「Mac(GitHub)」在 Artifacts 下载"
+      });
+      return true;
+    }
   }
 
   if (status === "completed" && (hasMacStored || hasWin)) {

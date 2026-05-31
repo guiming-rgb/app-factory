@@ -814,14 +814,6 @@ export function CodegenPanel({
                             ) : null}
                           </>
                         ) : null}
-                        {run.target === "flutter" && run.downloadMacUrl ? (
-                          <a
-                            href={run.downloadMacUrl}
-                            className="font-medium text-teal-800 underline"
-                          >
-                            Mac .app
-                          </a>
-                        ) : null}
                         {run.target === "flutter" &&
                         run.downloadMacGithubUrl ? (
                           <a
@@ -829,9 +821,16 @@ export function CodegenPanel({
                             target="_blank"
                             rel="noreferrer"
                             className="font-medium text-teal-800 underline"
-                            title="Mac 包约 50MB，在 GitHub Actions 页底部 Artifacts 下载 macos-…"
+                            title="Mac 包约 50MB：打开后滚到 Artifacts，下载 macos- 开头的 zip"
                           >
-                            Mac(GitHub)
+                            Mac .app(GitHub)
+                          </a>
+                        ) : run.target === "flutter" && run.downloadMacUrl ? (
+                          <a
+                            href={run.downloadMacUrl}
+                            className="font-medium text-teal-800 underline"
+                          >
+                            Mac .app
                           </a>
                         ) : null}
                         {run.target === "flutter" && run.downloadWinUrl ? (

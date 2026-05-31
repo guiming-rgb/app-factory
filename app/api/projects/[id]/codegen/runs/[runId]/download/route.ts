@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { artifactExists, readArtifactFile } from "@/lib/codegen/artifacts";
+import {
+  resolveMacGithubUrl,
+  shouldUseMacGithubDownload
+} from "@/lib/codegen/mac-download";
 import { getCodegenRun } from "@/lib/codegen/runs";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
@@ -40,11 +44,18 @@ export async function GET(
       );
     }
 
-    const meta = (run.metadata ?? {}) as {
+    const meta = (run.metadata ?? {}) as Record<string, unknown> & {
       fileName?: string;
       desktopMacArtifactPath?: string;
       desktopWinArtifactPath?: string;
     };
+
+    if (kind === "macos") {
+      const macGithub = resolveMacGithubUrl(meta);
+      if (shouldUseMacGithubDownload(meta) && macGithub) {
+        return NextResponse.redirect(macGithub, 302);
+      }
+    }
 
     let relativePath = run.artifact_path;
     if (kind === "macos" && meta.desktopMacArtifactPath) {
@@ -64,6 +75,12 @@ export async function GET(
     }
 
     if (!(await artifactExists(relativePath))) {
+      if (kind === "macos") {
+        const macGithub = resolveMacGithubUrl(meta);
+        if (macGithub) {
+          return NextResponse.redirect(macGithub, 302);
+        }
+      }
       return NextResponse.json(
         { error: "产物文件不存在（本地与 Storage 均无，请重新生成）" },
         { status: 410 }

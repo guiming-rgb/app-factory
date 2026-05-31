@@ -1,4 +1,8 @@
 import { artifactExists } from "@/lib/codegen/artifacts";
+import {
+  resolveMacGithubUrl,
+  shouldUseMacGithubDownload
+} from "@/lib/codegen/mac-download";
 import type { CodegenRunRow } from "@/lib/codegen/runs";
 
 export type CodegenRunView = CodegenRunRow & {
@@ -37,8 +41,10 @@ export async function enrichCodegenRun(
     typeof meta.desktopWinArtifactPath === "string"
       ? meta.desktopWinArtifactPath
       : null;
-  const hasMac =
+  const hasMacStored =
     run.status === "completed" && !!macPath && (await artifactExists(macPath));
+  const macUseGithub = shouldUseMacGithubDownload(meta);
+  const hasMac = hasMacStored && !macUseGithub;
   const hasWin =
     run.status === "completed" && !!winPath && (await artifactExists(winPath));
 
@@ -51,16 +57,11 @@ export async function enrichCodegenRun(
 
   const base = `/api/projects/${projectId}/codegen/runs/${run.id}/download`;
 
-  const macGithubUrl =
-    typeof meta.desktopMacGithubUrl === "string"
-      ? meta.desktopMacGithubUrl
-      : typeof meta.desktopGha?.desktopMacGithubUrl === "string"
-        ? meta.desktopGha.desktopMacGithubUrl
-        : null;
+  const macGithubUrl = resolveMacGithubUrl(meta);
   const showMacGithub =
     run.status === "completed" &&
-    (meta.desktopMacOnGithub === true || (!hasMac && !!macGithubUrl)) &&
-    !!macGithubUrl;
+    !!macGithubUrl &&
+    (macUseGithub || !hasMacStored);
 
   return {
     ...run,
