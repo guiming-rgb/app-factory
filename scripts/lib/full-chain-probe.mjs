@@ -1,7 +1,10 @@
 /**
  * 共享：生产/本地 HTTP 探针 + 可选 Auth Cookie
  */
-const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = Math.max(
+  30_000,
+  Number(process.env.V3_PROBE_TIMEOUT_MS) || 60_000
+);
 const DEFAULT_RETRIES = 3;
 
 export async function sleep(ms) {
