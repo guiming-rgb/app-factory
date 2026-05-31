@@ -136,7 +136,7 @@ export function buildEntityListRows(
   const base = screen.title || entity.name;
   const app = spec.displayName || spec.appName;
   const samples = [
-    { suffix: "一", note: "示例数据 · 待接 Supabase" },
+    { suffix: "一", note: "离线示例（拉取失败时显示）" },
     { suffix: "二", note: "由 App Spec 生成" },
     { suffix: "三", note: app.slice(0, 24) }
   ];

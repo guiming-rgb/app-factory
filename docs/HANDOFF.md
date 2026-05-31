@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-01（今日收工：鸿蒙 ZIP 真源 + 生产探针 ✅）  
-> **今日收工**：[收工记录-20260601-今日收工.md](./收工记录-20260601-今日收工.md)  
+> **最后更新**：2026-06-02（批次 N + P1 生产同步 codegen ✅）  
+> **今日收工**：[收工记录-20260602-批次N.md](./收工记录-20260602-批次N.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -60,6 +60,8 @@
 - [x] **git push**：`85652e2` + 收尾 `7e0385c` on `main`
 - [x] **收尾脚本**：`git:push` · `verify:v3:production:quick` + `preload-fetch-proxy`（`.env.local` 设 `V3_HTTP_PROXY`，勿提交）
 - [x] **M 鸿蒙真源**：生产下载 ZIP 含 Supabase 注入（维护者 2026-06-01）
+- [x] **批次 N**：排队 stale 90s · 鸿蒙 `maxDuration=300` · fallback 文案 · `dpl_5Wou91AcnngP6ioU4DDNzD6rxW2c`
+- [x] **P1 生产同步**：`verify:p1:production:sync` ✅（枪战 harmony ~12.7s）
 
 ## 验收 A 样本项目（2026-05-19，勿贴密钥）
 

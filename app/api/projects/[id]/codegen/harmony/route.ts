@@ -7,6 +7,8 @@ import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** 与 flutter/wechat 同步 ZIP 一致，避免 Vercel 默认超时截断 */
+export const maxDuration = 300;
 
 export async function POST(
   req: NextRequest,

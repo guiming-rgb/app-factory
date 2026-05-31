@@ -2,8 +2,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 import { markCodegenRunFailed } from "./runs";
 
-/** queued 长时间未消费（Inngest 未启动 / 端口错位） */
-export const CODEGEN_QUEUED_STALE_MS = 15 * 60 * 1000;
+/** queued 长时间未消费（与 CodegenPanel「排队超过 90 秒」提示一致） */
+export const CODEGEN_QUEUED_STALE_MS = 90 * 1000;
 
 /** running 执行超时 */
 export const CODEGEN_RUNNING_STALE_MS = 2 * 60 * 60 * 1000;

@@ -74,6 +74,10 @@ assert(
   "harmony 缺少 Supabase HTTP"
 );
 assert(harmonyIndex.includes("/rest/v1/"), "harmony 缺少 PostgREST 路径");
+assert(
+  !harmonyIndex.includes("待接 Supabase"),
+  "harmony fallback 仍含过时文案"
+);
 console.log("✓ 鸿蒙 Index 实体列表 + Supabase REST");
 
 console.log("\n✅ verify:g2:entity-scaffold 通过\n");
