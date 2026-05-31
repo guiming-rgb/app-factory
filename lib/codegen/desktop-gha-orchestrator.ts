@@ -37,16 +37,20 @@ export async function scheduleDesktopGhaAfterFlutter(
     appName: input.appName
   });
 
-  await inngest.send({
-    name: "project/codegen.flutter.desktop-gha.requested",
-    data: {
-      projectId: input.projectId,
-      runId: input.runId,
-      appName: input.appName,
-      workflowRunId: triggered.workflowRunId,
-      userId: input.userId
-    }
-  });
+  try {
+    await inngest.send({
+      name: "project/codegen.flutter.desktop-gha.requested",
+      data: {
+        projectId: input.projectId,
+        runId: input.runId,
+        appName: input.appName,
+        workflowRunId: triggered.workflowRunId,
+        userId: input.userId
+      }
+    });
+  } catch {
+    /* 生产未配 Inngest 时：刷新列表会通过 sync-desktop-gha 拉回产物 */
+  }
 
   await mergeCodegenRunNestedMetadata(input.runId, "desktopGha", {
     status: "queued",

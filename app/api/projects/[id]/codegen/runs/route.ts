@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { enrichCodegenRuns } from "@/lib/codegen/run-response";
 import { checkCodegenInngestPreflight } from "@/lib/codegen/inngest-preflight";
+import { syncDesktopGhaForRuns } from "@/lib/codegen/sync-desktop-gha";
 import { listCodegenRuns } from "@/lib/codegen/runs";
 import { cleanupStaleCodegenRuns } from "@/lib/codegen/stale-runs";
 import {
@@ -30,7 +31,9 @@ export async function GET(
 
     const runs = await listCodegenRuns(projectId, 20, supabase);
     await cleanupStaleCodegenRuns({ projectId });
-    const enriched = await enrichCodegenRuns(runs, projectId);
+    await syncDesktopGhaForRuns(runs);
+    const refreshed = await listCodegenRuns(projectId, 20, supabase);
+    const enriched = await enrichCodegenRuns(refreshed, projectId);
     const inngestPreflight = await checkCodegenInngestPreflight();
     return NextResponse.json({ runs: enriched, inngestPreflight }, {
       headers: { "Cache-Control": "no-store" }

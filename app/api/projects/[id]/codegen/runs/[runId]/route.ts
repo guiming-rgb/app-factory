@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { enrichCodegenRun } from "@/lib/codegen/run-response";
+import { syncDesktopGhaIfNeeded } from "@/lib/codegen/sync-desktop-gha";
 import { getCodegenRun } from "@/lib/codegen/runs";
 import { guardProjectAccess } from "@/lib/auth/require-project-access";
 
@@ -19,10 +20,13 @@ export async function GET(
       return denied;
     }
 
-    const run = await getCodegenRun(runId);
+    let run = await getCodegenRun(runId);
     if (!run || run.project_id !== projectId) {
       return NextResponse.json({ error: "codegen 记录不存在" }, { status: 404 });
     }
+
+    await syncDesktopGhaIfNeeded(run);
+    run = (await getCodegenRun(runId)) ?? run;
 
     const enriched = await enrichCodegenRun(run, projectId);
 
