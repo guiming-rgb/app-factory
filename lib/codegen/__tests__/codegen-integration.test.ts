@@ -117,7 +117,7 @@ describe("Codegen Integration", () => {
       ]
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line
     const ddlResult = generateCreateTableDDL(spec as any);
 
     const ddl = ddlResult;
