@@ -4,990 +4,210 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { GitHubConnectButton } from "@/components/GitHubConnectButton";
+import { CodegenTargetCards } from "@/components/CodegenTargetCard";
+import { CodegenRunRow } from "@/components/CodegenRunRow";
+import { useCodegenRuns, type CodegenRun } from "@/components/hooks/useCodegenRuns";
 import {
   classifyCodegenFailure,
-  failureRemediation,
   latestRunByTarget,
-  qualityGateBadges,
   type CodegenTarget as QualityTarget,
-  type QualityGateBadge
 } from "@/lib/codegen/format-run-quality";
 
+const TARGET_LABEL: Record<string, string> = { flutter: "Flutter", wechat: "微信小程序", harmony: "鸿蒙 ArkTS" };
 const SPEC_QUALITY_WARN = 60;
-
-type SpecQualityPreview = {
-  score: number;
-  warnings: string[];
-};
 
 type CodegenTarget = "flutter" | "wechat" | "harmony";
 
-type CodegenRun = {
-  id: string;
-  target: CodegenTarget;
-  status: "queued" | "running" | "completed" | "failed";
-  spec_source: string | null;
-  log: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-  downloadUrl?: string | null;
-  downloadMacUrl?: string | null;
-  downloadMacGithubUrl?: string | null;
-  downloadWinUrl?: string | null;
-  previewUrl?: string | null;
-};
-
-const TARGET_LABEL: Record<CodegenTarget, string> = {
-  flutter: "Flutter",
-  wechat: "微信小程序",
-  harmony: "鸿蒙 ArkTS"
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  queued: "排队中",
-  running: "生成中",
-  completed: "已完成",
-  failed: "失败"
-};
-
-function formatAnalyzeStatus(meta: Record<string, unknown>) {
-  let s = "";
-  const status = meta.analyzeStatus;
-  if (status === "passed") s = " · analyze ✅";
-  else if (status === "skipped") s = " · analyze 跳过";
-  else if (status === "failed") s = " · analyze ❌";
-  const env = meta.analyzeEnvironment;
-  if (env === "vercel-no-docker") s += "（Vercel 无 Docker）";
-  else if (env === "no-docker") s += "（无 Docker）";
-  else if (env === "harmony-structure-only") s += "（结构门禁）";
-  const buildStatus = meta.buildStatus;
-  if (buildStatus === "passed") s += " · build ✅";
-  else if (buildStatus === "skipped") s += " · build 跳过";
-  else if (buildStatus === "failed") s += " · build ❌";
-  const rounds = meta.autoFixRounds;
-  if (typeof rounds === "number" && rounds > 0) {
-    s += ` · 自动修 ${rounds} 轮`;
-  }
-  const score = meta.specQualityScore;
-  if (typeof score === "number") {
-    s += ` · Spec ${score}`;
-  }
-  const screens = meta.screenCount;
-  if (typeof screens === "number" && screens > 0) {
-    s += ` · ${screens} 屏`;
-  }
-  return s;
-}
-
-function formatSpecSource(source: string | null, meta: Record<string, unknown>) {
-  const base = source === "report-llm"
-    ? "报告→Spec（LLM）"
-    : source === "title-heuristic"
-      ? "标题启发式（回退）"
-      : source ?? "—";
-  return base + formatAnalyzeStatus(meta);
-}
-
-const STUCK_QUEUED_MS = 3 * 60 * 1000;
-const STUCK_RUNNING_MS = 10 * 60 * 1000;
-const QUEUED_SLOW_MS = 90 * 1000;
-
-function runAgeMs(run: CodegenRun): number {
-  return Date.now() - new Date(run.created_at).getTime();
-}
-
-function isRunStuck(run: CodegenRun): boolean {
-  if (run.status !== "queued" && run.status !== "running") return false;
-  const age = runAgeMs(run);
-  if (run.status === "queued") return age > STUCK_QUEUED_MS;
-  return age > STUCK_RUNNING_MS;
-}
-
-function isQueuedSlow(run: CodegenRun): boolean {
-  return run.status === "queued" && runAgeMs(run) > QUEUED_SLOW_MS;
-}
-
-type DesktopGhaMeta = {
-  status?: string;
-  message?: string;
-  htmlUrl?: string;
-};
-
-function getDesktopGha(meta: Record<string, unknown>): DesktopGhaMeta | null {
-  const raw = meta.desktopGha;
-  if (!raw || typeof raw !== "object") return null;
-  return raw as DesktopGhaMeta;
-}
+type SpecQualityPreview = { score: number; warnings: string[] };
 
 function isDesktopGhaPending(run: CodegenRun): boolean {
   if (run.target !== "flutter" || run.status !== "completed") return false;
-  const s = getDesktopGha(run.metadata ?? {})?.status;
-  return s === "queued" || s === "running";
-}
-
-function failureHint(run: CodegenRun, meta: Record<string, unknown>): string {
-  const breakdown = classifyCodegenFailure(meta, run.log);
-  if (run.log) {
-    return `[${breakdown.category}] ${breakdown.detail}\n${run.log}`;
-  }
-  const parts = [
-    `[${breakdown.category}] ${breakdown.detail}`,
-    meta.buildReason,
-    meta.analyzeReason,
-    meta.specQualityWarnings,
-    meta.specWarning
-  ].filter((x): x is string => typeof x === "string" && x.length > 0);
-  return parts[0] ?? "生成失败，可点「重试」";
-}
-
-function badgeClass(tone: QualityGateBadge["tone"]): string {
-  if (tone === "ok") return "bg-emerald-100 text-emerald-900";
-  if (tone === "fail") return "bg-red-100 text-red-800";
-  if (tone === "warn") return "bg-amber-100 text-amber-900";
-  return "bg-violet-100 text-violet-800";
+  const s = (run.metadata as Record<string, unknown> | null)?.desktopGha as { status?: string } | undefined;
+  return s?.status === "queued" || s?.status === "running";
 }
 
 export function CodegenPanel({
   projectId,
   initialRuns = [],
-  embedded = false
+  embedded = false,
 }: {
   projectId: string;
   initialRuns?: CodegenRun[];
   embedded?: boolean;
 }) {
-  const [runs, setRuns] = useState<CodegenRun[]>(initialRuns);
+  const { runs, setRuns, error, setError, inngestHint, fetchRuns, fetchSingleRun, startPolling } = useCodegenRuns(projectId);
   const [loadingTarget, setLoadingTarget] = useState<CodegenTarget | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
   const [pushingRunId, setPushingRunId] = useState<string | null>(null);
   const [pushingAll, setPushingAll] = useState(false);
   const [cancelingRunId, setCancelingRunId] = useState<string | null>(null);
-  const [inngestHint, setInngestHint] = useState<string | null>(null);
   const [hideFailedRuns, setHideFailedRuns] = useState(true);
   const [copiedRepoRunId, setCopiedRepoRunId] = useState<string | null>(null);
-  const [specQuality, setSpecQuality] = useState<SpecQualityPreview | null>(
-    null
-  );
+  const [specQuality, setSpecQuality] = useState<SpecQualityPreview | null>(null);
   const [syncProgress, setSyncProgress] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const failedRunCount = runs.filter((r) => r.status === "failed").length;
-  const visibleRuns = hideFailedRuns
-    ? runs.filter((r) => r.status !== "failed")
-    : runs;
-
-  const fetchRuns = useCallback(async () => {
-    const res = await fetch(`/api/projects/${projectId}/codegen/runs`, {
-      cache: "no-store"
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data?.error ?? "加载 codegen 记录失败");
-    }
-    setRuns(data.runs ?? []);
-    const preflight = data.inngestPreflight as
-      | { ok?: boolean; message?: string; hint?: string }
-      | undefined;
-    if (preflight && !preflight.ok) {
-      setInngestHint(
-        [preflight.message, preflight.hint].filter(Boolean).join(" · ")
-      );
-    } else if (preflight?.hint) {
-      setInngestHint(preflight.hint);
-    } else {
-      setInngestHint(null);
-    }
-    return data.runs as CodegenRun[];
-  }, [projectId]);
-
-  const pollRun = useCallback(
-    async (runId: string) => {
-      const res = await fetch(
-        `/api/projects/${projectId}/codegen/runs/${runId}`,
-        { cache: "no-store" }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error ?? "查询 codegen 状态失败");
-      }
-
-      const updated = data.run as CodegenRun;
-      updated.downloadUrl = data.downloadUrl ?? updated.downloadUrl ?? null;
-      updated.downloadMacUrl =
-        data.downloadMacUrl ?? updated.downloadMacUrl ?? null;
-      updated.downloadMacGithubUrl =
-        data.downloadMacGithubUrl ?? updated.downloadMacGithubUrl ?? null;
-      updated.downloadWinUrl =
-        data.downloadWinUrl ?? updated.downloadWinUrl ?? null;
-      updated.previewUrl = data.previewUrl ?? updated.previewUrl ?? null;
-
-      setRuns((prev) => {
-        const rest = prev.filter((r) => r.id !== runId);
-        return [updated, ...rest];
-      });
-
-      return updated;
-    },
-    [projectId]
-  );
+  // 初始化
+  useEffect(() => {
+    // Avoid duplicate: useCodegenRuns already fetches initial data if runs is empty in the hook
+    // but here we set initial runs passed from server
+    if (initialRuns.length > 0) setRuns(initialRuns);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    void fetchRuns().catch(() => {
-      /* 首屏静默；用户可点刷新或重新提交 */
-    });
     void fetch(`/api/projects/${projectId}/spec`, { cache: "no-store" })
       .then((r) => r.json())
-      .then((data: { quality?: SpecQualityPreview }) => {
-        if (data.quality) setSpecQuality(data.quality);
-      })
+      .then((data: { quality?: SpecQualityPreview }) => { if (data.quality) setSpecQuality(data.quality); })
       .catch(() => {});
-  }, [fetchRuns, projectId]);
+  }, [projectId]);
 
-  useEffect(() => {
-    if (!runs.some(isDesktopGhaPending)) return;
-    const id = setInterval(() => {
-      void fetchRuns().catch(() => {});
-    }, 15000);
-    return () => clearInterval(id);
-  }, [runs, fetchRuns]);
-
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-      }
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
-      }
-    };
-  }, []);
+  useEffect(() => { return () => { if (successTimerRef.current) clearTimeout(successTimerRef.current); }; }, []);
 
   function showSuccess(message: string) {
     setSuccessMsg(message);
-    if (successTimerRef.current) {
-      clearTimeout(successTimerRef.current);
-    }
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
     successTimerRef.current = setTimeout(() => setSuccessMsg(null), 8000);
-  }
-
-  function absoluteDownloadUrl(run: CodegenRun): string | null {
-    if (!run.downloadUrl) return null;
-    if (run.downloadUrl.startsWith("http")) return run.downloadUrl;
-    if (typeof window === "undefined") return run.downloadUrl;
-    return `${window.location.origin}${run.downloadUrl}`;
-  }
-
-  function startPolling(runId: string) {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-    }
-
-    pollRef.current = setInterval(async () => {
-      try {
-        const run = await pollRun(runId);
-        const ghaPending = isDesktopGhaPending(run);
-        if (
-          (run.status === "completed" || run.status === "failed") &&
-          !ghaPending
-        ) {
-          if (pollRef.current) {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-          }
-          if (run.status === "completed") {
-            const gha = getDesktopGha(run.metadata ?? {});
-            if (gha?.status === "completed") {
-              showSuccess(
-                `${TARGET_LABEL[run.target]} 已完成，Mac/Win 可双击包已就绪`
-              );
-            } else {
-              showSuccess(`${TARGET_LABEL[run.target]} 已完成，可下载 ZIP`);
-            }
-          }
-          await fetchRuns();
-        }
-      } catch {
-        /* 轮询静默重试 */
-      }
-    }, 3000);
   }
 
   async function handleGenerate(target: CodegenTarget) {
     setLoadingTarget(target);
     setError("");
-
     try {
-      const specRes = await fetch(`/api/projects/${projectId}/spec`, {
-        cache: "no-store"
-      });
+      const specRes = await fetch(`/api/projects/${projectId}/spec`, { cache: "no-store" });
       if (specRes.ok) {
-        const specData = (await specRes.json()) as {
-          quality?: SpecQualityPreview;
-        };
+        const specData = (await specRes.json()) as { quality?: SpecQualityPreview };
         if (specData.quality) {
           setSpecQuality(specData.quality);
           if (specData.quality.score < SPEC_QUALITY_WARN) {
-            const warnText = specData.quality.warnings.slice(0, 3).join("；");
-            const ok = window.confirm(
-              `Spec 质量 ${specData.quality.score}/100 偏低，生成结果可能仅为占位页。\n${warnText || ""}\n\n仍要同步生成吗？`
-            );
-            if (!ok) return;
+            if (!window.confirm(`Spec 质量 ${specData.quality.score}/100 偏低\n${specData.quality.warnings.slice(0, 3).join("；") || ""}\n\n仍要生成吗？`)) return;
           }
         }
       }
-
-      setSyncProgress(
-        `${TARGET_LABEL[target]} 同步生成中（通常 10–30 秒，请勿关闭本页）…`
-      );
-
-      const res = await fetch(
-        `/api/projects/${projectId}/codegen/${target}`,
-        { method: "POST" }
-      );
+      setSyncProgress(`${TARGET_LABEL[target]} 同步生成中（通常 10–30 秒）…`);
+      const res = await fetch(`/api/projects/${projectId}/codegen/${target}`, { method: "POST" });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? "启动 codegen 失败");
-      }
-
-      const runId = data.runId as string;
-      const updated = await pollRun(runId);
-      if (updated.status === "completed") {
-        const msg =
-          typeof data.message === "string"
-            ? data.message
-            : `${TARGET_LABEL[target]} 已完成，可下载 ZIP`;
-        showSuccess(msg);
-        await fetchRuns();
-      } else if (updated.status === "failed") {
-        const meta = (updated.metadata ?? {}) as Record<string, unknown>;
-        const fb = classifyCodegenFailure(meta, updated.log);
-        setError(`${fb.category}：${fb.detail}`);
-        await fetchRuns();
-      } else {
-        startPolling(runId);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "启动 codegen 失败");
-    } finally {
-      setLoadingTarget(null);
-      setSyncProgress(null);
-    }
+      if (!res.ok) throw new Error(data?.error ?? "启动 codegen 失败");
+      const updated = await fetchSingleRun(data.runId as string);
+      if (updated.status === "completed") { showSuccess(`${TARGET_LABEL[target]} 已完成`); await fetchRuns(); }
+      else if (updated.status === "failed") { setError(classifyCodegenFailure(updated.metadata as Record<string, unknown> ?? {}, updated.log).detail); await fetchRuns(); }
+      else startPolling(data.runId as string);
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : "启动 codegen 失败"); }
+    finally { setLoadingTarget(null); setSyncProgress(null); }
   }
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    setError("");
+  async function handlePush(runId: string) {
+    setPushingRunId(runId); setError("");
     try {
+      const res = await fetch(`/api/projects/${projectId}/codegen/runs/${runId}/github-push`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.code === "github_not_connected" ? "请先连接 GitHub" : data?.error ?? "推送失败");
       await fetchRuns();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "刷新失败");
-    } finally {
-      setRefreshing(false);
-    }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : "推送失败"); }
+    finally { setPushingRunId(null); }
   }
 
   async function handleCancel(runId: string) {
-    setCancelingRunId(runId);
-    setError("");
+    setCancelingRunId(runId); setError("");
     try {
-      const res = await fetch(
-        `/api/projects/${projectId}/codegen/runs/${runId}/cancel`,
-        { method: "POST" }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error ?? "取消失败");
-      }
+      const res = await fetch(`/api/projects/${projectId}/codegen/runs/${runId}/cancel`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json())?.error ?? "取消失败");
       await fetchRuns();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "取消失败");
-    } finally {
-      setCancelingRunId(null);
-    }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : "取消失败"); }
+    finally { setCancelingRunId(null); }
   }
 
-  async function handleGitHubPushAll() {
-    setPushingAll(true);
-    setError("");
+  async function handlePushAll() {
+    setPushingAll(true); setError("");
     try {
-      const res = await fetch(
-        `/api/projects/${projectId}/codegen/github-push-all`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ensure: true })
-        }
-      );
+      const res = await fetch(`/api/projects/${projectId}/codegen/github-push-all`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ensure: true }) });
       const data = await res.json();
-      if (!res.ok || !data.ok) {
-        if (data?.errors?.length) {
-          throw new Error(
-            data.errors.map((e: { target: string; error: string }) =>
-              `${e.target}: ${e.error}`
-            ).join(" · ")
-          );
-        }
-        throw new Error(data?.error ?? "三栈 push 失败");
-      }
+      if (!res.ok || !data.ok) throw new Error(data?.errors?.length ? data.errors.map((e: { target: string; error: string }) => `${e.target}: ${e.error}`).join(" · ") : data?.error ?? "三栈 push 失败");
       await fetchRuns();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "三栈 push 失败");
-    } finally {
-      setPushingAll(false);
-    }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : "三栈 push 失败"); }
+    finally { setPushingAll(false); }
   }
 
-  async function handleCopyGitHubUrl(runId: string, url: string) {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedRepoRunId(runId);
-      setTimeout(() => setCopiedRepoRunId(null), 2000);
-    } catch {
-      setError("复制失败，请手动打开 GitHub 链接");
-    }
+  async function handleCopyRepo(runId: string, url: string) {
+    try { await navigator.clipboard.writeText(url); setCopiedRepoRunId(runId); setTimeout(() => setCopiedRepoRunId(null), 2000); }
+    catch { setError("复制失败"); }
   }
 
-  async function handleGitHubPush(runId: string) {
-    setPushingRunId(runId);
-    setError("");
-    try {
-      const res = await fetch(
-        `/api/projects/${projectId}/codegen/runs/${runId}/github-push`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({})
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        if (data?.code === "github_not_connected") {
-          throw new Error("请先连接 GitHub（上方「连接 GitHub」）");
-        }
-        throw new Error(data?.error ?? "推送到 GitHub 失败");
-      }
-      await fetchRuns();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "推送到 GitHub 失败");
-    } finally {
-      setPushingRunId(null);
-    }
-  }
-
-  const activeRun = runs.find(
-    (r) => r.status === "queued" || r.status === "running"
-  );
-
-  const latestByTarget = latestRunByTarget(runs);
-  const stackTargets: QualityTarget[] = ["flutter", "wechat", "harmony"];
-
-  const shellClass = embedded
-    ? "mt-4"
-    : "mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4";
+  const activeRun = runs.find((r) => r.status === "queued" || r.status === "running");
+  const failedRunCount = runs.filter((r) => r.status === "failed").length;
+  const visibleRuns = hideFailedRuns ? runs.filter((r) => r.status !== "failed") : runs;
+  const shellClass = embedded ? "mt-4" : "mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4";
 
   return (
     <div className={shellClass}>
-      {!embedded && (
-        <p className="text-sm font-medium text-violet-950">代码生成（同步优先）</p>
-      )}
-      {embedded && (
-        <p className="text-sm font-medium text-violet-950">同步生成与历史记录</p>
-      )}
-      <p className="mt-1 text-xs text-violet-800/80">
-        三栈默认<strong>同步生成</strong>。Flutter 可额外产出
-        <strong> Mac .app / Win .exe 可双击包</strong>（需在对应系统或 GitHub Actions
-        上构建；云端 Vercel 仅含源码 +「双击运行」说明）。产物可预览、下载、推 GitHub。
-      </p>
+      {!embedded && <p className="text-sm font-medium text-violet-950">代码生成（同步优先）</p>}
+      {embedded && <p className="text-sm font-medium text-violet-950">同步生成与历史记录</p>}
+      <p className="mt-1 text-xs text-violet-800/80">三栈同步生成。Flutter 可额外产出 Mac .app / Win .exe 可双击包（GHA 构建）。</p>
 
-      {inngestHint ? (
-        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          ⚠ Inngest：{inngestHint}
-        </p>
-      ) : null}
+      {inngestHint ? <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ Inngest：{inngestHint}</p> : null}
+      {specQuality && specQuality.score < SPEC_QUALITY_WARN ? <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-950">⚠ Spec 质量 {specQuality.score}/100 偏低</p> : null}
 
-      {specQuality && specQuality.score < SPEC_QUALITY_WARN ? (
-        <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-950">
-          ⚠ Spec 质量 {specQuality.score}/100 偏低
-          {specQuality.warnings[0]
-            ? `：${specQuality.warnings[0]}`
-            : " — 建议先完善报告/Spec 或使用同步下载验证"}
-        </p>
-      ) : null}
+      <CodegenTargetCards runs={runs} />
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        {stackTargets.map((target) => {
-          const run = latestByTarget[target];
-          const meta = (run?.metadata ?? {}) as Record<string, unknown>;
-          const badges = qualityGateBadges(meta);
-          const status = run
-            ? (STATUS_LABEL[run.status] ?? run.status)
-            : "未生成";
-          const fail =
-            run?.status === "failed"
-              ? classifyCodegenFailure(meta, run.log)
-              : null;
-          return (
-            <div
-              key={target}
-              className="rounded-lg border border-violet-200 bg-white/80 px-3 py-2 text-xs text-violet-950"
-            >
-              <p className="font-medium">{TARGET_LABEL[target]}</p>
-              <p className="mt-0.5 text-violet-700">{status}</p>
-              {badges.length > 0 ? (
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {badges.map((b) => (
-                    <span
-                      key={b.label}
-                      className={`rounded px-1.5 py-0.5 text-[10px] ${badgeClass(b.tone)}`}
-                    >
-                      {b.label}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-1 text-[10px] text-violet-500">暂无门禁记录</p>
-              )}
-              {fail ? (
-                <p
-                  className="mt-1 text-[10px] leading-snug text-red-700"
-                  title={failureRemediation(fail)}
-                >
-                  {fail.category}：{fail.detail}
-                </p>
-              ) : null}
-              {run?.status === "completed" && run.downloadUrl ? (
-                <p className="mt-1 text-[10px] text-emerald-800">可下载 ZIP</p>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      {successMsg ? (
-        <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          ✅ {successMsg}
-        </p>
-      ) : null}
-
-      {syncProgress ? (
-        <p className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
-          <span className="inline-block animate-pulse">●</span> {syncProgress}
-        </p>
-      ) : null}
-
-      {activeRun?.status === "queued" && isQueuedSlow(activeRun) ? (
-        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          排队超过 90 秒：多为旧版 Inngest 队列任务。请点「标记失败」后改用「生成 ×× ZIP（同步）」。
-        </p>
-      ) : null}
+      {successMsg ? <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">✅ {successMsg}</p> : null}
+      {syncProgress ? <p className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900"><span className="inline-block animate-pulse">●</span> {syncProgress}</p> : null}
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <GitHubConnectButton nextPath={`/projects/${projectId}`} />
-        <button
-          type="button"
-          disabled={pushingAll || !!pushingRunId}
-          onClick={() => void handleGitHubPushAll()}
-          className="rounded-lg border border-gray-800 px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-gray-100 disabled:opacity-50"
-        >
+        <button type="button" disabled={pushingAll || !!pushingRunId} onClick={() => void handlePushAll()} className="rounded-lg border border-gray-800 px-3 py-1.5 text-xs font-medium text-gray-900 hover:bg-gray-100 disabled:opacity-50">
           {pushingAll ? "三栈推送中…" : "一键推三栈 GitHub"}
         </button>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={!!loadingTarget || !!activeRun}
-          onClick={() => handleGenerate("flutter")}
-          className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loadingTarget === "flutter"
-            ? "提交中…"
-            : activeRun?.target === "flutter"
-              ? "Flutter 生成中…"
-              : "生成 Flutter ZIP（同步）"}
+        {(["flutter", "wechat", "harmony"] as CodegenTarget[]).map((target) => (
+          <button key={target} type="button" disabled={!!loadingTarget || !!activeRun} onClick={() => handleGenerate(target)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${target === "flutter" ? "bg-violet-700 text-white" : target === "wechat" ? "border border-violet-600 text-violet-800" : "border border-emerald-700 text-emerald-900"}`}>
+            {loadingTarget === target ? "提交中…" : activeRun?.target === target ? `${TARGET_LABEL[target]} 生成中…` : `生成 ${TARGET_LABEL[target]} ZIP（同步）`}
+          </button>
+        ))}
+        <button type="button" disabled={!!loadingTarget || !!activeRun} onClick={() => {
+          const targets: CodegenTarget[] = ["flutter", "wechat", "harmony"];
+          setSyncProgress("并行生成三平台代码（各约 10–30 秒）…");
+          fetch(`/api/projects/${projectId}/codegen/generate-all`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targets }) })
+            .then(r => r.json()).then(d => {
+              if (d.ok) showSuccess("三栈并行生成完成");
+              else setError(d.errors?.map((e: { target: string; error: string }) => `${e.target}: ${e.error}`).join(" · ") ?? "并行生成失败");
+            }).catch(e => setError(e.message))
+            .finally(() => { setSyncProgress(null); void fetchRuns(); });
+        }} className="rounded-lg bg-gradient-to-r from-violet-700 to-emerald-700 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
+          {loadingTarget ? "生成中…" : "一键三栈生成（并行）"}
         </button>
-
-        <button
-          type="button"
-          disabled={!!loadingTarget || !!activeRun}
-          onClick={() => handleGenerate("wechat")}
-          className="rounded-lg border border-violet-600 px-4 py-2 text-sm font-medium text-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loadingTarget === "wechat"
-            ? "生成中…"
-            : activeRun?.target === "wechat"
-              ? "小程序生成中…"
-              : "生成小程序 ZIP（同步）"}
-        </button>
-
-        <button
-          type="button"
-          disabled={!!loadingTarget || !!activeRun}
-          onClick={() => handleGenerate("harmony")}
-          className="rounded-lg border border-emerald-700 px-4 py-2 text-sm font-medium text-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {loadingTarget === "harmony"
-            ? "鸿蒙生成中…"
-            : activeRun?.target === "harmony"
-              ? "鸿蒙生成中…"
-              : "生成鸿蒙 ZIP（同步）"}
-        </button>
-
-        <button
-          type="button"
-          disabled={refreshing}
-          onClick={() => void handleRefresh()}
-          className="rounded-lg border border-violet-300 px-3 py-2 text-xs text-violet-800 disabled:opacity-50"
-        >
-          {refreshing ? "刷新中…" : "刷新记录"}
-        </button>
-
+        <button type="button" disabled={false} onClick={() => void fetchRuns().catch(() => {})} className="rounded-lg border border-violet-300 px-3 py-2 text-xs text-violet-800">刷新记录</button>
         {failedRunCount > 0 ? (
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-violet-800">
-            <input
-              type="checkbox"
-              checked={hideFailedRuns}
-              onChange={(e) => setHideFailedRuns(e.target.checked)}
-              className="rounded border-violet-300"
-            />
+            <input type="checkbox" checked={hideFailedRuns} onChange={(e) => setHideFailedRuns(e.target.checked)} className="rounded border-violet-300" />
             折叠失败记录（{failedRunCount}）
           </label>
         ) : null}
       </div>
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-
-      {activeRun && (
-        <p className="mt-2 text-xs text-violet-900">
-          当前任务：{TARGET_LABEL[activeRun.target]} ·{" "}
-          {STATUS_LABEL[activeRun.status] ?? activeRun.status}
-          {activeRun.status === "queued" || activeRun.status === "running"
-            ? " · 约每 3 秒自动刷新"
-            : null}
-        </p>
-      )}
-
-      {runs.length > 0 && visibleRuns.length === 0 && hideFailedRuns ? (
-        <p className="mt-3 text-xs text-violet-700">
-          已折叠 {failedRunCount} 条失败记录。
-          <button
-            type="button"
-            className="ml-1 font-medium text-violet-900 underline"
-            onClick={() => setHideFailedRuns(false)}
-          >
-            展开查看
-          </button>
-        </p>
-      ) : null}
+      {activeRun && <p className="mt-2 text-xs text-violet-900">当前任务：{TARGET_LABEL[activeRun.target]} · 约每 3 秒自动刷新</p>}
+      {runs.length > 0 && visibleRuns.length === 0 && hideFailedRuns ? <p className="mt-3 text-xs text-violet-700">已折叠 {failedRunCount} 条。 <button type="button" className="font-medium text-violet-900 underline" onClick={() => setHideFailedRuns(false)}>展开查看</button></p> : null}
 
       {visibleRuns.length > 0 && (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[480px] text-left text-xs text-violet-950">
             <thead>
               <tr className="border-b border-violet-200 text-violet-700">
-                <th className="py-2 pr-2 font-medium">类型</th>
-                <th className="py-2 pr-2 font-medium">状态</th>
-                <th className="py-2 pr-2 font-medium">Spec 来源</th>
-                <th className="py-2 pr-2 font-medium">门禁</th>
-                <th className="py-2 pr-2 font-medium">产物</th>
-                <th className="py-2 font-medium">操作</th>
+                <th className="py-2 pr-2 font-medium">类型</th><th className="py-2 pr-2 font-medium">状态</th><th className="py-2 pr-2 font-medium">Spec 来源</th>
+                <th className="py-2 pr-2 font-medium">门禁</th><th className="py-2 pr-2 font-medium">产物</th><th className="py-2 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
-              {visibleRuns.slice(0, 8).map((run) => {
-                const meta = (run.metadata ?? {}) as {
-                  specWarning?: string;
-                  analyzeOutput?: string;
-                  analyzeReason?: string;
-                  storageUploaded?: boolean;
-                  storageBucket?: string;
-                  githubRepoUrl?: string;
-                  githubPushStatus?: string;
-                };
-                const gateBadges = qualityGateBadges(meta);
-                const stuck = isRunStuck(run);
-                const failText = run.status === "failed" ? failureHint(run, meta) : "";
-                const failBreakdown =
-                  run.status === "failed"
-                    ? classifyCodegenFailure(meta, run.log)
-                    : null;
-                return (
-                  <tr key={run.id} className="border-b border-violet-100/80 align-top">
-                    <td className="py-2 pr-2">{TARGET_LABEL[run.target]}</td>
-                    <td className="py-2 pr-2">
-                      {STATUS_LABEL[run.status] ?? run.status}
-                      {stuck ? (
-                        <span
-                          className="ml-1 text-amber-700"
-                          title={
-                            run.status === "queued"
-                              ? "排队超过 3 分钟"
-                              : "生成超过 10 分钟"
-                          }
-                        >
-                          ⚠ 可能卡住
-                        </span>
-                      ) : null}
-                      {run.status === "failed" && failBreakdown ? (
-                        <div className="mt-1 max-w-xs text-[10px] leading-snug text-red-600">
-                          <p>
-                            <span className="font-medium">{failBreakdown.category}</span>
-                            {" — "}
-                            {failBreakdown.detail}
-                          </p>
-                          <p className="mt-0.5 text-amber-900">
-                            {failureRemediation(failBreakdown)}
-                          </p>
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="py-2 pr-2">
-                      {formatSpecSource(run.spec_source, meta)}
-                      {meta.specWarning ? (
-                        <span
-                          className="ml-1 cursor-help text-amber-700"
-                          title={meta.specWarning}
-                        >
-                          ⚠
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="py-2 pr-2">
-                      <div className="flex flex-wrap gap-1">
-                        {gateBadges.length > 0 ? (
-                          gateBadges.map((b) => (
-                            <span
-                              key={b.label}
-                              className={`rounded px-1 py-0.5 text-[10px] ${badgeClass(b.tone)}`}
-                            >
-                              {b.label}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-violet-400">—</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2 pr-2">
-                      {run.status === "completed" && meta.storageUploaded ? (
-                        <span className="text-emerald-700" title={meta.storageBucket}>
-                          Storage ✅
-                        </span>
-                      ) : run.status === "completed" ? (
-                        <span className="text-amber-700" title="仅本机 /tmp">
-                          本地
-                        </span>
-                      ) : (
-                        <span className="text-violet-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex flex-wrap gap-2">
-                        {run.previewUrl ? (
-                          <a
-                            href={run.previewUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium text-violet-700 underline"
-                          >
-                            预览
-                          </a>
-                        ) : null}
-                        {run.downloadUrl ? (
-                          <>
-                            <a
-                              href={run.downloadUrl}
-                              className="font-medium text-violet-700 underline"
-                            >
-                              源码 ZIP
-                            </a>
-                            {absoluteDownloadUrl(run) ? (
-                              <CopyTextButton
-                                text={absoluteDownloadUrl(run)!}
-                                label="复制链"
-                                className="font-medium text-violet-600 underline"
-                              />
-                            ) : null}
-                          </>
-                        ) : null}
-                        {run.target === "flutter" &&
-                        run.downloadMacGithubUrl ? (
-                          <a
-                            href={run.downloadMacGithubUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium text-teal-800 underline"
-                            title="Mac 包约 50MB：打开后滚到 Artifacts，下载 macos- 开头的 zip"
-                          >
-                            Mac .app(GitHub)
-                          </a>
-                        ) : run.target === "flutter" && run.downloadMacUrl ? (
-                          <a
-                            href={run.downloadMacUrl}
-                            className="font-medium text-teal-800 underline"
-                          >
-                            Mac .app
-                          </a>
-                        ) : null}
-                        {run.target === "flutter" && run.downloadWinUrl ? (
-                          <a
-                            href={run.downloadWinUrl}
-                            className="font-medium text-teal-800 underline"
-                          >
-                            Win .exe 包
-                          </a>
-                        ) : null}
-                        {run.target === "flutter" &&
-                        isDesktopGhaPending(run) ? (
-                          <span
-                            className="text-teal-700"
-                            title={getDesktopGha(meta)?.message ?? ""}
-                          >
-                            GHA 构建中…
-                          </span>
-                        ) : null}
-                        {run.target === "flutter" &&
-                        getDesktopGha(meta)?.status === "failed" ? (
-                          <span
-                            className="text-amber-800"
-                            title={getDesktopGha(meta)?.message ?? ""}
-                          >
-                            桌面包失败
-                          </span>
-                        ) : null}
-                        {run.target === "flutter" &&
-                        getDesktopGha(meta)?.htmlUrl ? (
-                          <a
-                            href={getDesktopGha(meta)!.htmlUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium text-slate-600 underline"
-                          >
-                            Actions
-                          </a>
-                        ) : null}
-                        {run.status === "completed" && run.downloadUrl ? (
-                          <button
-                            type="button"
-                            disabled={pushingRunId === run.id}
-                            onClick={() => void handleGitHubPush(run.id)}
-                            className="font-medium text-emerald-700 underline disabled:opacity-50"
-                          >
-                            {pushingRunId === run.id
-                              ? "推送中…"
-                              : meta.githubRepoUrl
-                                ? "再次推送"
-                                : "推 GitHub"}
-                          </button>
-                        ) : null}
-                        {meta.githubRepoUrl ? (
-                          <>
-                            <a
-                              href={meta.githubRepoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-medium text-emerald-700 underline"
-                            >
-                              GitHub
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleCopyGitHubUrl(
-                                  run.id,
-                                  meta.githubRepoUrl as string
-                                )
-                              }
-                              className="font-medium text-emerald-700 underline"
-                            >
-                              {copiedRepoRunId === run.id ? "已复制" : "复制链接"}
-                            </button>
-                          </>
-                        ) : null}
-                        {run.status === "failed" ? (
-                          <>
-                            <button
-                              type="button"
-                              disabled={!!loadingTarget || !!activeRun}
-                              onClick={() => void handleGenerate(run.target)}
-                              className="font-medium text-amber-800 underline disabled:opacity-50"
-                            >
-                              重试
-                            </button>
-                            {failText ? (
-                              <CopyTextButton
-                                text={failText}
-                                label="复制日志"
-                                className="font-medium text-red-700 underline"
-                              />
-                            ) : null}
-                          </>
-                        ) : null}
-                        {(run.status === "queued" || run.status === "running") &&
-                        (stuck || run.status === "queued") ? (
-                          <button
-                            type="button"
-                            disabled={cancelingRunId === run.id}
-                            onClick={() => void handleCancel(run.id)}
-                            className="font-medium text-red-700 underline disabled:opacity-50"
-                          >
-                            {cancelingRunId === run.id ? "取消中…" : "标记失败"}
-                          </button>
-                        ) : null}
-                        {!run.downloadUrl && !run.previewUrl && run.status === "failed" && !run.log ? (
-                          <span className="text-red-600">失败</span>
-                        ) : null}
-                        {!run.downloadUrl &&
-                        !run.previewUrl &&
-                        run.status !== "failed" &&
-                        run.status !== "queued" &&
-                        run.status !== "running" ? (
-                          <span className="text-violet-400">—</span>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {visibleRuns.slice(0, 8).map((run) => (
+                <CodegenRunRow key={run.id} run={run} onGenerate={handleGenerate} onPush={handlePush} onCancel={handleCancel}
+                  loadingTarget={loadingTarget} activeRun={activeRun} pushingRunId={pushingRunId} cancelingRunId={cancelingRunId}
+                  copiedRepoRunId={copiedRepoRunId} onCopyRepo={handleCopyRepo} />
+              ))}
             </tbody>
           </table>
-          {visibleRuns.some((r) => r.status === "failed") && !hideFailedRuns ? (
-            <div className="mt-3 space-y-2">
-              {visibleRuns
-                .filter((r) => r.status === "failed")
-                .slice(0, 3)
-                .map((run) => {
-                  const meta = (run.metadata ?? {}) as Record<string, unknown>;
-                  const fb = classifyCodegenFailure(meta, run.log);
-                  const logBody = failureHint(run, meta);
-                  return (
-                    <details
-                      key={`log-${run.id}`}
-                      className="rounded-lg border border-red-100 bg-red-50/50 px-3 py-2 text-xs text-red-950"
-                    >
-                      <summary className="cursor-pointer font-medium">
-                        {TARGET_LABEL[run.target]} 失败日志
-                      </summary>
-                      <p className="mt-2 text-amber-900">{failureRemediation(fb)}</p>
-                      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-white/80 p-2 text-[10px] leading-snug text-red-900">
-                        {logBody}
-                      </pre>
-                      <div className="mt-2">
-                        <CopyTextButton
-                          text={logBody}
-                          label="复制完整日志"
-                          className="text-xs font-medium text-red-800 underline"
-                        />
-                      </div>
-                    </details>
-                  );
-                })}
-            </div>
-          ) : null}
         </div>
       )}
     </div>

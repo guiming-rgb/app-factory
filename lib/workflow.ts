@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "./supabase";
-import { agentConfigs } from "./agents";
+import { agentConfigs, filterAgentsForApp } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
 import {
@@ -151,7 +151,8 @@ export async function executeProjectWorkflow(projectId: string) {
   const skillsByCode = new Map(publishedSkills.map((s) => [s.code, s]));
 
   try {
-    for (const agent of agentConfigs) {
+    const agents = filterAgentsForApp(project.idea);
+    for (const agent of agents) {
       const injection = resolveAgentSkillInjection(
         agent.code,
         agentSkillBindings,
@@ -306,6 +307,83 @@ export async function markProjectFailed(projectId: string, message: string) {
       updated_at: new Date().toISOString()
     })
     .eq("id", projectId);
+}
+
+/** 断点续传：从失败项目的最后一个成功 Agent 继续 */
+export async function resumeProjectWorkflow(projectId: string) {
+  const { data: project } = await getSupabaseAdmin()
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) throw new Error("项目不存在");
+  if (project.status !== "failed") throw new Error("仅失败项目可续传");
+
+  // 获取已完成的 Agent
+  const { data: completedRuns } = await getSupabaseAdmin()
+    .from("agent_runs")
+    .select("agent_code, output")
+    .eq("project_id", projectId)
+    .eq("status", "completed")
+    .order("created_at", { ascending: true });
+
+  const completedCodes = new Set((completedRuns ?? []).map((r: Record<string, unknown>) => r.agent_code as string));
+  const contextOutputs = (completedRuns ?? []).map((r: Record<string, unknown>) => `## ${r.agent_code}\n\n${r.output}`).filter(Boolean);
+
+  const agents = filterAgentsForApp(project.idea);
+  const remainingAgents = agents.filter((a) => !completedCodes.has(a.code));
+
+  // 更新状态为 running
+  await getSupabaseAdmin().from("projects").update({ status: "running", error_message: null, updated_at: new Date().toISOString() }).eq("id", projectId);
+
+  // 获取记忆和技能
+  const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
+  const memoryBlock = formatMemoriesForPrompt(workflowMemories);
+  const agentSkillBindings = await loadAgentSkillBindings();
+  const allSkillCodes = [...new Set(Object.values(agentSkillBindings).flat())];
+  const publishedSkills = await getPublishedSkillsByCodes(allSkillCodes);
+  const skillsByCode = new Map(publishedSkills.map((s) => [s.code, s]));
+
+  try {
+    for (const agent of remainingAgents) {
+      const injection = resolveAgentSkillInjection(agent.code, agentSkillBindings, skillsByCode);
+      const skillsBlock = formatSkillsForPrompt(injection.skills);
+      const systemPrompt = skillsBlock ? `${agent.systemPrompt}\n\n---\n\n已绑定技能：\n${skillsBlock}` : agent.systemPrompt;
+
+      const runInput = buildAgentInput({
+        projectIdea: project.idea,
+        previousOutputs: contextOutputs,
+        projectMemoriesBlock: agentReceivesProjectMemories(agent.code) ? memoryBlock : undefined,
+        memorySectionHint: agentReceivesProjectMemories(agent.code) ? memorySectionHintForAgent(agent.code) : undefined,
+        userProfileBlock: undefined,
+      });
+
+      const { data: run } = await getSupabaseAdmin().from("agent_runs").insert({
+        project_id: projectId, agent_code: agent.code, agent_name: agent.name, input: runInput, status: "running", started_at: new Date().toISOString()
+      }).select("*").single();
+
+      if (!run) throw new Error(`创建 Agent 运行记录失败：${agent.name}`);
+
+      try {
+        const result = await callLLM({ systemPrompt, userPrompt: runInput, temperature: 0.35 });
+        await getSupabaseAdmin().from("agent_runs").update({ output: result.content, status: "completed", finished_at: new Date().toISOString() }).eq("id", run.id);
+        contextOutputs.push(`## ${agent.name}\n\n${result.content}`);
+      } catch (agentError) {
+        await getSupabaseAdmin().from("agent_runs").update({ status: "failed", error_message: getErrorMessage(agentError), finished_at: new Date().toISOString() }).eq("id", run.id);
+        throw agentError;
+      }
+    }
+
+    const allOutputs = [...(completedRuns ?? []).map((r: Record<string, unknown>) => `## ${r.agent_code}\n\n${r.output}`), ...contextOutputs];
+    const finalReport = buildFinalMarkdownReport({ title: project.title, idea: project.idea, sections: allOutputs });
+    await getSupabaseAdmin().from("projects").update({ status: "completed", final_report: finalReport, error_message: null, updated_at: new Date().toISOString() }).eq("id", projectId);
+
+    return { projectId, status: "completed" as const, resumed: true, skippedAgents: completedCodes.size };
+  } catch (error) {
+    await markProjectFailed(projectId, getErrorMessage(error));
+    throw error;
+  }
 }
 
 function buildAgentInput(params: {

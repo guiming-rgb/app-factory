@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-02（批次 S：Codegen UX 抛光 ✅）  
-> **今日收工**：[收工记录-20260602-批次S-UX.md](./收工记录-20260602-批次S-UX.md) · [批次 Q+R](./收工记录-20260602-批次QR.md)  
+> **最后更新**：2026-05-31（批次 T+：网页 → GHA → Mac/Win 桌面包 ✅）  
+> **今日收工**：[收工记录-20260531-批次T+-桌面GHA.md](./收工记录-20260531-批次T+-桌面GHA.md) · [桌面可双击发行包.md](./桌面可双击发行包.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md)
 
 ## 当前进度（勾选）
@@ -66,6 +66,7 @@
 - [x] **批次 P**：Flutter `macos`/`windows` 模板 · Spec 默认四平台 · 鸿蒙默认 `enabled: true` · `verify:p:desktop:flutter` · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W`
 - [x] **批次 Q+R**：`verify:qr:batch` · 生产 P1 三栈 · 枪战 ZIP 探针 · 小程序编译重试 · stale 创建前清理 · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd`
 - [x] **批次 S**：Codegen 同步文案 · 失败建议/展开日志 · 复制下载链 · `verify:s:ux` · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK`
+- [x] **批次 T+**：Flutter 桌面 GHA 双平台 · 网页触发 · `Mac .app(GitHub)` + `Win .exe` · 维护者 Mac 待办实测 ✅ · `verify:t:desktop:build`
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -151,6 +152,7 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-31 | **批次 T+**：GHA `flutter-desktop-dual-build` · 刷新同步桌面包 · Mac GitHub / Win 直链 · 待办 MVP Mac 运行 ✅ |
 | 2026-06-02 | **批次 S**：Codegen UX（失败建议、日志展开、复制链、同步进度）· `verify:s:ux` · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK` |
 | 2026-06-02 | **批次 Q+R**：生产 P1 + ZIP 探针 · 稳定 1.0（重试/清理/stats REST）· `verify:qr:batch` · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd` |
 | 2026-06-02 | **批次 P**：Flutter 桌面 `macos/windows` · 鸿蒙 Spec 默认开启 · [跨平台运行说明](./跨平台运行说明.md) · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W` |

@@ -31,8 +31,12 @@ export function emitEntityListIndexWxml(
   <view class="card">
     <view class="todo-title">${title}</view>
     <view class="muted">${entityLine}</view>
-    <view class="muted" wx:if="{{supabaseReady}}">已配置 Supabase · 点击行进详情</view>
-    <view class="muted" wx:else>示例数据 · 在 app.js 配置 Supabase 后可拉取</view>
+  </view>
+
+  <!-- 搜索框 -->
+  <view class="card">
+    <input class="search-input" placeholder="搜索…" value="{{searchText}}" bindinput="onSearchInput" confirm-type="search" />
+    <view class="search-hint muted" wx:if="{{supabaseReady}}">搜索 · 下拉刷新 · 上拉加载更多</view>
   </view>
 
   <view class="card" wx:if="{{loading}}">
@@ -44,7 +48,7 @@ export function emitEntityListIndexWxml(
   </view>
 
   <view class="card" wx:if="{{!loading && items.length === 0}}">
-    <view class="empty">暂无数据</view>
+    <view class="empty">{{searchText ? '未找到匹配项' : '暂无数据'}}</view>
   </view>
 
   <block wx:for="{{items}}" wx:key="id">
@@ -53,6 +57,10 @@ export function emitEntityListIndexWxml(
       <view class="muted list-item-sub">{{item.subtitle}}</view>
     </view>
   </block>
+
+  <view class="card" wx:if="{{hasMore && !loading}}">
+    <view class="muted" style="text-align:center" bindtap="loadMore">加载更多…</view>
+  </view>
 </view>
 `;
 }
@@ -83,6 +91,8 @@ const FALLBACK_ITEMS = [
 ${items}
 ];
 
+const PAGE_SIZE = 15;
+
 Page({
   data: {
     showPrivacy: false,
@@ -93,18 +103,18 @@ Page({
     table: "${table}",
     pk: "${pk}",
     titleField: "${titleField}",
-    items: FALLBACK_ITEMS
+    searchText: "",
+    items: FALLBACK_ITEMS,
+    page: 0,
+    hasMore: true
   },
 
   onShow() {
     const app = getApp();
     const accepted = !!app.globalData.privacyAccepted;
     const supabaseReady = isSupabaseConfigured();
-    this.setData({
-      showPrivacy: !accepted,
-      supabaseReady
-    });
-    if (accepted) this.loadItems();
+    this.setData({ showPrivacy: !accepted, supabaseReady, page: 0, hasMore: true });
+    if (accepted) this.loadItems(true);
   },
 
   onPrivacyAccept() {
@@ -112,47 +122,54 @@ Page({
     app.globalData.privacyAccepted = true;
     wx.setStorageSync("privacy_accepted", true);
     this.setData({ showPrivacy: false });
-    this.loadItems();
+    this.loadItems(true);
   },
 
-  loadItems() {
+  onSearchInput(e) {
+    this.setData({ searchText: e.detail.value });
+    clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(() => this.loadItems(true), 300);
+  },
+
+  onPullDownRefresh() { this.loadItems(true).then(() => wx.stopPullDownRefresh()); },
+  onReachBottom() { if (this.data.hasMore) this.loadItems(false); },
+
+  loadItems(reset) {
     if (!isSupabaseConfigured()) {
       this.setData({ items: FALLBACK_ITEMS, loadError: "", loading: false });
       return;
     }
+    const page = reset ? 0 : this.data.page + 1;
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    let url = this.data.table + "?select=${select}";
+    if (this.data.searchText) url += "&" + encodeURIComponent(this.data.titleField) + "=ilike.*" + encodeURIComponent(this.data.searchText) + "*";
+    url += "&limit=" + PAGE_SIZE + "&offset=" + from + "&order=created_at.desc";
+
     this.setData({ loading: true, loadError: "" });
-    request(this.data.table + "?select=${select}&limit=20", { method: "GET" })
+    return request(url, { method: "GET" })
       .then((rows) => {
         const list = Array.isArray(rows) ? rows : [];
         const tf = this.data.titleField;
         const pk = this.data.pk;
-        const items = list.length
-          ? list.map((row, i) => {
-              const id =
-                row[pk] != null ? String(row[pk]) : String(i + 1);
-              const title =
-                row[tf] != null
-                  ? String(row[tf])
-                  : row.title != null
-                    ? String(row.title)
-                    : "—";
-              return {
-                id,
-                title,
-                subtitle: this.data.entityName + " · " + id
-              };
-            })
-          : FALLBACK_ITEMS;
-        this.setData({ items, loading: false });
+        const newItems = list.map((row, i) => {
+          const id = row[pk] != null ? String(row[pk]) : String(from + i + 1);
+          const title = row[tf] != null ? String(row[tf]) : (row.title != null ? String(row.title) : "—");
+          return { id, title, subtitle: this.data.entityName + " · " + id };
+        });
+        const items = reset ? newItems : this.data.items.concat(newItems);
+        this.setData({ items, loading: false, page, hasMore: list.length >= PAGE_SIZE });
       })
       .catch((err) => {
+        if (reset) this.setData({ items: FALLBACK_ITEMS });
         this.setData({
-          items: FALLBACK_ITEMS,
-          loadError: err && err.message ? err.message : "拉取失败，已显示示例",
+          loadError: err && err.message ? err.message : "拉取失败",
           loading: false
         });
       });
   },
+
+  loadMore() { this.loadItems(false); },
 
   onTapItem(e) {
     const id = e.currentTarget.dataset.id;
@@ -160,6 +177,10 @@ Page({
     wx.navigateTo({
       url: "${detailPath}?id=" + encodeURIComponent(String(id)) + "&entity=" + encodeURIComponent(this.data.entityName)
     });
+  },
+
+  onTapAdd() {
+    wx.navigateTo({ url: "/pages/form/form?id=form" });
   }
 });
 `;

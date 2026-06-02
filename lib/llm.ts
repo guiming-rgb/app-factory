@@ -32,19 +32,35 @@ export async function callLLM(params: {
   userPrompt: string;
   temperature?: number;
 }): Promise<LlmCallResult> {
-  const completion = await openai.chat.completions.create({
-    model,
-    temperature: params.temperature ?? 0.4,
-    messages: [
-      {
-        role: "system",
-        content: params.systemPrompt
-      },
-      {
-        role: "user",
-        content: params.userPrompt
-      }
-    ]
+  // 熔断器检查
+  const { llmBreaker } = await import("@/lib/llm-circuit-breaker");
+  llmBreaker.tryReset();
+  const fallback = llmBreaker.getFallbackConfig();
+  const effectiveBaseURL = fallback?.baseURL ?? baseURL;
+  const effectiveModel = fallback?.model ?? model;
+  const effectiveKey = fallback?.apiKey ?? apiKey;
+
+  const client = (effectiveBaseURL !== baseURL || effectiveKey !== apiKey)
+    ? new OpenAI({ apiKey: effectiveKey, baseURL: effectiveBaseURL })
+    : openai;
+
+  const { measureTiming, captureError } = await import("@/lib/monitoring");
+  const completion = await measureTiming("llm.call", () =>
+    client.chat.completions.create({
+      model: effectiveModel,
+      temperature: params.temperature ?? 0.4,
+      messages: [
+        { role: "system", content: params.systemPrompt },
+        { role: "user", content: params.userPrompt }
+      ]
+    })
+  ).then((c) => {
+    llmBreaker.onSuccess();
+    return c;
+  }).catch(async (err) => {
+    llmBreaker.onFailure();
+    await captureError(err, { component: "callLLM" });
+    throw err;
   });
 
   const content = completion.choices[0]?.message?.content;

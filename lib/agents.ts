@@ -2,6 +2,12 @@ export type AgentConfig = {
   code: string;
   name: string;
   systemPrompt: string;
+  /** P0: Agent 分类标签 — 用于智能跳过 */
+  category: "strategy" | "product" | "tech" | "business";
+  /** 哪些 App 类型可以跳过此 Agent */
+  skipFor?: string[];
+  /** 哪些 App 类型必须保留此 Agent */
+  requiredFor?: string[];
 };
 
 const baseRule = `
@@ -18,6 +24,8 @@ export const agentConfigs: AgentConfig[] = [
   {
     code: "ceo",
     name: "CEO 总策划",
+    category: "strategy",
+    skipFor: ["tool", "utility"],
     systemPrompt: `
 ${baseRule}
 
@@ -42,6 +50,8 @@ ${baseRule}
   {
     code: "product_manager",
     name: "产品经理",
+    category: "product",
+    requiredFor: ["*"],
     systemPrompt: `
 ${baseRule}
 
@@ -67,6 +77,8 @@ ${baseRule}
   {
     code: "project_manager",
     name: "项目经理",
+    category: "tech",
+    skipFor: ["tool", "utility", "game"],
     systemPrompt: `
 ${baseRule}
 
@@ -91,6 +103,8 @@ ${baseRule}
   {
     code: "architect",
     name: "系统架构师",
+    category: "tech",
+    requiredFor: ["*"],
     systemPrompt: `
 ${baseRule}
 
@@ -118,6 +132,8 @@ ${baseRule}
   {
     code: "ui_designer",
     name: "UI/UX 设计师",
+    category: "product",
+    requiredFor: ["*"],
     systemPrompt: `
 ${baseRule}
 
@@ -142,6 +158,8 @@ ${baseRule}
   {
     code: "dev_lead",
     name: "开发负责人",
+    category: "tech",
+    requiredFor: ["*"],
     systemPrompt: `
 ${baseRule}
 
@@ -166,6 +184,8 @@ ${baseRule}
   {
     code: "qa_lead",
     name: "测试负责人",
+    category: "tech",
+    skipFor: ["game", "tool"],
     systemPrompt: `
 ${baseRule}
 
@@ -190,6 +210,8 @@ ${baseRule}
   {
     code: "business_advisor",
     name: "商业顾问",
+    category: "business",
+    skipFor: ["tool", "utility", "game"],
     systemPrompt: `
 ${baseRule}
 
@@ -212,6 +234,34 @@ ${baseRule}
 `
   }
 ];
+
+/** P0: 根据项目描述检测 App 类型 */
+export type AppCategory = "data" | "tool" | "social" | "content" | "game" | "utility";
+
+export function detectAppCategory(idea: string): AppCategory {
+  const text = idea.toLowerCase();
+  if (text.match(/游戏|game|得分|闯关|升级|战斗/)) return "game";
+  if (text.match(/聊天|社交|好友|动态|评论|点赞/)) return "social";
+  if (text.match(/计算器|计时|闹钟|转换|工具|扫描/)) return "tool";
+  if (text.match(/新闻|博客|文章|阅读|视频|播放/)) return "content";
+  if (text.match(/管理|记录|清单|库存|订单|统计|报表/)) return "data";
+  return "utility";
+}
+
+/** P0: 智能筛选 — 跳过低相关 Agent */
+export function filterAgentsForApp(idea: string): AgentConfig[] {
+  const category = detectAppCategory(idea);
+
+  return agentConfigs.filter((agent) => {
+    // requiredFor: ["*"] 表示任何类型都必须保留
+    if (agent.requiredFor?.includes("*")) return true;
+    // 必须在特定类型才保留
+    if (agent.requiredFor?.length && !agent.requiredFor.includes(category)) return false;
+    // skipFor 列表中跳过
+    if (agent.skipFor?.includes(category)) return false;
+    return true;
+  });
+}
 
 export function getAgentConfig(code: string) {
   return agentConfigs.find((agent) => agent.code === code);

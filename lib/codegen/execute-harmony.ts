@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-import { buildSpecForProject } from "@/lib/app-spec/from-report";
+import { resolveSpecForCodegen } from "@/lib/app-spec/resolve-spec";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
 import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
 import { validateAppSpec } from "@/lib/app-spec/validate";
@@ -60,7 +60,7 @@ export async function executeHarmonyCodegen(input: {
 
   const { data: project, error } = await getSupabaseAdmin()
     .from("projects")
-    .select("id, title, idea, final_report, status")
+    .select("id, title, idea, final_report, status, spec_override")
     .eq("id", projectId)
     .single();
 
@@ -73,11 +73,12 @@ export async function executeHarmonyCodegen(input: {
   let outputRoot: string | null = null;
 
   try {
-    const built = await buildSpecForProject({
+    const built = await resolveSpecForCodegen({
       id: project.id,
       title: project.title ?? "未命名",
       idea: project.idea,
-      final_report: project.final_report
+      final_report: project.final_report,
+      spec_override: project.spec_override
     });
 
     const validation = validateAppSpec(built.spec);
@@ -93,6 +94,16 @@ export async function executeHarmonyCodegen(input: {
     const { outputDir, appName, displayName, bundleName, screenCount } =
       await generateHarmonyProject(spec);
     outputRoot = path.dirname(outputDir);
+
+    // P1: 单独上传 SQL 文件（供 SQL 下载 API）
+    try {
+      const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
+      const ddl = generateCreateTableDDL(spec);
+      const sqlBuffer = Buffer.from(ddl.fullSql, "utf8");
+      await writeArtifactFile(runId, "supabase_migration.sql", sqlBuffer);
+    } catch (sqlErr) {
+      console.warn("[executeHarmonyCodegen] SQL upload skipped:", sqlErr);
+    }
 
     const structure = runHarmonyStructureValidate({ appDir: outputDir });
     if (shouldFailCodegenOnHarmonyStructure(structure)) {

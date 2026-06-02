@@ -5,8 +5,8 @@ import { markCodegenRunFailed } from "./runs";
 /** queued 长时间未消费（与 CodegenPanel「排队超过 90 秒」提示一致） */
 export const CODEGEN_QUEUED_STALE_MS = 90 * 1000;
 
-/** running 执行超时 */
-export const CODEGEN_RUNNING_STALE_MS = 2 * 60 * 60 * 1000;
+/** running 执行超时（10 分钟，同步 codegen 通常 10-30 秒） */
+export const CODEGEN_RUNNING_STALE_MS = 10 * 60 * 1000;
 
 /** @deprecated 使用 QUEUED/RUNNING 分项阈值 */
 export const CODEGEN_STALE_RUN_MAX_AGE_MS = CODEGEN_RUNNING_STALE_MS;

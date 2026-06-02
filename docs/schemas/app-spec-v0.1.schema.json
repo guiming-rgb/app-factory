@@ -42,7 +42,7 @@
             "enabled": { "type": "boolean" },
             "platforms": {
               "type": "array",
-              "items": { "enum": ["ios", "android", "macos", "windows"] },
+              "items": { "enum": ["ios", "android", "macos", "windows", "web"] },
               "minItems": 1
             },
             "formFactors": {
@@ -152,7 +152,10 @@
                   "float",
                   "bool",
                   "datetime",
-                  "json"
+                  "json",
+                  "location",
+                  "image",
+                  "file"
                 ]
               },
               "primary": { "type": "boolean" },
@@ -172,7 +175,7 @@
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
         "title": { "type": "string" },
         "type": {
-          "enum": ["tabRoot", "list", "detail", "form", "placeholder"]
+          "enum": ["tabRoot", "list", "detail", "form", "placeholder", "map", "chat", "call", "payment", "iot", "game", "ar", "medical", "automotive", "banking", "insurance", "kyc"]
         },
         "children": {
           "type": "array",

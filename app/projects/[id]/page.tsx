@@ -11,6 +11,7 @@ import { GenerateProjectButton } from "@/components/GenerateProjectButton";
 import { ProjectMemoriesPanel } from "@/components/ProjectMemoriesPanel";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
 import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButton";
+import { SpecEditorPanel } from "@/components/SpecEditorPanel";
 import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
 import { APP_FEATURES } from "@/lib/app-features";
 import { getProjectDetailForPage } from "@/lib/projects-server";
@@ -194,39 +195,46 @@ export default async function ProjectPage({
           </div>
 
           {project.status === "completed" && (
-            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50/80 p-5">
-              <h2 className="text-lg font-semibold text-gray-900">代码生成</h2>
-              <p className="mt-1 text-xs text-gray-600">
-                「快速下载」为即时导出 Spec 工程 ZIP。下方<strong>同步生成</strong>约
-                10–30 秒/栈。Flutter 另可产出
-                <strong> Mac 可双击 .app、Windows 可双击 .exe 包</strong>
-                （须在 Mac/Win11 构建机或仓库 GitHub Actions 工作流生成；生产网页端默认可下源码，内含「双击运行-Desktop」说明）。
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <DownloadFlutterButton projectId={project.id} />
-                <DownloadWechatButton projectId={project.id} />
-                <DownloadHarmonyButton projectId={project.id} />
+            <>
+              {/* P0: Spec 编辑面板 */}
+              <div className="mt-6">
+                <SpecEditorPanel projectId={project.id} />
               </div>
-              <CodegenPanel
-                projectId={project.id}
-                embedded
-                initialRuns={codegenRuns.map((run) => ({
-                  id: run.id,
-                  target: run.target,
-                  status: run.status as
-                    | "queued"
-                    | "running"
-                    | "completed"
-                    | "failed",
-                  spec_source: run.spec_source,
-                  log: run.log,
-                  metadata: run.metadata,
-                  created_at: run.created_at,
-                  downloadUrl: run.downloadUrl,
-                  previewUrl: run.previewUrl
-                }))}
-              />
-            </div>
+
+              <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50/80 p-5">
+                <h2 className="text-lg font-semibold text-gray-900">代码生成</h2>
+                <p className="mt-1 text-xs text-gray-600">
+                  「快速下载」为即时导出 Spec 工程 ZIP。下方<strong>同步生成</strong>约
+                  10–30 秒/栈。Flutter 另可产出
+                  <strong> Mac 可双击 .app、Windows 可双击 .exe 包</strong>
+                  （须在 Mac/Win11 构建机或仓库 GitHub Actions 工作流生成；生产网页端默认可下源码，内含「双击运行-Desktop」说明）。
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <DownloadFlutterButton projectId={project.id} />
+                  <DownloadWechatButton projectId={project.id} />
+                  <DownloadHarmonyButton projectId={project.id} />
+                </div>
+                <CodegenPanel
+                  projectId={project.id}
+                  embedded
+                  initialRuns={codegenRuns.map((run) => ({
+                    id: run.id,
+                    target: run.target,
+                    status: run.status as
+                      | "queued"
+                      | "running"
+                      | "completed"
+                      | "failed",
+                    spec_source: run.spec_source,
+                    log: run.log,
+                    metadata: run.metadata,
+                    created_at: run.created_at,
+                    downloadUrl: run.downloadUrl,
+                    previewUrl: run.previewUrl
+                  }))}
+                />
+              </div>
+            </>
           )}
 
           <div>

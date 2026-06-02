@@ -20,6 +20,12 @@ export default function HomePage() {
             历史项目
           </Link>
           <Link
+            href="/dashboard"
+            className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-1 text-sm text-emerald-800 hover:bg-emerald-100"
+          >
+            用量仪表盘
+          </Link>
+          <Link
             href="/deploy"
             className="rounded-full border border-violet-300 bg-violet-50 px-4 py-1 text-sm text-violet-800 hover:bg-violet-100"
           >

@@ -8,6 +8,7 @@ type SkillRow = {
   name: string;
   description: string | null;
   category: string | null;
+  codegen_snippets?: unknown[];
   version: string;
   status: "draft" | "published";
   updated_at: string;

@@ -25,6 +25,21 @@ export async function createCodegenRun(input: {
   const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
   await cleanupStaleCodegenRuns({ projectId: input.projectId });
 
+  // 幂等性检查：如果已有 queued/running 的 run，直接返回（防重复点击）
+  const { data: existing } = await getSupabaseAdmin()
+    .from("codegen_runs")
+    .select("*")
+    .eq("project_id", input.projectId)
+    .eq("target", input.target)
+    .in("status", ["queued", "running"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    return existing as CodegenRunRow;
+  }
+
   const { data, error } = await getSupabaseAdmin()
     .from("codegen_runs")
     .insert({

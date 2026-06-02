@@ -6,7 +6,8 @@ const FLUTTER_PLATFORM_DIRS: Record<string, string> = {
   ios: "ios",
   android: "android",
   macos: "macos",
-  windows: "windows"
+  windows: "windows",
+  web: "web"
 };
 
 /** 从 App Spec 解析 Flutter 目标平台（默认含桌面端） */
@@ -20,7 +21,7 @@ export function resolveFlutterPlatforms(spec: {
   if (Array.isArray(raw) && raw.length > 0) {
     return raw.filter((p) => typeof p === "string" && p.length > 0);
   }
-  return ["ios", "android", "macos", "windows"];
+  return ["ios", "android", "macos", "windows", "web"];
 }
 
 export async function ensureFlutterPlatformFolders(

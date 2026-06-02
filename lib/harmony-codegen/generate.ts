@@ -94,6 +94,22 @@ export async function generateHarmonyProject(
     "utf8"
   );
 
+  // P1: 生成 Supabase 建表 SQL
+  const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
+  const ddl = generateCreateTableDDL(spec);
+  const sqlDir = path.join(appDir, "supabase", "migrations");
+  await fs.mkdir(sqlDir, { recursive: true });
+  await fs.writeFile(
+    path.join(sqlDir, "001_create_tables.sql"),
+    ddl.fullSql,
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(appDir, "supabase", "README.md"),
+    `# Supabase 后端配置\n\n本目录包含 App 生产工厂自动生成的数据库迁移脚本。\n\n## 表结构\n\n${ddl.tableNames.length ? ddl.tableNames.map((t) => `- **${t}**`).join("\n") : "（无）"}\n`,
+    "utf8"
+  );
+
   const limitations = spec.limitations?.length
     ? spec.limitations.map((l) => `- ${l}`).join("\n")
     : "- （无）";
@@ -122,6 +138,21 @@ export async function generateHarmonyProject(
   );
   await fs.writeFile(appScopePath, appScope, "utf8");
 
+  // 注入 Supabase 配置
+  const { url: sbUrl2, anonKey: sbKey2 } = resolveHarmonySupabaseForCodegen();
+  const supabaseConfigPath = path.join(appDir, "entry/src/main/ets/utils/SupabaseConfig.ets");
+  let supabaseConfig = await fs.readFile(supabaseConfigPath, "utf8");
+  supabaseConfig = supabaseConfig
+    .replace("__SUPABASE_URL__", sbUrl2 || "")
+    .replace("__SUPABASE_ANON_KEY__", sbKey2 || "");
+  await fs.writeFile(supabaseConfigPath, supabaseConfig, "utf8");
+
+  // 替换 Index.ets 模板占位符
+  const indexPath = path.join(appDir, "entry/src/main/ets/pages/Index.ets");
+  let indexContent = await fs.readFile(indexPath, "utf8");
+  indexContent = indexContent.replace(/__DISPLAY_NAME__/g, spec.displayName);
+  await fs.writeFile(indexPath, indexContent, "utf8");
+
   const emitted = await emitHarmonyScreens(appDir, spec);
 
   const listScreen = findEntityListScreen(spec);
@@ -136,6 +167,47 @@ export async function generateHarmonyProject(
       );
     }
   }
+
+  // Auth 页面
+  const { emitHarmonyLoginPage, emitHarmonyRegisterPage } = await import("./emit-auth");
+  const pagesDir = path.join(appDir, "entry/src/main/ets/pages");
+  await fs.writeFile(
+    path.join(pagesDir, "Login.ets"),
+    emitHarmonyLoginPage(spec.displayName),
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(pagesDir, "Register.ets"),
+    emitHarmonyRegisterPage(spec.displayName),
+    "utf8"
+  );
+
+  // Form 页面（为 form 类型的 screen 生成）
+  const formScreens = spec.screens.filter((s) => s.type === "form");
+  for (const screen of formScreens) {
+    const { emitHarmonyFormPage } = await import("./emit-form");
+    const componentName = harmonyPageComponentName(screen.id, formScreens.indexOf(screen) + 100);
+    await fs.writeFile(
+      path.join(pagesDir, `${componentName}.ets`),
+      emitHarmonyFormPage(screen, spec),
+      "utf8"
+    );
+  }
+
+  // 更新 main_pages.json（添加 auth 和 form 页面）
+  const mainPagesPath = path.join(appDir, "entry/src/main/resources/base/profile/main_pages.json");
+  const existingPages = JSON.parse(await fs.readFile(mainPagesPath, "utf8")) as { src: string[] };
+  const extraRoutes = ["pages/Login", "pages/Register"];
+  for (const screen of formScreens) {
+    const componentName = harmonyPageComponentName(screen.id, formScreens.indexOf(screen) + 100);
+    extraRoutes.push(`pages/${componentName}`);
+  }
+  for (const route of extraRoutes) {
+    if (!existingPages.src.includes(route)) {
+      existingPages.src.push(route);
+    }
+  }
+  await fs.writeFile(mainPagesPath, JSON.stringify(existingPages, null, 2) + "\n", "utf8");
 
   return {
     outputDir: appDir,

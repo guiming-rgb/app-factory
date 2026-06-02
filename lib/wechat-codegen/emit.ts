@@ -2,6 +2,7 @@ import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { resolveEntityForScreen } from "@/lib/app-spec/entity-scaffold";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
+import { isListScreen } from "@/lib/app-spec/resolve-list-screen";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null
@@ -119,11 +120,13 @@ export function buildAppJson(
   };
 }
 
+/** P3: 使用共享 isListScreen 逻辑 */
 export function listScreenFromSpec(spec: AppSpec): AppSpecScreen | undefined {
   const byType = spec.screens.find((s) => s.type === "list");
   if (byType) return byType;
+  // 回退到共享 isListScreen 判断（替代硬编码 LIST_PAGE_IDS）
   return spec.screens.find(
-    (s) => LIST_PAGE_IDS.has(s.id) && s.type !== "tabRoot"
+    (s) => isListScreen(s, spec) && s.type !== "tabRoot"
   );
 }
 

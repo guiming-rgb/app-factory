@@ -11,6 +11,7 @@ export type Skill = {
   workflow_schema: Record<string, unknown>;
   tools_required: unknown[];
   quality_checks: unknown[];
+  codegen_snippets: unknown[];
   version: string;
   status: string;
   created_at: string;
@@ -20,7 +21,7 @@ export type Skill = {
 export type SkillStatus = "draft" | "published";
 
 const SKILL_LIST_FIELDS =
-  "id, code, name, description, category, input_schema, workflow_schema, tools_required, quality_checks, version, status, created_at, updated_at";
+  "id, code, name, description, category, input_schema, workflow_schema, tools_required, quality_checks, codegen_snippets, version, status, created_at, updated_at";
 
 const CODE_PATTERN = /^[a-z][a-z0-9_]*$/;
 

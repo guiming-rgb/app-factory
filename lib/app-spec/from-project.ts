@@ -27,7 +27,7 @@ export function buildMinimalSpecFromProject(project: {
     targets: {
       flutter: {
         enabled: true,
-        platforms: ["ios", "android", "macos", "windows"],
+        platforms: ["ios", "android", "macos", "windows", "web"],
         formFactors: ["phone", "tablet"]
       },
       harmony: { enabled: true, formFactors: ["phone", "tablet"] },

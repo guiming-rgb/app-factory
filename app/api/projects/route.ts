@@ -78,6 +78,14 @@ export async function POST(req: NextRequest) {
       return unauthorizedResponse();
     }
 
+    // 配额检查 (B-1)
+    if (user) {
+      const { checkQuota, incrementUsage } = await import("@/lib/auth/quota");
+      const quota = await checkQuota(user.id, "project");
+      if (!quota.ok) return NextResponse.json({ error: quota.message }, { status: 403 });
+      await incrementUsage(user.id, "project");
+    }
+
     const insert: {
       title: string;
       idea: string;

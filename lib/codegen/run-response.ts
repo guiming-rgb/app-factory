@@ -13,6 +13,10 @@ export type CodegenRunView = CodegenRunRow & {
   downloadMacGithubUrl: string | null;
   /** Windows 可双击发行包 zip */
   downloadWinUrl: string | null;
+  /** Supabase 建表 SQL 下载 */
+  sqlDownloadUrl: string | null;
+  /** Flutter Web 预览 ZIP */
+  flutterWebUrl: string | null;
   previewUrl: string | null;
 };
 
@@ -63,12 +67,26 @@ export async function enrichCodegenRun(
     run.status === "completed" &&
     !!macGithubUrl;
 
+  const sqlPath = `${run.id}/supabase_migration.sql`;
+  const hasSql = run.status === "completed" && (await artifactExists(sqlPath));
+  const sqlDownloadUrl = hasSql
+    ? `/api/projects/${projectId}/codegen/runs/${run.id}/sql`
+    : null;
+
+  const webPath = `${run.id}/flutter-web.zip`;
+  const hasWeb = run.target === "flutter" && run.status === "completed" && (await artifactExists(webPath));
+  const flutterWebUrl = hasWeb
+    ? `${base}?kind=flutter-web`
+    : null;
+
   return {
     ...run,
     downloadUrl: hasArtifact ? base : null,
     downloadMacUrl: hasMac ? `${base}?kind=macos` : null,
     downloadMacGithubUrl: showMacGithub ? macGithubUrl : null,
     downloadWinUrl: hasWin ? `${base}?kind=windows` : null,
+    sqlDownloadUrl,
+    flutterWebUrl,
     previewUrl: hasPreview
       ? `/api/projects/${projectId}/codegen/runs/${run.id}/preview`
       : null

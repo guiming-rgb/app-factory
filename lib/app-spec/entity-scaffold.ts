@@ -9,6 +9,7 @@ export type AppSpecEntityField = {
 export type AppSpecEntity = {
   name: string;
   fields: AppSpecEntityField[];
+  relations?: Array<{ target: string; type: string }>;
 };
 
 export type EntityListRow = {
@@ -43,7 +44,18 @@ function asEntity(raw: unknown): AppSpecEntity | null {
       { name: "title", type: "string" }
     );
   }
-  return { name, fields };
+  const relations: Array<{ target: string; type: string }> = [];
+  if (Array.isArray(rec.relations)) {
+    for (const r of rec.relations) {
+      if (typeof r !== "object" || r === null) continue;
+      const rr = r as Record<string, unknown>;
+      const target = typeof rr.target === "string" ? rr.target.trim() : "";
+      const type = typeof rr.type === "string" ? rr.type.trim() : "belongs_to";
+      if (target) relations.push({ target, type });
+    }
+  }
+
+  return { name, fields, ...(relations.length ? { relations } : {}) };
 }
 
 export function parseEntities(spec: AppSpec): AppSpecEntity[] {

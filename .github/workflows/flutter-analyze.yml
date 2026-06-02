@@ -1,0 +1,33 @@
+name: Flutter Analyze
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/flutter-codegen/**"
+      - "templates/flutter-minimal/**"
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze:
+    name: Flutter dart analyze
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: "3.27", channel: stable }
+      - run: flutter --version
+
+      - name: 生成测试项目
+        run: |
+          npm ci
+          npx tsx scripts/codegen-flutter.ts \
+            --spec docs/schemas/examples/valid-minimal.json \
+            --out /tmp/flutter-ci
+
+      - name: dart analyze
+        run: |
+          cd /tmp/flutter-ci
+          flutter pub get
+          dart analyze

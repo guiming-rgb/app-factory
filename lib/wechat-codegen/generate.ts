@@ -101,6 +101,22 @@ export async function generateWechatProject(
     "utf8"
   );
 
+  // P1: 生成 Supabase 建表 SQL
+  const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
+  const ddl = generateCreateTableDDL(spec);
+  const sqlDir = path.join(appDir, "supabase", "migrations");
+  await fs.mkdir(sqlDir, { recursive: true });
+  await fs.writeFile(
+    path.join(sqlDir, "001_create_tables.sql"),
+    ddl.fullSql,
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(appDir, "supabase", "README.md"),
+    `# Supabase 后端配置\n\n本目录包含 App 生产工厂自动生成的数据库迁移脚本。\n\n## 使用方法\n\n1. 登录 [Supabase](https://supabase.com) 控制台\n2. 进入项目 → SQL Editor\n3. 粘贴 \`migrations/001_create_tables.sql\` 内容并执行\n\n## 表结构\n\n${ddl.tableNames.length ? ddl.tableNames.map((t) => `- **${t}**`).join("\n") : "（无）"}\n`,
+    "utf8"
+  );
+
   const limitations = spec.limitations?.length
     ? spec.limitations.map((l) => `- ${l}`).join("\n")
     : "- （无）";
@@ -123,13 +139,13 @@ export async function generateWechatProject(
   ) as Record<string, unknown>;
   const todoMode = isTodoAppSpec(spec);
   const listScreen = listScreenFromSpec(spec);
-  let appJson = buildAppJson(spec, baseAppJson);
+  let appJson = buildAppJson(spec, baseAppJson) as Record<string, unknown> & { pages: string[] };
   const entityForDetail =
     listScreen && !todoMode
       ? resolveEntityForScreen(spec, listScreen)
       : undefined;
   if (entityForDetail) {
-    appJson = ensureEntityDetailInAppJson(appJson);
+    appJson = ensureEntityDetailInAppJson(appJson) as typeof appJson;
     await writeEntityDetailPage(appDir, entityForDetail, fs, path);
   }
   await fs.writeFile(
@@ -220,6 +236,50 @@ export async function generateWechatProject(
   for (const screen of resolveCodegenScreens(spec)) {
     await ensureGeneratedPage(appDir, screen);
   }
+
+  // Form 页面：为 form 类型的 screen 和没有专门列表的添加表单入口
+  const formScreens = spec.screens.filter((s) => s.type === "form");
+  for (const screen of formScreens) {
+    const safe = screen.id.replace(/[^a-z0-9_]/gi, "_").toLowerCase() || "form";
+    const formDir = path.join(appDir, "pages", safe);
+    await fs.mkdir(formDir, { recursive: true });
+    const { emitWechatFormPage } = await import("./emit-form");
+    const form = emitWechatFormPage(screen, spec);
+    await fs.writeFile(path.join(formDir, `${safe}.wxml`), form.wxml, "utf8");
+    await fs.writeFile(path.join(formDir, `${safe}.js`), form.js, "utf8");
+    await fs.writeFile(path.join(formDir, `${safe}.json`), '{"usingComponents":{"privacy-popup":"../../components/privacy-popup/privacy-popup"}}\n', "utf8");
+    await fs.writeFile(path.join(formDir, `${safe}.wxss`), form.wxss, "utf8");
+    // 注册到 app.json
+    const pagePath = `pages/${safe}/${safe}`;
+    if (!appJson.pages.includes(pagePath)) {
+      appJson.pages.push(pagePath);
+    }
+  }
+
+  // Auth 页面
+  const { emitWechatLoginPage, emitWechatRegisterPage } = await import("./emit-auth");
+  const loginDir = path.join(appDir, "pages", "login");
+  const registerDir = path.join(appDir, "pages", "register");
+  await fs.mkdir(loginDir, { recursive: true });
+  await fs.mkdir(registerDir, { recursive: true });
+
+  const login = emitWechatLoginPage(spec.displayName);
+  await fs.writeFile(path.join(loginDir, "login.wxml"), login.wxml, "utf8");
+  await fs.writeFile(path.join(loginDir, "login.js"), login.js, "utf8");
+  await fs.writeFile(path.join(loginDir, "login.json"), '{"usingComponents":{"privacy-popup":"../../components/privacy-popup/privacy-popup"}}\n', "utf8");
+  await fs.writeFile(path.join(loginDir, "login.wxss"), login.wxss, "utf8");
+
+  const register = emitWechatRegisterPage(spec.displayName);
+  await fs.writeFile(path.join(registerDir, "register.wxml"), register.wxml, "utf8");
+  await fs.writeFile(path.join(registerDir, "register.js"), register.js, "utf8");
+  await fs.writeFile(path.join(registerDir, "register.json"), '{"usingComponents":{"privacy-popup":"../../components/privacy-popup/privacy-popup"}}\n', "utf8");
+  await fs.writeFile(path.join(registerDir, "register.wxss"), register.wxss, "utf8");
+
+  if (!appJson.pages.includes("pages/login/login")) appJson.pages.push("pages/login/login");
+  if (!appJson.pages.includes("pages/register/register")) appJson.pages.push("pages/register/register");
+
+  // 写回 app.json（含新增 page）
+  await fs.writeFile(appJsonPath, JSON.stringify(appJson, null, 2) + "\n", "utf8");
 
   return {
     outputDir: appDir,
