@@ -145,7 +145,7 @@ export function CodegenPanel({
       <p className="mt-1 text-xs text-violet-800/80">三栈同步生成。Flutter 可额外产出 Mac .app / Win .exe 可双击包（GHA 构建）。</p>
 
       {inngestHint ? <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ Inngest：{inngestHint}</p> : null}
-      {specQuality && specQuality.score < SPEC_QUALITY_WARN ? <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-950">⚠ Spec 质量 {specQuality.score}/100 偏低</p> : null}
+      {specQuality ? <p data-specQualityScore={specQuality.score} className={`mt-2 rounded-lg border px-3 py-2 text-xs ${specQuality.score < SPEC_QUALITY_WARN ? 'border-orange-200 bg-orange-50 text-orange-950' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>Spec 质量 {specQuality.score}/100 {specQuality.score < SPEC_QUALITY_WARN ? '偏低' : ''}{specQuality.warnings.length > 0 ? ` · ${specQuality.warnings.slice(0, 2).join('；')}` : ''}</p> : null}
 
       <CodegenTargetCards runs={runs} />
 

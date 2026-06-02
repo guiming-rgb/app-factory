@@ -181,6 +181,7 @@ class ${className} extends StatelessWidget {
   return `import "package:flutter/material.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
+import "../../../core/supabase/supabase_client.dart";
 import "../../../core/widgets/polished_widgets.dart";
 ${isProduct || isFitness || isCRM ? 'import "../../../core/widgets/ux_widgets.dart";' : ''}
 
@@ -233,7 +234,8 @@ ${formCtrlFields.map((f) => `    _${escapeDartString(f.name)}Ctrl.dispose();`).j
     try {
       final from = _page * _pageSize;
       final to = from + _pageSize - 1;
-      dynamic query = Supabase.instance.client.from("${table}").select("${select}");
+      final client = supabaseOrNull; if (client == null) { setState(() { _error = "Supabase 未配置"; _loading = false; }); return; }
+      dynamic query = client.from("${table}").select("${select}");
       if (_searchController.text.isNotEmpty) query = query.ilike("${titleField}", "%\${_searchController.text}%");
       query = query.order("created_at", ascending: false).range(from, to);
       final rows = await query;
@@ -310,7 +312,7 @@ ${detailFields}
         final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text("确认删除"), content: Text("确定要删除 \${item.title} 吗？此操作不可撤销。"), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("取消")), FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: Colors.red), child: const Text("删除"))]));
         if (confirm == true && mounted) {
           try {
-            await Supabase.instance.client.from("${table}").delete().eq("${pk}", item.id);
+            await supabaseOrNull?.from("${table}").delete().eq("${pk}", item.id);
             if (mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("已删除"))); Navigator.of(context).pop(); _load(reset: true); }
           } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("删除失败"))); }
         }
@@ -326,7 +328,8 @@ ${formFieldWidgets || '        TextField(decoration: const InputDecoration(label
         const SizedBox(height: 12),
         FilledButton(onPressed: () async {
           try {
-            await Supabase.instance.client.from("${table}").insert({
+            final insertClient = supabaseOrNull; if (insertClient == null) return;
+            await insertClient.from("${table}").insert({
               ${formInsertData || '"title": ""'}
             });
             if (mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("添加成功"))); Navigator.of(context).pop(); _load(reset: true); }
