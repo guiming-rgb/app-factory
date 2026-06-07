@@ -1,0 +1,45 @@
+---
+description: 平台与生成 App 的完整地址、路径、名称、运行环境与真机调试（共享记忆）
+alwaysApply: true
+---
+
+# 产品路径与运行环境 — 共享记忆
+
+跨会话事实源（重启 / 换 AI / **Claude 协作** 先读）：
+
+0. **[docs/Claude共享记忆-总索引.md](../../docs/Claude共享记忆-总索引.md)** — 全部记忆+规则+资料入口  
+1. **[docs/产品路径一览.md](../../docs/产品路径一览.md)** — URL、工程名、下载链  
+2. **[docs/运行环境与真机调试-重启备忘.md](../../docs/运行环境与真机调试-重启备忘.md)** — 环境、E1–E5、重启、战略
+
+## 重启后 30 秒
+
+```bash
+cd "/Users/guiming/Desktop/app生产工厂/app-factory"
+# 代理（git push / 探针）：export https_proxy=http://127.0.0.1:7897
+npm run dev:codegen:3001    # → http://localhost:3001
+```
+
+- **生产**：https://app-factory-five.vercel.app  
+- **本地联调**：`INNGEST_DEV=1` 于 `.env.local`；端口 **3001**  
+- **代理探针**：`.env.local` 内 `V3_HTTP_PROXY=http://127.0.0.1:7897`
+
+## 平台（App 生产工厂）
+
+- **GitHub**：https://github.com/guiming-rgb/app-factory
+- **GHA 桌面构建**：`.github/workflows/flutter-desktop-dual-build.yml`
+
+## 待办 MVP（工厂生成 App）
+
+| 端 | 显示名 | 工程/包/目录 | 调试工具 |
+|----|--------|--------------|----------|
+| Flutter Mac/Win | 我的小清单 | `app_factory_minimal.app` / Win Release | 解压双击；可选 `flutter run` |
+| 微信小程序 | 极简待办 | `simple_todo-wechat` | 微信开发者工具 **2.01.2510290** · 测试号 |
+| 鸿蒙 | Spec displayName | `simple_todo-harmony/` | **DevEco Studio** + 鸿蒙设备/模拟器 |
+
+- **Win 下载**：`?kind=windows` · **Mac**：Mac .app(GitHub) → Artifacts  
+- **战略**：工厂不上架；成品 App 分阶段各平台上架
+
+## 示例 projectId
+
+- 生产枪战：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
+- 本地枪战：`4fec0ec1-bcd3-4fa9-8386-e930ad3e9c09`

@@ -1,8 +1,8 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-05-31（批次 T+：网页 → GHA → Mac/Win 桌面包 ✅）  
-> **今日收工**：[收工记录-20260531-批次T+-桌面GHA.md](./收工记录-20260531-批次T+-桌面GHA.md) · [桌面可双击发行包.md](./桌面可双击发行包.md)  
-> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md)
+> **最后更新**：2026-06-05（今日收工：T+ 实跑 + 三端待办验证 + 战略备忘）  
+> **今日收工**：[收工记录-20260605-今日收工-全量.md](./收工记录-20260605-今日收工-全量.md) · [T+ 桌面 GHA](./收工记录-20260531-批次T+-桌面GHA.md) · [桌面可双击发行包.md](./桌面可双击发行包.md)  
+> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md) · **[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)** · [产品路径一览.md](./产品路径一览.md) · [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
 
 ## 当前进度（勾选）
 
@@ -66,7 +66,8 @@
 - [x] **批次 P**：Flutter `macos`/`windows` 模板 · Spec 默认四平台 · 鸿蒙默认 `enabled: true` · `verify:p:desktop:flutter` · `dpl_5rh8QCD6XCp9S1aVrTp2DtFTg31W`
 - [x] **批次 Q+R**：`verify:qr:batch` · 生产 P1 三栈 · 枪战 ZIP 探针 · 小程序编译重试 · stale 创建前清理 · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd`
 - [x] **批次 S**：Codegen 同步文案 · 失败建议/展开日志 · 复制下载链 · `verify:s:ux` · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK`
-- [x] **批次 T+**：Flutter 桌面 GHA 双平台 · 网页触发 · `Mac .app(GitHub)` + `Win .exe` · 维护者 Mac 待办实测 ✅ · `verify:t:desktop:build`
+- [x] **批次 T+**：Flutter 桌面 GHA · Mac/Win · 维护者 Mac 待办 ✅ · `verify:t:desktop:build`
+- [x] **2026-06-05 收工**：Win 工厂链 + Mac GitHub 链 · 微信 `simple_todo-wechat` 模拟器 ✅ · 战略「工厂不上架/成品上架」→ [全量收工](./收工记录-20260605-今日收工-全量.md)
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -152,6 +153,10 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |
+| 2026-06-05 | **运行环境 + 真机 + 重启备忘**：[运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md) |
+| 2026-06-05 | **产品路径共享记忆**： [产品路径一览.md](./产品路径一览.md) + `.cursor/rules/product-paths-memory.mdc`（AI 跨会话） |
+| 2026-06-05 | **今日收工全量**：任务/环境/三端实跑 · 战略备忘 · 微信 Console 待查 → [收工记录-20260605-今日收工-全量.md](./收工记录-20260605-今日收工-全量.md) |
 | 2026-05-31 | **批次 T+**：GHA `flutter-desktop-dual-build` · 刷新同步桌面包 · Mac GitHub / Win 直链 · 待办 MVP Mac 运行 ✅ |
 | 2026-06-02 | **批次 S**：Codegen UX（失败建议、日志展开、复制链、同步进度）· `verify:s:ux` · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK` |
 | 2026-06-02 | **批次 Q+R**：生产 P1 + ZIP 探针 · 稳定 1.0（重试/清理/stats REST）· `verify:qr:batch` · `dpl_CpBXN3wC4AFbTFpKMJfQc7RaSYwd` |

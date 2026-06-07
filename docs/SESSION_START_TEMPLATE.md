@@ -5,6 +5,9 @@
 1. [docs/ONE_PAGER.md](./ONE_PAGER.md)  
 2. [docs/CONTINUOUS_DELIVERY_OUTLINE.md](./CONTINUOUS_DELIVERY_OUTLINE.md)（**§2** 并行线 A～H、**§3** 最近一条收工）  
 3. [docs/HANDOFF.md](./HANDOFF.md)  
+4. [docs/Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)（**全部记忆+规则+资料**，与 Claude 共享入口）
+5. [docs/产品路径一览.md](./产品路径一览.md)（平台 URL、工程名、下载链）
+6. [docs/运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)（环境、真机 E1–E5、重启恢复、战略构思）
 
 再读与本次任务相关的代码。
 

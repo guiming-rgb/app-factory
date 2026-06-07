@@ -2,8 +2,11 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-06-02 批次 S）
+## 当前事实（截至 2026-06-05）
 
+- **Claude / 全量记忆**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) · 根 [CLAUDE.md](../CLAUDE.md)
+- **地址/名称**：[产品路径一览.md](./产品路径一览.md)
+- **运行环境 / 真机 / 重启**：[运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
 - **跨平台**：工厂 Mac/Win 浏览器；生成 App → Flutter 桌面 + 鸿蒙系统 + 小程序（见 [跨平台运行说明.md](./跨平台运行说明.md)）
 - **生产**：https://app-factory-five.vercel.app · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK`
 - **门禁**：`verify:qr:batch` · `verify:s:ux` · `verify:p1:production:sync:all`

@@ -10,7 +10,7 @@ alwaysApply: false
 
 - **真相源**：跨会话、跨天、换机器以 **Git + 仓库内接力文档** 为准；不默认聊天上下文在别处仍成立。
 - **多项目**：一 App 一仓库 + 一接力单（如 `docs/HANDOFF.md`）+ 一聊天主题；跨项目靠 **Git / 接口 / 契约**，不靠一条对话串多仓。
-- **缺上下文**：先读 `docs/ONE_PAGER.md`、`docs/CONTINUOUS_DELIVERY_OUTLINE.md`、`docs/HANDOFF.md`，或使用 `docs/SESSION_START_TEMPLATE.md`。
+- **缺上下文**：先读 `docs/Claude共享记忆-总索引.md`（总入口），或 Tier-1：`ONE_PAGER`、`CONTINUOUS_DELIVERY_OUTLINE`、`HANDOFF`、`产品路径一览`、`运行环境与真机调试-重启备忘`；或使用 `SESSION_START_TEMPLATE.md`。
 
 ## 二、开工（建议顺序）
 
