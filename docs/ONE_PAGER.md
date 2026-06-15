@@ -2,23 +2,24 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-06-05）
+## 当前事实（截至 2026-06-16）
 
 - **Claude / 全量记忆**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) · 根 [CLAUDE.md](../CLAUDE.md)
 - **地址/名称**：[产品路径一览.md](./产品路径一览.md)
 - **运行环境 / 真机 / 重启**：[运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
-- **跨平台**：工厂 Mac/Win 浏览器；生成 App → Flutter 桌面 + 鸿蒙系统 + 小程序（见 [跨平台运行说明.md](./跨平台运行说明.md)）
-- **生产**：https://app-factory-five.vercel.app · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK`
-- **门禁**：`verify:qr:batch` · `verify:s:ux` · `verify:p1:production:sync:all`
-- **策略**：自动化兜底；真机 E1–E5 / DevEco **可选**（HANDOFF §跨平台策略）
+- **本地启动** | `npm run build && npm run dev:codegen:3001` → **3001** + Inngest **8288** · `INNGEST_DEV=1`
+- **跨平台**：工厂 Mac/Win 浏览器；生成 App → Flutter 桌面 + 鸿蒙 + 小程序
+- **生产**：https://app-factory-five.vercel.app
+- **Git** | 本地 **ahead 1+**（记忆 doc `8846d06` 待 push）
+- **WIP** | 安全合规 Agent（9 Agent）· build ❌ · 见 [收工记录-20260616](./收工记录-20260616-今日收工.md)
 - **枪战**：`0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
 - **目录**：`cd "/Users/guiming/Desktop/app生产工厂/app-factory"`
 
-## 可选下一批
+## 明日优先
 
-- 观察部署后 7 天 `stats:codegen`（harmony 目标 >70%）· DevEco E4 · 体验 E1–E5
-
-详表：[三阶段-执行计划-20260519.md](./三阶段-执行计划-20260519.md)
+1. `git push`（代理 7897）  
+2. 安全合规 WIP → migration · build · verify  
+3. 微信 Console 红错 / 发行 R1（可选）
 
 ## 入口
 
@@ -26,10 +27,10 @@
 |------|------------|
 | **生产 Web** | https://app-factory-five.vercel.app |
 | 本地 Web | http://localhost:3001 |
-| 门禁 | `verify:i0:batch` · `verify:i1:flutter` · `trigger:shooter:8-8` · `verify:i2:shooter` |
+| 门禁 | `verify:i0:batch` · `npm run build` |
 | 部署 | `deploy:vercel:env` · `deploy:vercel` |
 
 ## 必读
 
-- **[验收大纲-自动与必做.md](./验收大纲-自动与必做.md)** — 自动 vs 必做（当前 **0 阻塞**）
-- [HANDOFF.md](./HANDOFF.md) · [收工记录-20260602-批次S-UX.md](./收工记录-20260602-批次S-UX.md)
+- [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md)
+- [HANDOFF.md](./HANDOFF.md) · [验收大纲-自动与必做.md](./验收大纲-自动与必做.md)

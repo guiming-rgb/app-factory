@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-05（今日收工：T+ 实跑 + 三端待办验证 + 战略备忘）  
-> **今日收工**：[收工记录-20260605-今日收工-全量.md](./收工记录-20260605-今日收工-全量.md) · [T+ 桌面 GHA](./收工记录-20260531-批次T+-桌面GHA.md) · [桌面可双击发行包.md](./桌面可双击发行包.md)  
+> **最后更新**：2026-06-16（今日收工：记忆共享接力 + 安全合规 WIP）  
+> **今日收工**：[收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md) · [收工记录-20260605-今日收工-全量.md](./收工记录-20260605-今日收工-全量.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md) · **[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)** · [产品路径一览.md](./产品路径一览.md) · [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
 
 ## 当前进度（勾选）
@@ -68,6 +68,8 @@
 - [x] **批次 S**：Codegen 同步文案 · 失败建议/展开日志 · 复制下载链 · `verify:s:ux` · `dpl_2Pubz7g33kf8RsPRcfH2pLctFGvK`
 - [x] **批次 T+**：Flutter 桌面 GHA · Mac/Win · 维护者 Mac 待办 ✅ · `verify:t:desktop:build`
 - [x] **2026-06-05 收工**：Win 工厂链 + Mac GitHub 链 · 微信 `simple_todo-wechat` 模拟器 ✅ · 战略「工厂不上架/成品上架」→ [全量收工](./收工记录-20260605-今日收工-全量.md)
+- [x] **2026-06-16 收工**：Claude/路径/环境 **共享记忆落盘**（commit `8846d06`）· 开工/端口 Q&A → [今日收工](./收工记录-20260616-今日收工.md)
+- [ ] **安全合规 Agent WIP**：migration + 9 Agent 链 · Spec 合规 emit · **build 待过**（工作区未 commit）
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -130,11 +132,16 @@ npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
 
 **维护者必做**：**0**（`npm run maintainer:pending`）
 
+**Agent / 开发优先**
+
+1. **`git push origin main`**（含 `8846d06` 记忆文档 + 本收工 commit；需代理 7897）  
+2. **安全合规批次**：应用 `sql/migrations/20260616_security_compliance_agent.sql` · 完成 WIP · `npm run build` ✅  
+3. 8 个未跟踪 `.cursor/rules/project-*.mdc` — 入库或废弃  
+
 **可选**
 
-1. 枪战项目重新「生成 Flutter / 鸿蒙 ZIP（同步）」→ 解压确认 `macos/`、`windows/`、`EntityDetail.ets`  
-2. （可选）DevEco / `flutter run -d macos|windows` 真机感受  
-3. `npm run stats:codegen -- 7` 看近 7 天成功率  
+4. 微信 Console **6 错 7 警告** · 发行 checklist R1 · PAT **workflow** scope  
+5. `npm run stats:codegen -- 7`
 
 ```bash
 npm run maintainer:pending
@@ -153,6 +160,7 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-16 | **今日收工**：记忆共享接力 · 安全合规 Agent WIP · push 待办 → [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md) |
 | 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |
 | 2026-06-05 | **运行环境 + 真机 + 重启备忘**：[运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md) |
 | 2026-06-05 | **产品路径共享记忆**： [产品路径一览.md](./产品路径一览.md) + `.cursor/rules/product-paths-memory.mdc`（AI 跨会话） |
