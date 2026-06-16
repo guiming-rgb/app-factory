@@ -29,8 +29,8 @@ describe("filterAgentsForApp", () => {
     expect(codes).toContain("product_manager");
   });
 
-  it("数据类应保留所有 Agent", () => {
+  it("数据类应保留所有 Agent（含安全与合规顾问）", () => {
     const agents = filterAgentsForApp("库存管理系统");
-    expect(agents.length).toBe(8);
+    expect(agents.length).toBe(9);
   });
 });

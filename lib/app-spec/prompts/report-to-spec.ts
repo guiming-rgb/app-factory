@@ -26,7 +26,20 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 - roles: 数组（可为空 []）
 - auth: { "provider":"supabase", "methods":["email"], "roles":["user"] }
 - api: 数组（可为空 []）
-- complianceFlags: { "templateLimited": true 或 false }
+- complianceFlags: 包含以下字段的 JSON 对象：
+  * templateLimited: true 或 false（是否受模板能力限制）
+  * regulatedIndustry: "medical" | "fintech" | "insurance" | "social" | "ecommerce" | "none"（受监管行业）
+  * riskLevel: "low" | "medium" | "high" | "critical"（安全合规风险等级）
+  * requiresHIPAA: true 或 false（是否需要 HIPAA 合规）
+  * requiresPCIDSS: true 或 false（是否需要 PCI-DSS 支付安全合规）
+  * requiresKYC: true 或 false（是否需要 KYC 身份验证）
+  * requiresGDPR: true 或 false（是否需要 GDPR 合规）
+  * requiresPIPL: true 或 false（是否需要中国个人信息保护法合规）
+  * requiresConsentScreen: true 或 false（是否需要用户同意页面）
+  * requiresDataDeletionAPI: true 或 false（是否需要数据删除 API）
+  * requiresDataLocalization: true 或 false（是否需要数据本地化存储）
+  * requiresAuditLog: true 或 false（是否需要操作审计日志）
+  * checklist: 字符串数组，每条对应一个可验收的合规检查项
 
 ## 推荐结构
 

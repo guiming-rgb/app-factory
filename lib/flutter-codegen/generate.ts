@@ -53,6 +53,12 @@ import {
   emitFlutterKYCVerification
 } from "./emit-fintech";
 import {
+  emitFlutterConsentPage,
+  emitFlutterComplianceHubPage,
+  shouldGenerateCompliancePages
+} from "./emit-compliance";
+import { getComplianceFlags } from "@/lib/compliance-flags";
+import {
   ensureFlutterPlatformFolders,
   resolveFlutterPlatforms
 } from "./ensure-flutter-platforms";
@@ -370,10 +376,44 @@ export async function generateFlutterProject(
   await fs.mkdir(privacyDir, { recursive: true });
   await fs.writeFile(path.join(privacyDir, "privacy_page.dart"), generatePrivacyPage(spec.displayName), "utf8");
 
+  // 合规页面生成（条件性，根据 complianceFlags）
+  const complianceFlags = getComplianceFlags(spec as Record<string, unknown> as { complianceFlags?: Record<string, unknown> });
+  const complianceRoutes: Array<{ route: string; widget: string; importPath: string }> = [];
+  if (shouldGenerateCompliancePages(complianceFlags)) {
+    const complianceDir = path.join(appDir, "lib", "features", "compliance", "presentation");
+    await fs.mkdir(complianceDir, { recursive: true });
+
+    // 用户同意书（首次启动展示）
+    if (complianceFlags.requiresConsentScreen) {
+      await fs.writeFile(
+        path.join(complianceDir, "consent_page.dart"),
+        emitFlutterConsentPage(spec.displayName, complianceFlags as Record<string, unknown>),
+        "utf8"
+      );
+      complianceRoutes.push({
+        route: "/consent",
+        widget: "ConsentPage",
+        importPath: "../features/compliance/presentation/consent_page.dart"
+      });
+    }
+
+    // 合规信息中心
+    await fs.writeFile(
+      path.join(complianceDir, "compliance_hub_page.dart"),
+      emitFlutterComplianceHubPage(spec.displayName, complianceFlags as Record<string, unknown>),
+      "utf8"
+    );
+    complianceRoutes.push({
+      route: "/compliance",
+      widget: "ComplianceHubPage",
+      importPath: "../features/compliance/presentation/compliance_hub_page.dart"
+    });
+  }
+
   await fs.writeFile(appDartFilePath, appDartContent, "utf8");
 
   const routerPath = path.join(appDir, "lib", "router", "app_router.dart");
-  await fs.writeFile(routerPath, emitAppRouterDart(spec), "utf8");
+  await fs.writeFile(routerPath, emitAppRouterDart(spec, complianceRoutes.length > 0 ? complianceRoutes : undefined), "utf8");
 
   // 技能代码片段注入 (P1-2)
   try {

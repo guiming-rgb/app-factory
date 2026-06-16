@@ -403,7 +403,10 @@ class ${className} extends StatelessWidget {
 `;
 }
 
-export function emitAppRouterDart(spec: AppSpec): string {
+export function emitAppRouterDart(
+  spec: AppSpec,
+  complianceRoutes?: Array<{ route: string; widget: string; importPath: string }>
+): string {
   const tabs = resolveTabScreens(spec);
   const imports = new Set<string>();
   const branches: string[] = [];
@@ -467,6 +470,14 @@ export function emitAppRouterDart(spec: AppSpec): string {
   imports.add('import "../features/auth/presentation/register_page.dart";');
   extraRoutes.push(`        GoRoute(path: "/login", builder: (_, __) => const LoginPage()),`);
   extraRoutes.push(`        GoRoute(path: "/register", builder: (_, __) => const RegisterPage()),`);
+
+  // 合规路由（条件性，来自 complianceFlags）
+  if (complianceRoutes) {
+    for (const er of complianceRoutes) {
+      imports.add(`import "${er.importPath}";`);
+      extraRoutes.push(`        GoRoute(path: "${er.route}", builder: (_, __) => const ${er.widget}()),`);
+    }
+  }
 
   const destinations = tabs
     .map(

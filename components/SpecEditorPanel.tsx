@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SpecVersionPanel } from "./SpecVersionPanel";
 
 /**
  * Spec 编辑面板 — P0: 让用户查看、编辑、保存 App Spec
@@ -238,6 +239,12 @@ export function SpecEditorPanel({ projectId, embedded = false }: {
       <p className="mt-1 text-xs text-violet-800/80">
         Spec 决定了代码生成的结构：包括页面列表、实体定义和导航配置。编辑后保存，后续代码生成将使用编辑版本。
       </p>
+
+      <SpecVersionPanel
+        projectId={projectId}
+        currentSpec={specInfo?.spec as Record<string, unknown> | null}
+        onRestore={fetchSpec}
+      />
 
       {error ? (
         <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
