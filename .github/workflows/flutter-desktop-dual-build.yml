@@ -43,6 +43,41 @@ jobs:
           APP="$(find build/macos/Build/Products/Release -maxdepth 1 -name '*.app' | head -1)"
           test -n "$APP"
           cd "$(dirname "$APP")"
+          # 条件性签名 + 公证（需要 GitHub Secrets）
+          if [ -n "${APPLE_DEVELOPER_ID:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ] && [ -n "${APPLE_ID_PASSWORD:-}" ] && [ -n "${MACOS_CERT_BASE64:-}" ] && [ -n "${MACOS_CERT_PASSWORD:-}" ]; then
+            echo "🔏 检测到 Apple 签名凭据，执行签名与公证..."
+            # 解码并导入证书
+            echo "$MACOS_CERT_BASE64" | base64 -d > /tmp/cert.p12
+            security create-keychain -p temp /tmp/build.keychain
+            security default-keychain -s /tmp/build.keychain
+            security unlock-keychain -p temp /tmp/build.keychain
+            security import /tmp/cert.p12 -k /tmp/build.keychain -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp /tmp/build.keychain
+            # codesign（hardened runtime + entitlements）
+            /usr/bin/codesign --force --verify --verbose \
+              --sign "$APPLE_DEVELOPER_ID" \
+              --options runtime \
+              --entitlements /tmp/flutter-app/macos/Runner/Release.entitlements \
+              "$(basename "$APP")"
+            echo "✅ codesign 完成"
+            # 公证
+            ZIP_FOR_NOTARY="/tmp/app-notarize.zip"
+            ditto -c -k --sequesterRsrc --keepParent "$(basename "$APP")" "$ZIP_FOR_NOTARY"
+            xcrun notarytool submit "$ZIP_FOR_NOTARY" \
+              --apple-id "app-factory@factory.dev" \
+              --team-id "$APPLE_TEAM_ID" \
+              --password "$APPLE_ID_PASSWORD" \
+              --wait
+            echo "✅ notarize 完成"
+            # stapler
+            xcrun stapler staple "$(basename "$APP")"
+            echo "✅ stapler 完成"
+            # 验证
+            spctl -a -v "$(basename "$APP")"
+          else
+            echo "⚠️ 未配置 Apple 签名凭据，跳过签名与公证（构建产物未签名）"
+            echo "   设置 GitHub Secrets：APPLE_DEVELOPER_ID, APPLE_TEAM_ID, APPLE_ID_PASSWORD, MACOS_CERT_BASE64, MACOS_CERT_PASSWORD"
+          fi
           zip -r "$GITHUB_WORKSPACE/macos-desktop.zip" "$(basename "$APP")"
       - uses: actions/upload-artifact@v4
         with:
@@ -78,10 +113,27 @@ jobs:
           flutter build windows --release
       - name: 打包 Windows 发行目录（PowerShell 原生路径）
         shell: pwsh
+        env:
+          WINDOWS_CERT_BASE64: ${{ secrets.WINDOWS_CERT_BASE64 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: |
           $release = Join-Path $env:RUNNER_TEMP "flutter-app\build\windows\x64\runner\Release"
           if (-not (Test-Path $release)) {
             throw "Release 目录不存在: $release"
+          }
+          # 条件性 Authenticode 签名
+          if ($env:WINDOWS_CERT_BASE64 -and $env:WINDOWS_CERT_PASSWORD) {
+            Write-Host "🔏 检测到 Windows 签名凭据，执行签名..."
+            $certPath = Join-Path $env:RUNNER_TEMP "cert.pfx"
+            [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:WINDOWS_CERT_BASE64))
+            $exeFiles = Get-ChildItem -Path $release -Filter "*.exe" -Recurse
+            foreach ($exe in $exeFiles) {
+              & "signtool" sign /fd SHA256 /f $certPath /p $env:WINDOWS_CERT_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $exe.FullName
+              Write-Host "✅ 已签名: $($exe.Name)"
+            }
+          } else {
+            Write-Host "⚠️ 未配置 Windows 签名凭据，跳过签名"
+            Write-Host "   设置 GitHub Secrets：WINDOWS_CERT_BASE64, WINDOWS_CERT_PASSWORD"
           }
           $zip = Join-Path $env:GITHUB_WORKSPACE "windows-desktop.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }

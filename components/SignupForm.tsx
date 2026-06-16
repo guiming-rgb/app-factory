@@ -87,6 +87,21 @@ export function SignupForm({ nextPath }: { nextPath: string }) {
       {error && <p className="text-sm text-red-600">{error}</p>}
       {message && <p className="text-sm text-emerald-700">{message}</p>}
 
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          id="signup-consent"
+          required
+          className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-black focus:ring-black"
+        />
+        <label htmlFor="signup-consent" className="text-xs leading-5 text-gray-500">
+          我已阅读并同意{" "}
+          <Link href="/privacy" target="_blank" className="text-violet-700 underline">隐私政策</Link>
+          {" 和 "}
+          <Link href="/terms" target="_blank" className="text-violet-700 underline">服务条款</Link>
+        </label>
+      </div>
+
       <button
         type="submit"
         disabled={loading}

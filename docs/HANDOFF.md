@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-16（今日收工：记忆共享接力 + 安全合规 WIP）  
-> **今日收工**：[收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md) · [收工记录-20260605-今日收工-全量.md](./收工记录-20260605-今日收工-全量.md)  
+> **最后更新**：2026-06-17（今日收工：R1 发行层 — GHA 签名 + 隐私/条款页）  
+> **今日收工**：[收工记录-20260617-今日收工.md](./收工记录-20260617-今日收工.md) · [R1-发行路线图.md](./R1-发行路线图.md) · [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md) · **[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)** · [产品路径一览.md](./产品路径一览.md) · [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
 
 ## 当前进度（勾选）
@@ -69,7 +69,8 @@
 - [x] **批次 T+**：Flutter 桌面 GHA · Mac/Win · 维护者 Mac 待办 ✅ · `verify:t:desktop:build`
 - [x] **2026-06-05 收工**：Win 工厂链 + Mac GitHub 链 · 微信 `simple_todo-wechat` 模拟器 ✅ · 战略「工厂不上架/成品上架」→ [全量收工](./收工记录-20260605-今日收工-全量.md)
 - [x] **2026-06-16 收工**：Claude/路径/环境 **共享记忆落盘**（commit `8846d06`）· 开工/端口 Q&A → [今日收工](./收工记录-20260616-今日收工.md)
-- [ ] **安全合规 Agent WIP**：migration + 9 Agent 链 · Spec 合规 emit · **build 待过**（工作区未 commit）
+- [x] **安全合规 Agent**：9 Agent 链 · Spec 合规 emit · SpecVersionPanel · migration · build ✅ · push `664ccc2`（2026-06-16）
+- [x] **R1 发行层（代码）**：GHA 条件签名 · `/privacy` `/terms` · 生成 App 隐私 API/模板 · [R1-发行路线图](./R1-发行路线图.md)（2026-06-17）
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -134,14 +135,15 @@ npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
 
 **Agent / 开发优先**
 
-1. **`git push origin main`**（含 `8846d06` 记忆文档 + 本收工 commit；需代理 7897）  
-2. **安全合规批次**：应用 `sql/migrations/20260616_security_compliance_agent.sql` · 完成 WIP · `npm run build` ✅  
-3. 8 个未跟踪 `.cursor/rules/project-*.mdc` — 入库或废弃  
+1. **Supabase migration**：`sql/migrations/20260616_security_compliance_agent.sql`  
+2. **Vercel redeploy**：上线 `/privacy` · `/terms` · R1 workflow  
+3. **配 GitHub Secrets**（可选）：Apple / Windows 签名 → 跑 GHA 验证  
+4. 8 个未跟踪 `.cursor/rules/project-*.mdc` — 入库或废弃  
 
 **可选**
 
-4. 微信 Console **6 错 7 警告** · 发行 checklist R1 · PAT **workflow** scope  
-5. `npm run stats:codegen -- 7`
+5. 微信 Console 红错 · 正式 AppID 提审 · Inngest Cloud · PAT workflow scope  
+6. `npm run stats:codegen -- 7`
 
 ```bash
 npm run maintainer:pending
@@ -160,7 +162,8 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
-| 2026-06-16 | **今日收工**：记忆共享接力 · 安全合规 Agent WIP · push 待办 → [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md) |
+| 2026-06-17 | **R1 发行层**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · [收工记录-20260617](./收工记录-20260617-今日收工.md) |
+| 2026-06-16 | **今日收工**：记忆共享 · 安全合规 Agent · push `664ccc2` → [收工记录-20260616](./收工记录-20260616-今日收工.md) |
 | 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |
 | 2026-06-05 | **运行环境 + 真机 + 重启备忘**：[运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md) |
 | 2026-06-05 | **产品路径共享记忆**： [产品路径一览.md](./产品路径一览.md) + `.cursor/rules/product-paths-memory.mdc`（AI 跨会话） |

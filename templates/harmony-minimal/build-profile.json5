@@ -1,6 +1,20 @@
 {
   "app": {
-    "signingConfigs": [],
+    "signingConfigs": [
+      {
+        "name": "default",
+        "material": {
+          "certPath": "./signing/developer.p7b",
+          "keyStorePath": "./signing/developer.p12",
+          "keyStorePassword": "",
+          "keyAlias": "key0",
+          "keyPassword": "",
+          "profilePath": "./signing/developer.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storePassword": ""
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",

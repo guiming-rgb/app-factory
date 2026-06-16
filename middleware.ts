@@ -13,6 +13,8 @@ const SECURITY_HEADERS: Record<string, string> = {
   "X-XSS-Protection": "1; mode=block",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'none'; object-src 'none'",
 };
 
 /** API 限流（简单内存计数器，Vercel 边缘层可替换） */
@@ -92,5 +94,7 @@ export const config = {
     "/auth/:path*",
     "/dashboard",
     "/health",
+    "/privacy",
+    "/terms",
   ]
 };

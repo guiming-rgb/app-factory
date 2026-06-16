@@ -150,11 +150,17 @@ export function patchIndexJsonTitle(
 export function patchProjectConfigName(
   content: string,
   appName: string,
-  displayName: string
+  displayName: string,
+  /** 微信 AppID，默认用测试号 touristappid */
+  appId?: string
 ): string {
   const json = JSON.parse(content) as Record<string, unknown>;
   json.projectname = appName.slice(0, 40);
   json.description = `${displayName} — App 生产工厂生成（v2b）`;
+  // appid: 未提供时保持模板默认值（touristappid）
+  if (appId && typeof appId === "string" && appId.trim()) {
+    json.appid = appId.trim();
+  }
   return JSON.stringify(json, null, 2) + "\n";
 }
 

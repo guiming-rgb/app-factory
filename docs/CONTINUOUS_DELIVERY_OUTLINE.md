@@ -34,25 +34,20 @@
 
 ## §2 下一批并行任务包
 
-**批次名**：`Batch-2026-06-16-security-compliance`（安全合规 Agent + Spec 合规 emit）
+**批次名**：`Batch-2026-06-17-r1-deploy`（migration + Vercel redeploy + Secrets 实跑）
 
-**本批不要动（边界）**：未经评审 **不改** `sql/schema.sql` 表结构（migration 文件除外）；WIP 合入前勿 deploy 生产。
+**本批不要动（边界）**：Secrets 未配前 GHA 仍走未签名路径；勿在未 migration 前宣称 9 Agent 生产就绪。
 
 ### §2.1 并行线 A～H
 
 | 线 | 任务（可验收） | 典型文件域 | 依赖 / 互斥 |
 |----|----------------|------------|-------------|
-| **A** | **安全合规 Agent** · migration · 9 Agent 工作流 · build ✅ | `lib/agents.ts` · `sql/migrations/20260616_*` | 与 B 同改 agents 则串行 |
-| **B** | **Spec 合规** · SpecVersionPanel · emit-compliance · report-to-spec | `lib/compliance-flags.ts` · `lib/flutter-codegen/` | 依赖 A seed 一致 |
-| **C** | **push + 记忆 doc** · `8846d06` 上 origin | git · docs | 无 |
-| **D** | **Cursor rules 8 文件** · 入库或合并总索引 | `.cursor/rules/` | 无 |
-| **E** | 微信 Console 红错 / 发行 R1 checklist | docs / 小程序 ZIP | 可选 |
+| **A** | **Supabase migration** 9 Agent | `sql/migrations/20260616_*` | 须维护者/控制台 |
+| **B** | **Vercel redeploy** · `/privacy` `/terms` 生产可访问 | deploy | 依赖 A 可选 |
+| **C** | **Apple/Win Secrets** · GHA 签名实跑 | GitHub Secrets · workflow | 可选 |
+| **D** | 微信 Console 红错 · 正式 AppID | 小程序 ZIP | 可选 |
+| **E** | 8 个 `.cursor/rules` 入库或废弃 | `.cursor/rules/` | 无 |
 | **F**～**H** | — | — | 可选 |
-
-### §2.2 下一批预告
-
-- 安全合规链跑通 + `verify:i0:batch`  
-- Inngest Cloud / PAT workflow scope（可选）
 
 ---
 
@@ -60,8 +55,8 @@
 
 | 收工锚点 | 本批 / 本会话完成摘要 | 下一批并行包 |
 |----------|----------------------|--------------|
-| **2026-06-16** | **共享记忆落盘**（Claude 总索引/路径/环境）· 开工/端口 Q&A · **安全合规 WIP** · push 待办 | **§2 Batch-2026-06-16-security-compliance** |
-| **2026-06-05** | T+ GHA + 三端待办实跑 · 战略备忘 | 发行 R1 · 微信 Console |
+| **2026-06-17** | **R1 代码合入**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · build ✅ | **§2 Batch-2026-06-17-r1-deploy** |
+| **2026-06-16** | 共享记忆 · 9 Agent 安全合规 · push `664ccc2` | R1 |
 | **2026-05-20** | **v2a 线 A 调研文档齐**（Schema 草案、Flutter 目录、能力矩阵） | **§2 实现立项：flutter-minimal 模板** |
 | **2026-05-20** | **验收 B（v1.3）通过**；章程 **§0 验收执行：Agent 终端优先**；`verify:v13`、记录 [验收B-v1.3-问题与结论记录.md](./验收B-v1.3-问题与结论记录.md) | **§2 `Batch-2026-05-20-post-v1.3`** |
 | **2026-05-19** | **验收 A 通过**；合并 `main`；样本海洋生态 + 踢足球 | v1.3 |
