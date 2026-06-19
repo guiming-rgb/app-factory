@@ -1,0 +1,80 @@
+---
+alwaysApply: true
+---
+
+# App 生产工厂 — 功能定位与启动
+
+## 功能定位（一句话）
+
+**AI 原生软件生产平台**：用户输入 App 想法 → 8 Agent 串行方案生成 → App Spec IR 提取 → 三平台代码生成（Flutter + 微信小程序 + 鸿蒙）→ 后端 API（DDL + RLS + Edge Functions）→ 一键部署到 Vercel。
+
+## 技术栈
+
+| 层 | 技术 | 说明 |
+|---|---|---|
+| 框架 | Next.js 14 (App Router) | `serverExternalPackages: ["miniprogram-compiler"]` |
+| 数据库 | **Supabase 云端** | 项目 ID: `dllaezdyxmoebkkwbftd`，无需本地启动 |
+| LLM | **DeepSeek API** | OpenAI 兼容，`OPENAI_BASE_URL=https://api.deepseek.com`，模型 `deepseek-coder` |
+| 事件队列 | **Inngest** | 本地 `inngest-cli dev`，生产 Inngest Cloud |
+| 样式 | Tailwind CSS | |
+| 测试 | Vitest（单元 100+）+ Playwright（E2E） | |
+| 部署 | Vercel | `framework: "nextjs"` |
+
+## 外部服务依赖（全部云端，无需本地启动）
+
+| 服务 | 用途 |
+|------|------|
+| Supabase | 数据库、认证、存储 |
+| DeepSeek API | LLM 调用 |
+| GitHub OAuth/PAT | 代码推送到私有仓库 |
+| Stripe | 计费 Webhook |
+| Sentry | 错误监控 |
+
+## 本地启动方式
+
+> **本机约定**：3000 端口被其他 App 占用，工厂使用 **3001**。
+
+### 方式一：标准双终端（最常用）
+
+```bash
+# 终端 A：Next.js 开发服务器（支持热更新）
+cd "/Users/guiming/Desktop/app生产工厂/app-factory"
+npm run dev -- -p 3001
+
+# 终端 B：Inngest 本地事件队列
+cd "/Users/guiming/Desktop/app生产工厂/app-factory"
+npm run inngest:dev:3001
+# Inngest Dev UI: http://127.0.0.1:8288
+```
+
+### 方式二：生产模式（需先 build）
+
+```bash
+npm run build
+# 终端 A
+npm run start -- -p 3001
+# 终端 B
+npm run inngest:dev:3001
+```
+
+### 方式三：一键双进程脚本（单终端）
+
+```bash
+npm run build
+npm run dev:codegen:3001
+```
+
+## 关键环境变量（.env.local）
+
+| 变量 | 用途 | 注意 |
+|------|------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 客户端 | 可暴露前端 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | 可暴露前端 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 服务端 | **绝对不能 NEXT_PUBLIC_** |
+| `DATABASE_URL` | Supabase 直连 | 迁移脚本用 |
+| `OPENAI_API_KEY` | LLM API Key | **绝对不能 NEXT_PUBLIC_** |
+| `OPENAI_BASE_URL` | LLM 端点 | `https://api.deepseek.com` |
+| `OPENAI_MODEL` | LLM 模型名 | `deepseek-coder` |
+| `NEXT_PUBLIC_APP_URL` | 本机 URL | `http://localhost:3001` |
+| `INNGEST_DEV` | 本地模式开关 | **必须设为 1**，否则 PUT /api/inngest 500 |
+| `V3_HTTP_PROXY` | 生产验证代理 | `http://127.0.0.1:7897`（本机代理） |

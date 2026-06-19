@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+
+# 上次会话状态（2026-06-07 关机前）
+
+## Git 状态
+
+| 项 | 值 |
+|------|-----|
+| 分支 | `main` |
+| 最后 commit | `3a8078e` fix: 移除不存在的 ESLint 规则引用 |
+
+### 已修改未提交
+
+- `.cursor/rules/tcm-continuity.mdc` (M)
+- `docs/HANDOFF.md` (M)
+- `docs/ONE_PAGER.md` (M)
+- `docs/SESSION_START_TEMPLATE.md` (M)
+
+### 新建未跟踪
+
+- `.cursor/rules/product-paths-memory.mdc`
+- `docs/产品路径一览.md`
+- `docs/收工记录-20260605-今日收工-全量.md`
+
+## 重启 TODO
+
+```bash
+cd "/Users/guiming/Desktop/app生产工厂/app-factory"
+git status
+# 终端 A
+npm run dev -- -p 3001
+# 终端 B
+npm run inngest:dev:3001
+# 验证
+curl http://localhost:3001/api/health
+```

@@ -1,0 +1,80 @@
+---
+alwaysApply: true
+---
+
+# 常用命令速查
+
+## 启动
+
+```bash
+npm run dev -- -p 3001              # Next.js (终端 A)
+npm run inngest:dev:3001            # Inngest (终端 B)
+npm run build && npm run dev:codegen:3001  # 一键双进程
+```
+
+## 验证与门禁
+
+```bash
+npm run build                       # 构建检查
+npm test                            # 单元测试 100+
+npm run lint                        # ESLint
+npm run validate:spec               # Spec Schema 校验
+npm run verify:qr:batch             # Q 门禁
+npm run verify:s:ux                 # Codegen UX 检查
+npm run verify:i1:flutter           # Flutter analyze 门禁
+npm run verify:p:desktop:flutter    # Flutter 桌面模板检查
+npm run verify:c6:harmony           # 鸿蒙模板检查
+npm run verify:v13                  # v1.3 可观测验收
+npm run stats:codegen -- 7          # 近 7 天 codegen 成功率
+```
+
+## 生产验证（需 V3_HTTP_PROXY=7897）
+
+```bash
+npm run verify:v3:production:quick
+npm run verify:p1:production:sync:all
+npm run verify:qr:production:artifacts
+```
+
+## 部署
+
+```bash
+npm run deploy:vercel:env           # 同步环境变量到 Vercel
+npm run deploy:vercel               # 部署到 Vercel 生产
+npm run check:deploy                # 检查部署环境
+```
+
+## 代码生成专项
+
+```bash
+npm run codegen:flutter -- --spec <spec.json> --out <dir>
+npm run codegen:wechat -- --spec <spec.json> --out <dir>
+npm run codegen:harmony -- --spec <spec.json> --out <dir>
+npm run trigger:generate            # 触发项目生成
+npm run trigger:shooter:8-8         # 枪战 8/8 生成
+npm run poll:codegen -- <runId>     # 轮询 codegen 状态
+```
+
+## 数据库迁移
+
+```bash
+npm run db:apply:codegen            # codegen 表迁移
+npm run db:apply:codegen:harmony    # 鸿蒙目标迁移
+npm run db:apply:v4-owner           # v4 项目归属迁移
+npm run db:apply:v4-rls             # v4 RLS 迁移
+npm run db:apply:v4-rate-limit      # v4 限流迁移
+npm run db:apply:v5-memories        # v5 记忆表迁移
+npm run db:apply:v5-skills-seed     # v5 技能种子数据
+npm run db:apply:v4-all             # v4 一键全迁移
+npm run db:migration:status         # 查迁移状态
+```
+
+## 维护
+
+```bash
+npm run maintainer:pending          # 查看待办
+npm run maintainer:done             # 标记完成
+npm run cleanup:codegen:stale       # 清理僵尸 codegen runs
+npm run db:backup                   # 数据库备份
+npm run changelog                   # 生成 Changelog
+```

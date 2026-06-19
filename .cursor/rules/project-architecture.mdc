@@ -1,0 +1,128 @@
+---
+alwaysApply: true
+---
+
+# 项目架构与核心设计
+
+## 目录结构与核心模块
+
+```
+app-factory/
+├── app/                        # Next.js 14 App Router
+│   ├── api/                    # 45 个 API 端点
+│   │   ├── projects/           # 项目 CRUD + generate + codegen + provision + feedback + report + clone
+│   │   ├── admin/              # 管理端 API
+│   │   ├── dashboard/          # 仪表盘数据
+│   │   ├── stripe/             # 计费 Webhook
+│   │   ├── webhook/            # 通用 Webhook
+│   │   ├── skills/             # 技能注册与管理
+│   │   ├── github/             # GitHub OAuth + PAT 连接
+│   │   ├── inngest/            # Inngest 服务端点
+│   │   ├── templates/          # 模板库 API
+│   │   ├── data-export/        # 数据导出
+│   │   └── user/               # 用户配置
+│   ├── projects/[id]/          # 项目详情页
+│   ├── dashboard/              # 仪表盘页
+│   ├── landing/                # 落地页
+│   ├── login/signup/           # 认证页
+│   └── health/                 # 健康检查页
+│
+├── lib/                        # 核心业务逻辑（最大模块，38 个子目录）
+│   ├── agents.ts               # 8 Agent 定义与注册
+│   ├── workflow.ts             # 8 Agent 串行工作流编排
+│   ├── llm.ts                  # LLM 调用封装（支持 OpenAI 兼容 API）
+│   ├── app-spec/               # App Spec IR 引擎（19 个文件）
+│   ├── flutter-codegen/        # Flutter 代码生成（20 个文件）
+│   ├── wechat-codegen/         # 微信小程序代码生成（7 个文件）
+│   ├── harmony-codegen/        # 鸿蒙 ArkTS 代码生成（8 个文件）
+│   ├── codegen/                # Codegen 基础设施（30 个文件）
+│   ├── inngest/                # Inngest 事件与函数
+│   ├── skills/                 # 技能系统（注册、注入、版本管理）
+│   ├── memories/               # 记忆系统（CRUD、Agent 注入）
+│   ├── supabase/               # Supabase 客户端与中间件
+│   ├── sandbox/                # Docker 沙箱
+│   ├── github/                 # GitHub OAuth + PAT + Push
+│   └── ...                     # auth, monitoring, i18n, feature-flags 等
+│
+├── components/                 # 29 个 React 组件
+├── templates/                  # 三平台最小模板
+│   ├── flutter-minimal/
+│   ├── harmony-minimal/
+│   └── wechat-miniprogram-minimal/
+├── scripts/                    # 100+ 脚本（验证、迁移、部署、维护）
+├── docs/                       # 60+ 设计/验收/收工文档
+├── sql/                        # 数据库迁移文件
+└── docs-site/                  # VitePress 文档站
+```
+
+## 核心业务流程
+
+### 方案生成流程
+
+```
+用户输入 App 想法（≥10 字，≤5000 字）
+  → POST /api/projects → 写入 projects 表（status=pending）
+  → 浏览器跳转 /projects/[id]
+  → 用户点击「启动 AI 后台生产」
+  → POST /api/projects/[id]/generate
+  → Inngest.send("project/generate.requested")
+  → 接口秒回 { mode: "async" }
+  → 8 Agent 串行执行项目工作流
+  → 完成后 status=completed, final_report 有实质内容
+  → 前端轮询刷新展示结果
+```
+
+### 8 Agent 执行顺序与职责
+
+| 序号 | Agent ID | 中文名 | 职责 |
+|------|----------|--------|------|
+| 1 | `ceo` | CEO | 项目愿景、目标、成功标准 |
+| 2 | `product_manager` | 产品经理 | PRD、用户故事、功能优先级 |
+| 3 | `architect` | 架构师 | 技术架构、数据模型、API 设计 |
+| 4 | `ui_designer` | UI 设计师 | 页面布局、交互设计、设计系统 |
+| 5 | `developer` | 开发 | 核心实现、代码结构、技术选型 |
+| 6 | `qa_lead` | QA 负责人 | 测试策略、用例、质量门禁 |
+| 7 | `devops` | DevOps | 部署方案、CI/CD、监控 |
+| 8 | `business_advisor` | 商业顾问 | 商业模式、市场分析、收入预测 |
+
+### 代码生成流程
+
+```
+已完成的 final_report
+  → App Spec 提取（from-report.ts，LLM 结构化提取）
+  → App Spec JSON（经 AJV Schema 校验）
+  → 分栈代码生成（并行或依次）：
+      ├── Flutter Gen  → dart-emit → dart analyze → ZIP
+      ├── 小程序 Gen   → wxml/wxss/js emit → wcc/wcsc 编译 → ZIP
+      └── 鸿蒙 Gen     → ArkTS emit → ZIP
+  → Supabase Storage 上传
+  → 生成预览 HTML
+  → （可选）GitHub Push 产物到私有仓库
+  → （可选）GHA 触发 Flutter 桌面构建（Mac .app / Win .exe）
+```
+
+## Inngest 事件体系
+
+| 事件 | 触发方 | 处理函数 |
+|------|--------|----------|
+| `project/generate.requested` | `POST /api/projects/[id]/generate` | `executeProjectWorkflow` |
+| `codegen/flutter.requested` | API/Inngest | Flutter 代码生成 |
+| `codegen/wechat.requested` | API/Inngest | 微信小程序生成 |
+| `codegen/harmony.requested` | API/Inngest | 鸿蒙代码生成 |
+
+## 安全约束（硬性规则）
+
+1. **密钥不进前端**：`OPENAI_API_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`INNGEST_SIGNING_KEY` 绝不加 `NEXT_PUBLIC_` 前缀
+2. **`.env.local` 不提交 Git**
+3. **AI 调用只走后端**：浏览器不可直接调 LLM API
+4. **API 限流**：middleware 内存计数器，每分钟 60 次
+5. **RLS 已上线**：v4 Supabase Row Level Security
+6. **生产 HTTPS 必须**：Vercel 自动提供
+
+## 核心设计原则
+
+- **国内模型优先**：DeepSeek/豆包/通义千问优先，不绑死单一境外供应商
+- **可插拔**：编排/模型/工具可演进，配置层支持 `OPENAI_BASE_URL` + `OPENAI_MODEL`
+- **先闭环再扩张**：每阶段有可演示的端到端结果
+- **模板 + 评测 + 人类在环**：关键节点可确认，质量可观测
+- **Spec IR 先行**：统一中间表示驱动各栈生成器
