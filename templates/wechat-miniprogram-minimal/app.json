@@ -29,14 +29,8 @@
       }
     ]
   },
-  "subPackages": [
-    {
-      "root": "subpkg/placeholder",
-      "name": "placeholder",
-      "pages": ["index"]
-    }
-  ],
   "style": "v2",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "__usePrivacyCheck__": true
 }

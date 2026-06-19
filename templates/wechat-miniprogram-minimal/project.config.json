@@ -40,7 +40,7 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "2.30.0",
+  "libVersion": "3.5.0",
   "appid": "touristappid",
   "projectname": "app-factory-wechat-minimal",
   "condition": {},

@@ -1,7 +1,6 @@
 {
   "templateId": "wechat-miniprogram-minimal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "pages": ["pages/index/index", "pages/profile/profile"],
-  "subPackages": ["subpkg/placeholder"],
-  "notes": "Generator v2b 将覆写 app.json tabBar 与页面 WXML"
+  "notes": "v0.2: 81x81 tab icons, __usePrivacyCheck__, 副包由 generator 动态注入"
 }
