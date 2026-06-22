@@ -5,6 +5,9 @@ import path from "path";
 import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import type { AppSpec } from "@/lib/app-spec/types";
+import { hasFlutter } from "@/lib/utils/has-flutter";
+
+export { hasFlutter };
 
 export const DEFAULT_SPEC_PATH = path.join(
   process.cwd(),
@@ -18,15 +21,6 @@ export const DOCKERFILE_DIR = path.join(
   "docker",
   "flutter-sandbox"
 );
-
-export function hasFlutter(): boolean {
-  try {
-    execSync("flutter --version", { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function hasDocker(): boolean {
   const r = spawnSync("docker", ["version"], { stdio: "ignore" });

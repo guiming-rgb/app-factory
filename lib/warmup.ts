@@ -26,6 +26,13 @@ export async function warmup(): Promise<void> {
   warmed = true;
   const elapsed = Date.now() - start;
   if (elapsed > 500) console.log(`[warmup] ${elapsed}ms`);
+
+  // P2-14: 随 warmup 清理过期 artifacts（低频，概率触发，避免每次请求都跑）
+  if (Math.random() < 0.1) {
+    import("@/lib/codegen/artifacts-cleanup")
+      .then((m) => m.cleanupAllArtifacts())
+      .catch(() => {});
+  }
 }
 
 export function isWarm(): boolean { return warmed; }

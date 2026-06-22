@@ -18,7 +18,7 @@ import { scheduleDesktopGhaAfterFlutter } from "@/lib/codegen/desktop-gha-orches
 import { attachDesktopReleases } from "@/lib/flutter-codegen/attach-desktop-releases";
 import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
 import { preferDesktopGhaOverLocalBuild } from "@/lib/github/desktop-gha-config";
-import { shouldAttemptDesktopBuild } from "@/lib/sandbox/flutter-desktop-build";
+import { shouldAttemptDesktopBuild } from "@/lib/flutter-codegen/desktop-build";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import {
   runDockerFlutterAnalyze,

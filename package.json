@@ -102,6 +102,7 @@
     "check:c4:github": "node scripts/check-c4-github-env.mjs",
     "verify:c5:app-spec": "npx tsx scripts/verify-c5-app-spec.ts",
     "db:apply:c4-github": "node scripts/apply-c4-github-migration.mjs",
+    "db:apply:security-compliance-agent": "node scripts/apply-security-compliance-agent-migration.mjs",
     "cleanup:codegen:stale": "npx tsx scripts/cleanup-stale-codegen-runs.ts",
     "db:backfill:owners": "npx tsx scripts/backfill-project-owners.ts",
     "db:apply:v5-memories": "node scripts/apply-v5-memories-migration.mjs",

@@ -4,7 +4,7 @@ import {
   shouldAttemptDesktopBuild,
   writeDesktopReleasesIntoProject,
   type DesktopBuildSummary
-} from "@/lib/sandbox/flutter-desktop-build";
+} from "./desktop-build";
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
 
 export type DesktopArtifactPaths = {

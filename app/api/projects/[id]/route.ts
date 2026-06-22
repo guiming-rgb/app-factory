@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireProjectOwner } from "@/lib/auth/require-auth";
 import {
   fetchProjectWithAccess,
   getSupabaseForUserRead
@@ -14,6 +15,9 @@ export async function GET(
 ) {
   try {
     const projectId = params.id;
+
+    const auth = await requireProjectOwner(projectId);
+    if (auth.error) return auth.error;
 
     const access = await fetchProjectWithAccess(projectId, "*");
     if (!access.ok) {

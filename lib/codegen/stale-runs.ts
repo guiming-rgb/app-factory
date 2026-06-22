@@ -1,7 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-import { markCodegenRunFailed } from "./runs";
-
 /** queued 长时间未消费（与 CodegenPanel「排队超过 90 秒」提示一致） */
 export const CODEGEN_QUEUED_STALE_MS = 90 * 1000;
 
@@ -43,7 +41,10 @@ async function cleanupByStatus(options: {
 
   const cleaned: string[] = [];
   for (const row of data ?? []) {
-    await markCodegenRunFailed(String(row.id), options.log);
+    await getSupabaseAdmin()
+      .from("codegen_runs")
+      .update({ status: "failed", log: options.log.slice(0, 4000), updated_at: new Date().toISOString() })
+      .eq("id", row.id);
     cleaned.push(String(row.id));
   }
   return cleaned;

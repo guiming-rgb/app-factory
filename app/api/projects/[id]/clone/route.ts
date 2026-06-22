@@ -1,3 +1,4 @@
+import { requireProjectOwner } from "@/lib/auth/require-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchProjectWithAccess } from "@/lib/auth/require-project-access";

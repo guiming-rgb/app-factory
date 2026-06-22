@@ -2,7 +2,7 @@ import { spawnSync } from "child_process";
 import fs from "fs/promises";
 import path from "path";
 
-import { hasFlutter } from "@/lib/sandbox/flutter";
+import { hasFlutter } from "@/lib/utils/has-flutter";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 
 export type DesktopBuildTarget = "macos" | "windows";

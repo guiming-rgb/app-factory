@@ -21,11 +21,18 @@ export async function GET() {
 
     const supabase = await getSupabaseForUserRequest();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("projects")
       .select("id, title, status, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(LIST_LIMIT);
+
+    // Auth 启用时仅返回当前用户的项目
+    if (isAuthEnabled() && user) {
+      query = query.eq("owner_id", user.id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

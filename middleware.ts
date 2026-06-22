@@ -17,25 +17,18 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'none'; object-src 'none'",
 };
 
-/** API 限流（简单内存计数器，Vercel 边缘层可替换） */
-const rateTracker = new Map<string, number>();
-const RATE_LIMIT = 60; // 每分钟 60 次
-
-function checkApiRateLimit(pathname: string): boolean {
-  if (!pathname.startsWith("/api")) return true;
-  const now = Date.now();
-  const key = `minute-${Math.floor(now / 60000)}`;
-  const count = (rateTracker.get(key) ?? 0) + 1;
-  rateTracker.set(key, count);
-  return count <= RATE_LIMIT;
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // API 限流
-  if (pathname.startsWith("/api") && !checkApiRateLimit(pathname)) {
-    return new NextResponse("Too Many Requests", { status: 429 });
+  // API 限流（Supabase 持久化，Vercel serverless 冷启动安全）
+  if (pathname.startsWith("/api")) {
+    const { checkSupabaseRateLimit } = await import("@/lib/auth/rate-limit-supabase");
+    if (!(await checkSupabaseRateLimit())) {
+      return new NextResponse("Too Many Requests", {
+        status: 429,
+        headers: { "Retry-After": "60" }
+      });
+    }
   }
 
   // 冷启动预热
