@@ -74,21 +74,28 @@ export function pageWidgetRef(
     };
   }
   // Map / Chat / Call / Payment / IoT / Game / AR / Medical / Automotive / Banking / Insurance / KYC
+  // + Dashboard / Card Grid / Calendar / Chart / Kanban / Onboarding
   if (screen.type === "map" || screen.type === "chat" || screen.type === "call" ||
       screen.type === "payment" || screen.type === "iot" || screen.type === "game" || screen.type === "ar" ||
       screen.type === "medical" || screen.type === "automotive" || screen.type === "banking" ||
-      screen.type === "insurance" || screen.type === "kyc") {
+      screen.type === "insurance" || screen.type === "kyc" ||
+      screen.type === "dashboard" || screen.type === "card_grid" || screen.type === "calendar" ||
+      screen.type === "chart" || screen.type === "kanban" || screen.type === "onboarding") {
     const suffixMap: Record<string, string> = {
       map: "_map_page", chat: "_chat_page", call: "_call_page",
       payment: "_payment_page", iot: "_iot_page", game: "_game_page", ar: "_ar_page",
       medical: "_medical_page", automotive: "_auto_page", banking: "_banking_page",
-      insurance: "_insurance_page", kyc: "_kyc_page"
+      insurance: "_insurance_page", kyc: "_kyc_page",
+      dashboard: "_dashboard_page", card_grid: "_grid_page", calendar: "_calendar_page",
+      chart: "_chart_page", kanban: "_kanban_page", onboarding: "_onboarding_page"
     };
     const classNameMap: Record<string, string> = {
       map: "MapPage", chat: "ChatListPage", call: "CallPage",
       payment: "CheckoutPage", iot: "BLEScannerPage", game: "GamePage", ar: "ARViewPage",
       medical: "HealthDashboardPage", automotive: "CarDashboardPage", banking: "BankingPaymentPage",
-      insurance: "InsurancePage", kyc: "KYCVerificationPage"
+      insurance: "InsurancePage", kyc: "KYCVerificationPage",
+      dashboard: "DashboardPage", card_grid: "CardGridPage", calendar: "CalendarPage",
+      chart: "ChartPage", kanban: "KanbanPage", onboarding: "OnboardingPage"
     };
     const suffix = suffixMap[screen.type] ?? "_page";
     const className = `${pascalCase(screen.id)}${classNameMap[screen.type] ?? "Page"}`;
@@ -106,7 +113,7 @@ export function pageWidgetRef(
   };
 }
 
-function pascalCase(id: string): string {
+export function pascalCase(id: string): string {
   return id
     .split(/[_-]+/)
     .filter(Boolean)
@@ -528,7 +535,7 @@ ${branches.join("\n")}
 `;
 }
 
-function escapeDartString(s: string): string {
+export function escapeDartString(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$");
 }
 

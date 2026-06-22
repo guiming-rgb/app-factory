@@ -64,14 +64,30 @@ async function ensureGeneratedPage(
   } catch {
     specForPage = undefined;
   }
-  await fs.writeFile(
-    `${fileBase}.wxml`,
-    emitGeneratedPageWxml(screen, specForPage),
-    "utf8"
-  );
-  await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+  // 扩展页面类型路由
+  const isExtended = ["dashboard", "card_grid", "calendar", "kanban"].includes(screen.type);
+  if (isExtended && specForPage) {
+    const ext = await import("./emit-extended");
+    if (screen.type === "dashboard") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatDashboardWxml(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatDashboardJs(screen, specForPage), "utf8");
+    } else if (screen.type === "card_grid") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatCardGridWxml(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCardGridJs(screen, specForPage), "utf8");
+    } else if (screen.type === "calendar") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatCalendarWxml(screen), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCalendarJs(screen, specForPage), "utf8");
+    } else if (screen.type === "kanban") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatKanbanWxml(screen), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatKanbanJs(screen, specForPage), "utf8");
+    }
+    await fs.writeFile(`${fileBase}.wxss`, ext.emitWechatExtendedWxss(), "utf8");
+  } else {
+    await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
+    await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+    await fs.writeFile(`${fileBase}.wxss`, "", "utf8");
+  }
   await fs.writeFile(`${fileBase}.json`, emitGeneratedPageJson(screen), "utf8");
-  await fs.writeFile(`${fileBase}.wxss`, "", "utf8");
 }
 
 export type WechatCodegenResult = {

@@ -209,7 +209,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 };
 
 /** Available screen types */
-export const SCREEN_TYPES = ["tabRoot", "list", "detail", "form", "placeholder"];
+export const SCREEN_TYPES = ["tabRoot", "list", "detail", "form", "placeholder", "dashboard", "card_grid", "calendar", "chart", "kanban", "onboarding", "map", "chat", "call", "iot", "game", "ar", "medical", "automotive", "banking", "insurance", "kyc"];
 
 /** Available field types */
 export const FIELD_TYPES = ["uuid", "string", "int", "float", "bool", "datetime", "json"];

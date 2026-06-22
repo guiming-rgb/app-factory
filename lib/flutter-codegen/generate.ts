@@ -319,6 +319,30 @@ export async function generateFlutterProject(
     } else if (screen.type === "kyc") {
       content = emitFlutterKYCVerification();
       fileName = `${screen.id}_kyc_page.dart`;
+    } else if (screen.type === "dashboard") {
+      const { emitFlutterDashboardPage } = await import("./emit-extended");
+      content = emitFlutterDashboardPage(screen, spec);
+      fileName = `${screen.id}_dashboard_page.dart`;
+    } else if (screen.type === "card_grid") {
+      const { emitFlutterCardGridPage } = await import("./emit-extended");
+      content = emitFlutterCardGridPage(screen, spec);
+      fileName = `${screen.id}_grid_page.dart`;
+    } else if (screen.type === "calendar") {
+      const { emitFlutterCalendarPage } = await import("./emit-extended");
+      content = emitFlutterCalendarPage(screen, spec);
+      fileName = `${screen.id}_calendar_page.dart`;
+    } else if (screen.type === "chart") {
+      const { emitFlutterChartPage } = await import("./emit-extended");
+      content = emitFlutterChartPage(screen, spec);
+      fileName = `${screen.id}_chart_page.dart`;
+    } else if (screen.type === "kanban") {
+      const { emitFlutterKanbanPage } = await import("./emit-extended");
+      content = emitFlutterKanbanPage(screen, spec);
+      fileName = `${screen.id}_kanban_page.dart`;
+    } else if (screen.type === "onboarding") {
+      const { emitFlutterOnboardingPage } = await import("./emit-extended");
+      content = emitFlutterOnboardingPage(screen, spec);
+      fileName = `${screen.id}_onboarding_page.dart`;
     } else if (screen.type === "list") {
       content = emitGeneratedListPage(screen, spec);
       fileName = `${screen.id}_page.dart`;
