@@ -72,7 +72,7 @@ export const TEMPLATE_LIBRARY: SpecTemplate[] = [
       {id:"search",title:"搜索",type:"form"},{id:"hotel_list",title:"酒店",type:"list",entity:"hotel"},{id:"hotel_detail",title:"详情",type:"detail",entity:"hotel"},{id:"booking",title:"预订",type:"form",entity:"booking"},{id:"my_bookings",title:"订单",type:"list",entity:"booking"},{id:"profile",title:"我的",type:"placeholder"}
     ], [
       {name:"hotel",fields:[f("id","uuid",true),f("name","string"),f("city","string"),f("address","string"),f("stars","int"),f("rating","float"),f("price_from","float"),f("images","json"),f("amenities","json"),f("latitude","float"),f("longitude","float")]},
-      {name:"booking",fields:[f("id","uuid",true),f("user_id","uuid"),f("hotel_id","uuid"),f("room_type","string"),f("check_in","date"),f("check_out","date"),f("guests","int"),f("total_price","float"),f("status","string")],relations:[{target:"hotel",type:"belongs_to"}]},
+      {name:"booking",fields:[f("id","uuid",true),f("user_id","uuid"),f("hotel_id","uuid"),f("room_type","string"),f("check_in","datetime"),f("check_out","datetime"),f("guests","int"),f("total_price","float"),f("status","string")],relations:[{target:"hotel",type:"belongs_to"}]},
     ],["search","hotel_list","my_bookings","profile"],["真实酒店数据需第三方API"])},
   // 8. 招聘 — 对标 BOSS直聘/LinkedIn
   { id: "recruitment", name: "招聘求职", description: "职位搜索+公司主页+投递+沟通+简历", category: "企业", icon: "💼",
@@ -136,7 +136,7 @@ export const TEMPLATE_LIBRARY: SpecTemplate[] = [
       {id:"today",title:"今日",type:"dashboard"},{id:"hourly",title:"逐小时",type:"list",entity:"forecast"},{id:"forecast",title:"15日",type:"list",entity:"forecast"},{id:"city_list",title:"城市",type:"list",entity:"city"},{id:"aqi",title:"空气质量",type:"card_grid"},{id:"life_index",title:"生活指数",type:"card_grid"},{id:"profile",title:"我的",type:"placeholder"}
     ], [
       {name:"city",fields:[f("id","uuid",true),f("name","string"),f("country","string"),f("latitude","float"),f("longitude","float"),f("is_current","bool")]},
-      {name:"forecast",fields:[f("id","uuid",true),f("city_id","uuid"),f("date","date"),f("temp_high","int"),f("temp_low","int"),f("condition","string"),f("humidity","int"),f("wind_speed","float"),f("aqi","int")],relations:[{target:"city",type:"belongs_to"}]},
+      {name:"forecast",fields:[f("id","uuid",true),f("city_id","uuid"),f("date","datetime"),f("temp_high","int"),f("temp_low","int"),f("condition","string"),f("humidity","int"),f("wind_speed","float"),f("aqi","int")],relations:[{target:"city",type:"belongs_to"}]},
     ],["today","forecast","city_list","profile"],["真实天气需OpenWeatherMap API"])},
   // 15. 体育 — 对标 懂球帝/ESPN
   { id: "sports", name: "体育赛事", description: "实时比分+赛程+积分榜+球队数据+新闻+关注", category: "内容", icon: "⚽",

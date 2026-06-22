@@ -105,31 +105,3 @@ class Obstacle extends PositionComponent with HasGameRef<SimpleGame> {
     );
   }
 }
-
-/// 游戏主页面 Widget — 含游戏 Canvas + 分数 + 结束弹窗
-class GameWidget extends StatelessWidget {
-  const GameWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GameWidget<SimpleGame>(
-      game: SimpleGame(),
-      overlayBuilderMap: {
-        "GameOver": (ctx, game) => Center(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                const Text("游戏结束", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("得分: ${(game as SimpleGame)._score ~/ 10}"),
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: () { (game as SimpleGame).resumeEngine(); (game as SimpleGame).overlays.remove("GameOver"); }, child: const Text("再来一局")),
-              ]),
-            ),
-          ),
-        ),
-      },
-    );
-  }
-}

@@ -48,6 +48,16 @@ jobs:
       - run: npm ci
       - run: npm run codegen:flutter -- --spec docs/schemas/examples/valid-minimal.json --out /tmp/codegen-ci
 
+  industry-templates:
+    name: 行业模板 Pipeline 验收
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - run: npm ci
+      - run: npm run verify:industry:templates
+
   build:
     name: Next.js 构建
     needs: [typecheck, test, validate-spec]

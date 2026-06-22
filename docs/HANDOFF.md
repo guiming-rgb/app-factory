@@ -1,6 +1,6 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-17（今日收工：R1 发行层 — GHA 签名 + 隐私/条款页）  
+> **最后更新**：2026-05-19（行业 Pipeline 全线贯通 + CI 门禁）  
 > **今日收工**：[收工记录-20260617-今日收工.md](./收工记录-20260617-今日收工.md) · [R1-发行路线图.md](./R1-发行路线图.md) · [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md) · **[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)** · [产品路径一览.md](./产品路径一览.md) · [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
 
@@ -71,6 +71,7 @@
 - [x] **2026-06-16 收工**：Claude/路径/环境 **共享记忆落盘**（commit `8846d06`）· 开工/端口 Q&A → [今日收工](./收工记录-20260616-今日收工.md)
 - [x] **安全合规 Agent**：9 Agent 链 · Spec 合规 emit · SpecVersionPanel · migration · build ✅ · push `664ccc2`（2026-06-16）
 - [x] **R1 发行层（代码）**：GHA 条件签名 · `/privacy` `/terms` · 生成 App 隐私 API/模板 · [R1-发行路线图](./R1-发行路线图.md)（2026-06-17）
+- [x] **行业 Pipeline**：`detectIndustry` + `copyIndustryTemplate` + game/payment 真模板 · `verify:industry:templates` · CI job · 21 E2E（2026-05-19）
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -135,10 +136,10 @@ npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
 
 **Agent / 开发优先**
 
-1. **Supabase migration**：`sql/migrations/20260616_security_compliance_agent.sql`  
-2. **Vercel redeploy**：上线 `/privacy` · `/terms` · R1 workflow  
+1. **Supabase migration**（若未跑）：`npm run db:apply:all-pending`（含 9 Agent 安全合规）  
+2. **Vercel redeploy**（若未跑）：`npm run build && npm run deploy:vercel` → `/privacy` · `/terms` · R1 workflow  
 3. **配 GitHub Secrets**（可选）：Apple / Windows 签名 → 跑 GHA 验证  
-4. 8 个未跟踪 `.cursor/rules/project-*.mdc` — 入库或废弃  
+4. ~~8 个未跟踪 `.cursor/rules/project-*.mdc`~~ ✅ 已入库（4 个 project-* + quality-assessment）  
 
 **可选**
 
@@ -162,6 +163,7 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-05-19 | **行业 Pipeline**：generate 接入 detectIndustry/copyIndustryTemplate · game/payment 真模板 · `verify:industry:templates` · CI |
 | 2026-06-17 | **R1 发行层**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · [收工记录-20260617](./收工记录-20260617-今日收工.md) |
 | 2026-06-16 | **今日收工**：记忆共享 · 安全合规 Agent · push `664ccc2` → [收工记录-20260616](./收工记录-20260616-今日收工.md) |
 | 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |
