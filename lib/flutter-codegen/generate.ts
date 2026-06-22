@@ -125,6 +125,15 @@ export async function generateFlutterProject(
   const appDir = path.join(outRoot, spec.appName);
   await copyTemplate(appDir);
 
+  // 行业「真模板」注入 — 根据 Spec 行业类型拷贝专属 models/services/widgets/pages
+  const { detectIndustry } = await import("./emit-industry");
+  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
+  if (industry !== "generic") {
+    const { copyIndustryTemplate } = await import("./copy-industry-template");
+    const { copied } = await copyIndustryTemplate(appDir, industry);
+    if (copied > 0) console.log(`[generateFlutterProject] 注入了 ${industry} 行业模板 (${copied} 文件)`);
+  }
+
   const flutterPlatforms = resolveFlutterPlatforms(spec);
   const platformEnsure = await ensureFlutterPlatformFolders(
     appDir,
@@ -394,16 +403,6 @@ export async function generateFlutterProject(
   const widgetsDir = path.join(appDir, "lib", "core", "widgets");
   await fs.writeFile(path.join(widgetsDir, "polished_widgets.dart"), emitPolishedWidgetsDart(), "utf8");
   await fs.writeFile(path.join(widgetsDir, "ux_widgets.dart"), emitUXWidgetsDart(), "utf8");
-
-  // 行业专属 Widget 注入
-  const { detectIndustry, getIndustryWidgetsDart } = await import("./emit-industry");
-  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
-  if (industry !== "generic") {
-    const industryDart = getIndustryWidgetsDart(industry);
-    if (industryDart) {
-      await fs.writeFile(path.join(widgetsDir, "industry_widgets.dart"), industryDart, "utf8");
-    }
-  }
 
   // 隐私政策页面（市场合规）
   const privacyDir = path.join(appDir, "lib", "features", "privacy", "presentation");
