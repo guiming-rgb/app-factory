@@ -125,15 +125,6 @@ export async function generateFlutterProject(
   const appDir = path.join(outRoot, spec.appName);
   await copyTemplate(appDir);
 
-  // 行业「真模板」注入 — 根据 Spec 行业类型拷贝专属 models/services/widgets/pages
-  const { detectIndustry } = await import("./emit-industry");
-  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
-  if (industry !== "generic") {
-    const { copyIndustryTemplate } = await import("./copy-industry-template");
-    const { copied } = await copyIndustryTemplate(appDir, industry);
-    if (copied > 0) console.log(`[generateFlutterProject] 注入了 ${industry} 行业模板 (${copied} 文件)`);
-  }
-
   const flutterPlatforms = resolveFlutterPlatforms(spec);
   const platformEnsure = await ensureFlutterPlatformFolders(
     appDir,

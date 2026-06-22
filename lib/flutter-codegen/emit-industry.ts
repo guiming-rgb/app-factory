@@ -580,9 +580,9 @@ class GradeBadge extends StatelessWidget {
 // 工具函数 — 根据 Spec metadata 判断行业并注入对应 Widget 文件
 // ═══════════════════════════════════════════════════════════
 
-export type IndustryCategory = "finance" | "crm" | "fitness" | "ecommerce" | "education" | "generic";
+export type IndustryCategory = "finance" | "crm" | "fitness" | "ecommerce" | "education" | "social" | "food" | "hotel" | "recruitment" | "property" | "video" | "weather" | "sports" | "photo" | "dating" | "medical" | "blog" | "game" | "payment" | "generic";
 
-/** 从 Spec 判断行业类型 */
+/** 从 Spec 判断行业类型（覆盖 17 种） */
 export function detectIndustry(spec: Record<string, unknown>): IndustryCategory {
   const metadata = (spec.metadata ?? {}) as Record<string, unknown>;
   const cat = (metadata?.category as string ?? "").toLowerCase();
@@ -595,6 +595,20 @@ export function detectIndustry(spec: Record<string, unknown>): IndustryCategory 
   if (/健身|运动|训练|workout|fitness|exercise|gym|跑步|瑜伽/.test(blob)) return "fitness";
   if (/电商|购物|商城|shop|store|ecommerce|商品|product|cart/.test(blob)) return "ecommerce";
   if (/课表|课程|course|学校|作业|exam|成绩|学习|class|timetable|student/.test(blob)) return "education";
+  if (/社交|社区|朋友圈|动态|social|feed|post|话题|小红书/.test(blob)) return "social";
+  if (/外卖|点餐|餐厅|饭店|美食|food|delivery|restaurant|menu/.test(blob)) return "food";
+  if (/酒店|住宿|宾馆|民宿|hotel|booking|客房/.test(blob)) return "hotel";
+  if (/招聘|求职|找工作|职位|job|recruit|hr|简历/.test(blob)) return "recruitment";
+  if (/物业|小区|报修|缴费|门禁|property|repair/.test(blob)) return "property";
+  if (/视频|影音|播放|电影|video|movie|film|netflix/.test(blob)) return "video";
+  if (/天气|气象|预报|weather|forecast|temperature/.test(blob)) return "weather";
+  if (/体育|比赛|球队|赛程|sport|match|league|足球|篮球/.test(blob)) return "sports";
+  if (/照片|摄影|拍照|图库|photo|image|gallery|camera/.test(blob)) return "photo";
+  if (/交友|相亲|匹配|dating|match|tinder/.test(blob)) return "dating";
+  if (/医疗|问诊|医院|医生|看病|medical|doctor|patient|处方/.test(blob)) return "medical";
+  if (/博客|文章|阅读|blog|article|写作|专栏/.test(blob)) return "blog";
+  if (/游戏|game|flame|玩法|关卡|得分|对战|休闲|射击|足球/.test(blob)) return "game";
+  if (/支付|付款|收银|stripe|pay|checkout|结算|充值/.test(blob)) return "payment";
 
   return "generic";
 }

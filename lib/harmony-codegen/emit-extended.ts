@@ -341,3 +341,101 @@ struct CalendarPage {
 }
 `;
 }
+
+// ─── Chart (柱状图) ────────────────────────────────────
+
+// ─── Chart ──────────────────────────────────────
+
+export function emitHarmonyChart(screen: AppSpecScreen): string {
+  const t = escapeString(screen.title);
+  return [
+    'import { http } from "@kit.NetworkKit";',
+    '',
+    '@Entry @Component struct ChartPage {',
+    '  @State data: Array<{label:string,value:number}> = [];',
+    '  aboutToAppear() { this.loadData(); }',
+    '  async loadData() {',
+    '    try {',
+    '      const BASE="https://your-project.supabase.co"; const ANON="your-anon-key";',
+    '      const resp = await http.createHttp().request(BASE+"/rest/v1/items?limit=100",',
+    '        {method:http.RequestMethod.GET,header:{apikey:ANON,Authorization:"Bearer "+ANON}});',
+    '      const rows = JSON.parse((resp.result as string)||"[]");',
+    '      const map:Record<string,number>={};',
+    '      for(const r of rows){const k=r["category"]||"其他";map[k]=(map[k]||0)+1}',
+    '      this.data = Object.entries(map).map(([k,v])=>({label:k,value:v}));',
+    '    } catch(e) { console.error("Chart failed",e); }',
+    '  }',
+    '  build() {',
+    '    Column() {',
+    '      Text("' + t + '").fontSize(20).fontWeight(FontWeight.Bold).margin(16)',
+    '      ForEach(this.data,(d:{label:string,value:number})=>{',
+    '        Row() { Text(d.label).width(80).fontSize(11)',
+    '          Progress({value:0,total:100,type:ProgressType.Linear}).value(d.value).width("60%").style({strokeWidth:16,strokeRadius:8})',
+    '          Text(d.value.toString()).fontSize(13).fontWeight(FontWeight.Bold).margin({left:8})',
+    '        }.padding({left:8,right:8,top:4,bottom:4})',
+    '      })',
+    '    }.width("100%").height("100%")',
+    '  }',
+    '}',
+  ].join("\n");
+}
+
+// ─── Kanban ─────────────────────────────────────
+
+export function emitHarmonyKanban(screen: AppSpecScreen): string {
+  const t = escapeString(screen.title);
+  return [
+    'import { http } from "@kit.NetworkKit";',
+    '',
+    'const COLS=[{key:"todo",label:"待办",color:"#3B82F6"},{key:"in_progress",label:"进行中",color:"#F59E0B"},{key:"done",label:"已完成",color:"#10B981"}];',
+    '',
+    '@Entry @Component struct KanbanPage {',
+    '  @State cols: Array<{key:string,label:string,color:string,items:Array<Record<string,Object>>}> = [];',
+    '  aboutToAppear() { this.load(); }',
+    '  async load() {',
+    '    try {',
+    '      const BASE="https://your-project.supabase.co"; const ANON="your-anon-key";',
+    '      const resp = await http.createHttp().request(BASE+"/rest/v1/items?select=*&limit=50",',
+    '        {method:http.RequestMethod.GET,header:{apikey:ANON,Authorization:"Bearer "+ANON}});',
+    '      const items = JSON.parse((resp.result as string)||"[]");',
+    '      this.cols = COLS.map(c=>({...c,items:items.filter((i:Record<string,Object>)=>(i["status"]||"todo")===c.key)}));',
+    '    } catch(e) {}',
+    '  }',
+    '  build() {',
+    '    Column() {',
+    '      Text("' + t + '").fontSize(20).fontWeight(FontWeight.Bold).margin(16)',
+    '      Scroll() { Row() {',
+    '        ForEach(this.cols,(c:{key:string,label:string,color:string,items:Array<Record<string,Object>>})=>{',
+    '          Column() {',
+    '            Row() { Circle({width:8,height:8}).fill(c.color); Text(c.label).fontSize(14).fontWeight(FontWeight.Medium).margin({left:4}) }.padding(8)',
+    '            List() { ForEach(c.items,(item:Record<string,Object>)=>{ ListItem() { Text((item["title"]||item["name"]||"---") as string).fontSize(13).padding(12) } }) }',
+    '          }.width(220).backgroundColor("#F9FAFB").borderRadius(12).padding(8).margin(6)',
+    '        })',
+    '      }}.padding(8)',
+    '    }.width("100%").height("100%")',
+    '  }',
+    '}',
+  ].join("\n");
+}
+
+// ─── Onboarding ─────────────────────────────────
+
+export function emitHarmonyOnboarding(screen: AppSpecScreen): string {
+  const t = escapeString(screen.title);
+  return [
+    '@Entry @Component struct OnboardingPage {',
+    '  @State current: number = 0;',
+    '  private swiper: SwiperController = new SwiperController();',
+    '  build() {',
+    '    Column() {',
+    '      Swiper(this.swiper) {',
+    '        Column() { Text("🚀").fontSize(64).margin({bottom:24}); Text("欢迎使用 ' + t + '").fontSize(24).fontWeight(FontWeight.Bold); Text("快速上手").fontSize(14).fontColor("#9CA3AF").margin({top:8}) }.width("100%").height("100%").justifyContent(FlexAlign.Center)',
+    '        Column() { Text("☁️").fontSize(64).margin({bottom:24}); Text("数据同步").fontSize(24).fontWeight(FontWeight.Bold); Text("安全存储").fontSize(14).fontColor("#9CA3AF").margin({top:8}) }.width("100%").height("100%").justifyContent(FlexAlign.Center)',
+    '        Column() { Text("🛡️").fontSize(64).margin({bottom:24}); Text("隐私安全").fontSize(24).fontWeight(FontWeight.Bold); Text("加密保护").fontSize(14).fontColor("#9CA3AF").margin({top:8}); Button("开始使用").type(ButtonType.Capsule).margin({top:40}) }.width("100%").height("100%").justifyContent(FlexAlign.Center)',
+    '      }.indicator(true).onChange((i:number)=>{this.current=i})',
+    '      Row() { Button("跳过").onClick(()=>{this.swiper.changeIndex(2)}); Blank(); Button(this.current===2?"开始":"下一步").onClick(()=>{if(this.current===2){}else{this.swiper.showNext()}}) }.width("100%").padding(24)',
+    '    }.width("100%").height("100%")',
+    '  }',
+    '}',
+  ].join("\n");
+}

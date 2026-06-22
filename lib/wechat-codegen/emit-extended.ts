@@ -493,3 +493,36 @@ export function emitWechatExtendedWxss(): string {
 .kanban-card { background: #fff; border-radius: 12rpx; padding: 16rpx; margin-bottom: 8rpx; box-shadow: 0 1rpx 4rpx rgba(0,0,0,0.04); font-size: 26rpx; }
 `;
 }
+
+// ─── Chart (柱状图) ─────────────────────────────────
+
+export function emitWechatChartWxml(screen: AppSpecScreen): string {
+  const t = screen.title.replace(/</g,"&lt;");
+  return '<view class="page"><privacy-popup show="{{showPrivacy}}" bind:accept="onPrivacyAccept"/><text class="page-title" style="padding:16px">'+t+'</text><view class="chart-tabs"><text class="chart-tab {{activeTab===0?\'active\':\'\'}}" bindtap="switchTab" data-idx="0">柱状图</text><text class="chart-tab {{activeTab===1?\'active\':\'\'}}" bindtap="switchTab" data-idx="1">饼图</text></view><view class="chart-container"><canvas type="2d" id="myChart" class="chart-canvas"/></view></view>';
+}
+
+export function emitWechatChartJs(screen: AppSpecScreen, spec: AppSpec): string {
+  const e = (spec.entities??[])[0] as Record<string,unknown>|undefined;
+  const fields = (e?.fields as Array<{name:string;type:string}>) ?? [];
+  const numFields = fields.filter((f:{type:string})=>["int","float","number"].includes(f.type));
+  const groupField = fields.find((f:{name:string})=>f.name.includes("category")||f.name.includes("type")||f.name.includes("name")||f.name.includes("title"))?.name ?? "id";
+  const table = (e?.name as string) ?? "items";
+
+  return 'const { request } = require("../../utils/supabase");\nPage({data:{showPrivacy:false,activeTab:0,chartData:[]},onShow(){const a=getApp();this.setData({showPrivacy:!a.globalData.privacyAccepted});if(a.globalData.privacyAccepted)this.loadData()},onPrivacyAccept(){const a=getApp();a.globalData.privacyAccepted=true;wx.setStorageSync("privacy_accepted",true);this.setData({showPrivacy:false});this.loadData()},switchTab(e){const i=e.currentTarget.dataset.idx;this.setData({activeTab:i});if(i===0)this.drawBar();else this.drawPie()},async loadData(){try{const rows=await request("'+table+'?limit=100");const grouped={};for(const r of rows||[]){const k=r["'+groupField+'"]||"其他";grouped[k]=(grouped[k]||0)+(Number('+(numFields[0]?('r["'+numFields[0].name+'"]'):'1')+')||0)}const data=Object.entries(grouped).map(([k,v])=>({label:k,value:v}));this.setData({chartData:data});this.drawBar()}catch(e){console.warn("Chart load failed",e)}},drawBar(){const q=wx.createSelectorQuery();q.select("#myChart").fields({node:true,size:true}).exec(res=>{if(!res[0])return;const c=res[0].node;const ctx=c.getContext("2d");const w=res[0].width;const h=res[0].height;const d=this.data.chartData;const max=Math.max(...d.map(x=>x.value),1);ctx.clearRect(0,0,w,h);const bw=(w-40)/d.length-10;d.forEach((item,i)=>{const bh=(item.value/max)*(h-60);const x=20+i*(bw+10);const y=h-30-bh;ctx.fillStyle="#0D9488";ctx.fillRect(x,y,bw,bh);ctx.fillStyle="#333";ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText(item.label,x+bw/2,h-10)})})},drawPie(){const q=wx.createSelectorQuery();q.select("#myChart").fields({node:true,size:true}).exec(res=>{if(!res[0])return;const c=res[0].node;const ctx=c.getContext("2d");const w=res[0].width;const h=res[0].height;const d=this.data.chartData;const total=d.reduce((s,x)=>s+x.value,0)||1;const cx=w/2,cy=h/2,r=Math.min(w,h)/2-20;const colors=["#0D9488","#2563EB","#F59E0B","#EF4444","#8B5CF6","#10B981"];let start=0;d.forEach((item,i)=>{const angle=(item.value/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+angle);ctx.closePath();ctx.fillStyle=colors[i%colors.length];ctx.fill();start+=angle})})}});';
+}
+
+// ─── Onboarding (引导页) ─────────────────────────────
+
+export function emitWechatOnboardingWxml(): string {
+  return '<swiper class="onboard-swiper" indicator-dots="{{true}}" indicator-color="#ddd" indicator-active-color="#0D9488"><swiper-item><view class="onboard-page"><view class="onboard-icon">🚀</view><text class="onboard-title">欢迎使用</text><text class="onboard-desc">快速上手，体验流畅的操作流程</text></view></swiper-item><swiper-item><view class="onboard-page"><view class="onboard-icon">☁️</view><text class="onboard-title">数据同步</text><text class="onboard-desc">安全存储，随时随地访问</text></view></swiper-item><swiper-item><view class="onboard-page"><view class="onboard-icon">🛡️</view><text class="onboard-title">隐私安全</text><text class="onboard-desc">加密保护你的数据</text><view class="onboard-btn" bindtap="onFinish"><text>开始使用</text></view></view></swiper-item></swiper>';
+}
+
+export function emitWechatOnboardingJs(): string {
+  return 'Page({onFinish(){wx.setStorageSync("onboarding_done",true);wx.switchTab({url:"/pages/index/index"})}});';
+}
+
+// ─── 补充 WXSS ───────────────────────────────────────
+
+export function emitWechatChartOnboardingWxss(): string {
+  return '.chart-tabs{display:flex;padding:0 24rpx;gap:16rpx}.chart-tab{padding:8rpx 24rpx;border-radius:20rpx;font-size:26rpx;background:#F3F4F6}.chart-tab.active{background:#0D9488;color:#fff}.chart-container{padding:16rpx}.chart-canvas{width:100%;height:500rpx}.onboard-swiper{width:100%;height:100vh}.onboard-page{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60rpx}.onboard-icon{font-size:120rpx;margin-bottom:40rpx}.onboard-title{font-size:40rpx;font-weight:700;margin-bottom:16rpx}.onboard-desc{font-size:28rpx;color:#9CA3AF;text-align:center}.onboard-btn{margin-top:60rpx;background:#0D9488;color:#fff;border-radius:40rpx;padding:20rpx 80rpx;font-size:30rpx}';
+}
