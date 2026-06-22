@@ -395,6 +395,16 @@ export async function generateFlutterProject(
   await fs.writeFile(path.join(widgetsDir, "polished_widgets.dart"), emitPolishedWidgetsDart(), "utf8");
   await fs.writeFile(path.join(widgetsDir, "ux_widgets.dart"), emitUXWidgetsDart(), "utf8");
 
+  // 行业专属 Widget 注入
+  const { detectIndustry, getIndustryWidgetsDart } = await import("./emit-industry");
+  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
+  if (industry !== "generic") {
+    const industryDart = getIndustryWidgetsDart(industry);
+    if (industryDart) {
+      await fs.writeFile(path.join(widgetsDir, "industry_widgets.dart"), industryDart, "utf8");
+    }
+  }
+
   // 隐私政策页面（市场合规）
   const privacyDir = path.join(appDir, "lib", "features", "privacy", "presentation");
   await fs.mkdir(privacyDir, { recursive: true });
