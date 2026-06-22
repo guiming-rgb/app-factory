@@ -5,7 +5,25 @@ const SCREEN_TYPES = new Set([
   "list",
   "detail",
   "form",
-  "placeholder"
+  "placeholder",
+  "dashboard",
+  "card_grid",
+  "calendar",
+  "chart",
+  "kanban",
+  "onboarding",
+  "map",
+  "chat",
+  "call",
+  "payment",
+  "iot",
+  "game",
+  "ar",
+  "medical",
+  "automotive",
+  "banking",
+  "insurance",
+  "kyc"
 ]);
 
 /** LLM 常把 id 或页面语义误填为 type */
@@ -78,6 +96,25 @@ function inferScreenType(
     }
     if (screenId.includes("form") || token === "form") {
       return "form";
+    }
+    // 新扩展类型推断
+    if (screenId.includes("dashboard") || screenId.includes("stat") || screenId.includes("overview") || token === "dashboard") {
+      return "dashboard";
+    }
+    if (screenId.includes("grid") || screenId.includes("gallery") || screenId.includes("card") || token === "card_grid") {
+      return "card_grid";
+    }
+    if (screenId.includes("calendar") || screenId.includes("schedule") || token === "calendar") {
+      return "calendar";
+    }
+    if (screenId.includes("chart") || screenId.includes("report") || screenId.includes("analysis") || token === "chart") {
+      return "chart";
+    }
+    if (screenId.includes("kanban") || screenId.includes("board") || screenId.includes("pipeline") || token === "kanban") {
+      return "kanban";
+    }
+    if (screenId.includes("onboarding") || screenId.includes("welcome") || screenId.includes("tutorial") || token === "onboarding") {
+      return "onboarding";
     }
   }
 

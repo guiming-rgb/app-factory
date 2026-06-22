@@ -19,9 +19,11 @@ export const REPORT_SPEC_SYSTEM = `你是 App 生产工厂的 App Spec 抽取器
 - targets.wechatMiniProgram.subPackages: 可为 []；若有分包则 { root, pages[], name? }
 - screens: 至少 3 个；每个必须有 id、title、type
 - screen.id: 仅小写+下划线，如 home、match_list、profile
-- screen.type: 只能是 tabRoot | list | detail | form | placeholder
+- screen.type: 按 App 特点智能选择 —— 基础：tabRoot | list | detail | form | placeholder；扩展：dashboard（数据看板/总览）| card_grid（卡片网格/商品浏览）| calendar（日历/日程）| chart（图表/统计）| kanban（看板/任务列）| onboarding（引导页）
 - **禁止**把 screen.id 的值（如 home、match_list）当作 type；**禁止**使用 main、home、list、page 等作为 type
-- navigation.tabs: 字符串数组，元素必须是 screens 里 type 为 list/placeholder/detail 的 id，至少 2 个
+- 判断规则：数据统计类 App（记账/健身/CRM）优先用 dashboard+chart；浏览类（商品/菜谱/图库）优先用 card_grid；日程类用 calendar；项目管理用 kanban；新用户流程用 onboarding
+- type=list 的 screen 如果适合用 card_grid/kanban 展示，**优先选 card_grid/kanban**
+- navigation.tabs: 字符串数组，元素必须是 screens 里非 tabRoot 的 id，至少 2 个
 - limitations: 非空字符串数组（从报告提炼首版范围限制）
 - roles: 数组（可为空 []）
 - auth: { "provider":"supabase", "methods":["email"], "roles":["user"] }

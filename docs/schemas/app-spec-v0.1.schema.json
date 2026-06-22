@@ -175,7 +175,7 @@
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
         "title": { "type": "string" },
         "type": {
-          "enum": ["tabRoot", "list", "detail", "form", "placeholder", "map", "chat", "call", "payment", "iot", "game", "ar", "medical", "automotive", "banking", "insurance", "kyc"]
+          "enum": ["tabRoot", "list", "detail", "form", "placeholder", "dashboard", "card_grid", "calendar", "chart", "kanban", "onboarding", "map", "chat", "call", "payment", "iot", "game", "ar", "medical", "automotive", "banking", "insurance", "kyc"]
         },
         "children": {
           "type": "array",
