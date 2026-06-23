@@ -132,7 +132,9 @@
     "maintainer:uninstall-reminders": "bash scripts/uninstall-maintainer-cron-reminders.sh",
     "verify:production:hardening": "node scripts/verify-production-hardening.mjs",
     "verify:industry:templates": "node scripts/verify-industry-templates.mjs",
-    "verify:industry:e2e": "npx tsx scripts/verify-industry-e2e.mjs"
+    "verify:industry:e2e": "npx tsx scripts/verify-industry-e2e.mjs",
+    "verify:industry:device": "npx tsx scripts/verify-industry-device.mjs",
+    "export:industry:device-samples": "npx tsx scripts/export-industry-device-samples.mjs"
   },
   "dependencies": {
     "@octokit/rest": "^21.1.1",

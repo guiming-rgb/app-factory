@@ -13,7 +13,7 @@ export function emitFinanceWidgetsDart(): string {
   return `import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 
-import "../theme/app_theme.dart";
+import "../../../core/theme/app_theme.dart";
 
 /// 交易列表项 — 带金额颜色、分类图标、日期
 class TransactionTile extends StatelessWidget {
@@ -45,7 +45,6 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final icon = _categoryIcons[category] ?? Icons.more_horiz;
-    final sign = isIncome ? "+" : "-";
     final color = isIncome ? Colors.green : theme.colorScheme.error;
 
     return Card(
@@ -56,7 +55,7 @@ class TransactionTile extends StatelessWidget {
         ),
         title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
         subtitle: Text(DateFormat("MM/dd").format(date), style: AppTheme.caption(theme.textTheme)),
-        trailing: Text("\\$sign¥\${amount.toStringAsFixed(2)}",
+        trailing: Text("\${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}",
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
         onTap: onTap,
       ),

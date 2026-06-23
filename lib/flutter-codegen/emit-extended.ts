@@ -47,7 +47,7 @@ export function emitFlutterDashboardPage(
   screen: AppSpecScreen,
   spec: AppSpec
 ): string {
-  const className = `${pascalCase(screen.id)}Page`;
+  const className = `${pascalCase(screen.id)}DashboardPage`;
   const title = escapeDartString(screen.title);
   const entity = entityOrFirst(spec, screen);
   const table = tableName(entity);
@@ -55,37 +55,24 @@ export function emitFlutterDashboardPage(
   const numericFields = entity.fields.filter((f) =>
     ["int", "float", "number"].includes(f.type)
   );
-  const statCards = numericFields.length > 0
-    ? numericFields
-        .map(
-          (f) => `        _StatCard(
-          label: "${escapeDartString(f.name)}",
-          future: supabaseOrNull
-              ?.from("${table}")
-              .select("${escapeDartString(f.name)}")
-              .then((rows) => (rows as List<dynamic>?)?.fold<double>(0, (s, r) => s + (double.tryParse((r as Map)["${escapeDartString(f.name)}"]?.toString() ?? "0") ?? 0)) ?? 0) ?? Future.value(0),
-        ),`
-        )
-        .join("\n")
-    : `        _StatCard(label: "总记录数", future: supabaseOrNull?.from("${table}").select("${pk}", FetchOptions(count: CountOption.exact)).then((_) => 0) ?? Future.value(0)),`;
 
-  const chartSections = numericFields
-    .slice(0, 3)
-    .map(
-      (f, i) => `              Bar(
-                x: ${i}.0,
-                y: summary["${escapeDartString(f.name)}"]?.toDouble() ?? 0,
-              ),`
-    )
-    .join("\n");
+  const chartBarGroups =
+    numericFields.length > 0
+      ? numericFields
+          .slice(0, 3)
+          .map(
+            (f, i) =>
+              `BarChartGroupData(x: ${i}, barRods: [BarChartRodData(toY: (_summary["${escapeDartString(f.name)}"] ?? 0).toDouble())])`
+          )
+          .join(",\n                            ")
+      : `BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: (_summary["total"] ?? 0).toDouble())])`;
 
   return `import "package:flutter/material.dart";
-import "package:supabase_flutter/supabase_flutter.dart";
 import "package:fl_chart/fl_chart.dart";
 
-import "../../../core/supabase/supabase_client.dart";
-import "../../../core/theme/app_theme.dart";
-import "../../../core/widgets/polished_widgets.dart";
+import "../../core/supabase/supabase_client.dart";
+import "../../core/theme/app_theme.dart";
+import "../../core/widgets/polished_widgets.dart";
 
 class ${className} extends StatefulWidget {
   const ${className}({super.key});
@@ -112,8 +99,8 @@ class _${className}State extends State<${className}> {
         setState(() { _loading = false; _error = "未配置 Supabase"; });
         return;
       }
-      final countResp = await client.from("${table}").select("${pk}", FetchOptions(count: CountOption.exact));
-      final total = countResp.count ?? 0;
+      final countRows = await client.from("${table}").select("${pk}");
+      final total = (countRows as List<dynamic>?)?.length ?? 0;
       final summary = <String, num>{"total": total};
 ${numericFields.map((f) => `      try {
         final rows = await client.from("${table}").select("${escapeDartString(f.name)}");
@@ -138,32 +125,27 @@ ${numericFields.map((f) => `      try {
               : RefreshIndicator(
                   onRefresh: _loadSummary,
                   child: ListView(padding: const EdgeInsets.all(16), children: [
-                    // 统计卡片行
                     Wrap(spacing: 12, runSpacing: 12, children: [
                       _SummaryCard(label: "总记录", value: "\${_summary['total'] ?? 0}", icon: Icons.storage, color: theme.colorScheme.primary),
                       ${numericFields.map((f) => `_SummaryCard(label: "${escapeDartString(f.name)} 合计", value: "\${(_summary['${escapeDartString(f.name)}'] ?? 0).toStringAsFixed(1)}", icon: Icons.trending_up, color: theme.colorScheme.tertiary),`).join("\n                      ")}
                     ]),
                     const SizedBox(height: 24),
-                    // 趋势图
-                    if (${numericFields.length > 0}) ...[
-                      Text("数据趋势", style: AppTheme.headingMedium(theme.textTheme)),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 200,
-                        child: BarChart(BarChartData(
-                          alignment: BarChartAlignment.spaceAround,
-                          maxY: (_summary.values.fold<num>(0, (a, b) => a > b ? a : b)).toDouble() + 10,
-                          barGroups: [
-                            ${chartSections || "BarChartGroup(x: 0, barRods: [BarChartRodData(toY: 0)])"}
-                          ],
-                          titlesData: FlTitlesData(show: true),
-                          borderData: FlBorderData(show: false),
-                          gridData: FlGridData(show: true, drawVerticalLine: false),
-                        )),
-                      ),
-                    ],
+                    Text("数据趋势", style: AppTheme.headingMedium(theme.textTheme)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 200,
+                      child: BarChart(BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: (_summary.values.fold<num>(0, (a, b) => a > b ? a : b)).toDouble() + 10,
+                        barGroups: [
+                            ${chartBarGroups}
+                        ],
+                        titlesData: const FlTitlesData(show: true),
+                        borderData: FlBorderData(show: false),
+                        gridData: FlGridData(show: true, drawVerticalLine: false),
+                      )),
+                    ),
                     const SizedBox(height: 24),
-                    // 快捷入口
                     Text("快捷操作", style: AppTheme.headingMedium(theme.textTheme)),
                     const SizedBox(height: 12),
                     _QuickAction(icon: Icons.add, label: "添加记录", onTap: () {}),

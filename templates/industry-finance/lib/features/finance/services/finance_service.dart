@@ -1,3 +1,6 @@
+import "dart:convert";
+
+import "package:http/http.dart" as http;
 import "package:supabase_flutter/supabase_flutter.dart";
 
 import "../models/transaction.dart";
@@ -17,14 +20,12 @@ class FinanceService {
     DateTime? from,
     DateTime? to,
   }) async {
-    var query = _client.from("transactions").select("*").order("created_at", ascending: false).limit(limit);
-
+    var query = _client.from("transactions").select("*");
     if (category != null) query = query.eq("category", category);
     if (type != null) query = query.eq("type", type);
     if (from != null) query = query.gte("created_at", from.toIso8601String());
     if (to != null) query = query.lte("created_at", to.toIso8601String());
-
-    final rows = await query;
+    final rows = await query.order("created_at", ascending: false).limit(limit);
     return (rows as List<dynamic>).map((r) => Transaction.fromJson(r as Map<String, dynamic>)).toList();
   }
 
@@ -94,10 +95,11 @@ class FinanceService {
   static Future<double?> getExchangeRate(String from, String to) async {
     try {
       final uri = Uri.parse("https://open.er-api.com/v6/latest/$from");
-      final resp = await Supabase.instance.client.httpClient.get(uri);
+      final resp = await http.get(uri);
       if (resp.statusCode == 200) {
-        // ignore: avoid_dynamic_calls
-        return resp.data['rates']?[to]?.toDouble();
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final rates = data["rates"] as Map<String, dynamic>?;
+        return rates?[to]?.toDouble();
       }
     } catch (_) {}
     return null;

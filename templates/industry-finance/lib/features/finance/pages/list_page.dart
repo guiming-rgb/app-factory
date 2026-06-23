@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/polished_widgets.dart';
+import 'detail_page.dart';
+import 'form_page.dart';
 
 class TransactionListPage extends StatefulWidget {
   const TransactionListPage({super.key});
@@ -23,9 +24,11 @@ class _TransactionListPageState extends State<TransactionListPage> {
   Future<void> _load([String? search]) async {
     setState(() { _loading = true; _error = null; });
     try {
-      var q = Supabase.instance.client.from("transactions").select("*").order("created_at",ascending:false).limit(50);
-      if (search != null && search.isNotEmpty) q = q.ilike("name", "%$search%");
-      final rows = await q;
+      var q = Supabase.instance.client.from("transactions").select("*");
+      if (search != null && search.isNotEmpty) {
+        q = q.ilike("title", "%$search%");
+      }
+      final rows = await q.order("created_at", ascending: false).limit(50);
       setState(() { _items = List<Map<String,dynamic>>.from(rows as List); _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });

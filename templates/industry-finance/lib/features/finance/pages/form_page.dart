@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/theme/app_theme.dart';
 
 class TransactionFormPage extends StatefulWidget {
   final Map<String,dynamic>? initial;
