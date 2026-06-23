@@ -58,19 +58,6 @@ import {
   shouldGenerateCompliancePages
 } from "./emit-compliance";
 import { getComplianceFlags } from "@/lib/compliance-flags";
-import { copyIndustryTemplate } from "./copy-industry-template";
-import {
-  detectIndustry,
-  getIndustryWidgetsDart
-} from "./emit-industry";
-import {
-  emitFlutterIndustryGamePage,
-  emitFlutterIndustryPaymentPage
-} from "./emit-industry-pages";
-import {
-  industryFeatureExists,
-  resolveIndustriesToCopy
-} from "./resolve-industries";
 import {
   ensureFlutterPlatformFolders,
   resolveFlutterPlatforms
@@ -137,23 +124,6 @@ export async function generateFlutterProject(
   );
   const appDir = path.join(outRoot, spec.appName);
   await copyTemplate(appDir);
-
-  const industriesToCopy = resolveIndustriesToCopy(spec);
-  for (const industry of industriesToCopy) {
-    await copyIndustryTemplate(appDir, industry);
-  }
-
-  const detectedIndustry = detectIndustry(spec as unknown as Record<string, unknown>);
-  const industryWidgets = getIndustryWidgetsDart(detectedIndustry);
-  if (industryWidgets) {
-    const industryWidgetsDir = path.join(appDir, "lib", "core", "widgets");
-    await fs.mkdir(industryWidgetsDir, { recursive: true });
-    await fs.writeFile(
-      path.join(industryWidgetsDir, "industry_widgets.dart"),
-      industryWidgets,
-      "utf8"
-    );
-  }
 
   const flutterPlatforms = resolveFlutterPlatforms(spec);
   const platformEnsure = await ensureFlutterPlatformFolders(
@@ -232,25 +202,8 @@ export async function generateFlutterProject(
   if (screenTypes.has("game")) {
     if (!pubspecContent.includes("flame:")) extraDeps.push("  flame: ^1.22.0");
   }
-  if (screenTypes.has("payment") || industriesToCopy.includes("payment")) {
-    if (!pubspecContent.includes("supabase_flutter:")) {
-      /* 已在基础模板 */
-    }
-  }
-  if (
-    screenTypes.has("dashboard") ||
-    screenTypes.has("chart") ||
-    industriesToCopy.includes("finance")
-  ) {
-    if (!pubspecContent.includes("fl_chart:")) extraDeps.push("  fl_chart: ^0.69.0");
-  }
-  if (screenTypes.has("calendar") || industriesToCopy.includes("education")) {
-    if (!pubspecContent.includes("table_calendar:")) {
-      extraDeps.push("  table_calendar: ^3.1.2");
-    }
-  }
-  if (industryWidgets && !pubspecContent.includes("intl:")) {
-    extraDeps.push("  intl: ^0.19.0");
+  if (screenTypes.has("payment")) {
+    // Stripe: 需要 flutter_stripe 但通常由服务端驱动
   }
   if (screenTypes.has("form") || screenTypes.has("detail")) {
     if (!pubspecContent.includes("file_picker:")) extraDeps.push("  file_picker: ^8.1.6");
@@ -340,19 +293,13 @@ export async function generateFlutterProject(
       content = emitFlutterWebRTCCallPage();
       fileName = `${screen.id}_call_page.dart`;
     } else if (screen.type === "payment") {
-      const useIndustryPayment = await industryFeatureExists(appDir, "payment");
-      content = useIndustryPayment
-        ? emitFlutterIndustryPaymentPage(screen, spec)
-        : emitFlutterPaymentPage();
+      content = emitFlutterPaymentPage();
       fileName = `${screen.id}_payment_page.dart`;
     } else if (screen.type === "iot") {
       content = emitFlutterBLEScannerPage();
       fileName = `${screen.id}_iot_page.dart`;
     } else if (screen.type === "game") {
-      const useIndustryGame = await industryFeatureExists(appDir, "game");
-      content = useIndustryGame
-        ? emitFlutterIndustryGamePage(screen, spec)
-        : emitFlutterGamePage(spec.displayName);
+      content = emitFlutterGamePage(spec.displayName);
       fileName = `${screen.id}_game_page.dart`;
     } else if (screen.type === "ar") {
       content = emitFlutterARPage();

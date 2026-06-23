@@ -49,15 +49,12 @@ async function emitHarmonyScreens(
     const filePath = path.join(pagesDir, `${componentName}.ets`);
 
     // 扩展页面类型路由
-    if (screen.type === "dashboard" || screen.type === "card_grid" || screen.type === "calendar" || screen.type === "chart" || screen.type === "kanban" || screen.type === "onboarding") {
+    if (screen.type === "dashboard" || screen.type === "card_grid" || screen.type === "calendar") {
       const ext = await import("./emit-extended");
       let content: string;
       if (screen.type === "dashboard") content = ext.emitHarmonyDashboard(screen, spec);
       else if (screen.type === "card_grid") content = ext.emitHarmonyCardGrid(screen, spec);
-      else if (screen.type === "calendar") content = ext.emitHarmonyCalendar(screen, spec);
-      else if (screen.type === "chart") content = ext.emitHarmonyChart(screen);
-      else if (screen.type === "kanban") content = ext.emitHarmonyKanban(screen);
-      else content = ext.emitHarmonyOnboarding(screen);
+      else content = ext.emitHarmonyCalendar(screen, spec);
       await fs.writeFile(filePath, content, "utf8");
     } else {
       await fs.writeFile(

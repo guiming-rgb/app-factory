@@ -65,7 +65,7 @@ async function ensureGeneratedPage(
     specForPage = undefined;
   }
   // 扩展页面类型路由
-  const isExtended = ["dashboard", "card_grid", "calendar", "kanban", "chart", "onboarding"].includes(screen.type);
+  const isExtended = ["dashboard", "card_grid", "calendar", "kanban"].includes(screen.type);
   if (isExtended && specForPage) {
     const ext = await import("./emit-extended");
     if (screen.type === "dashboard") {
@@ -80,14 +80,8 @@ async function ensureGeneratedPage(
     } else if (screen.type === "kanban") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatKanbanWxml(screen), "utf8");
       await fs.writeFile(`${fileBase}.js`, ext.emitWechatKanbanJs(screen, specForPage), "utf8");
-    } else if (screen.type === "chart") {
-      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatChartWxml(screen), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatChartJs(screen, specForPage), "utf8");
-    } else if (screen.type === "onboarding") {
-      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatOnboardingWxml(), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatOnboardingJs(), "utf8");
     }
-    await fs.writeFile(`${fileBase}.wxss`, ext.emitWechatExtendedWxss() + "\n" + ext.emitWechatChartOnboardingWxss(), "utf8");
+    await fs.writeFile(`${fileBase}.wxss`, ext.emitWechatExtendedWxss(), "utf8");
   } else {
     await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
     await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");

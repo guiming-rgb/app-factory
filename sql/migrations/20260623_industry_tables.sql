@@ -3,6 +3,17 @@
 
 -- ═══ 记账 Finance ═══════════════════════════════════════
 
+create table if not exists accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  balance numeric(12,2) default 0,
+  type text default 'cash',
+  created_at timestamptz default now()
+);
+alter table accounts enable row level security;
+create policy accounts_own on accounts for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 create table if not exists transactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
@@ -28,17 +39,6 @@ create table if not exists budgets (
 );
 alter table budgets enable row level security;
 create policy budgets_own on budgets for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-
-create table if not exists accounts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
-  name text not null,
-  balance numeric(12,2) default 0,
-  type text default 'cash',
-  created_at timestamptz default now()
-);
-alter table accounts enable row level security;
-create policy accounts_own on accounts for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- ═══ CRM ═══════════════════════════════════════════════════
 

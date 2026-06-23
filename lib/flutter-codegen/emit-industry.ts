@@ -582,45 +582,35 @@ class GradeBadge extends StatelessWidget {
 
 export type IndustryCategory = "finance" | "crm" | "fitness" | "ecommerce" | "education" | "social" | "food" | "hotel" | "recruitment" | "property" | "video" | "weather" | "sports" | "photo" | "dating" | "medical" | "blog" | "game" | "payment" | "generic";
 
-/** 从 Spec 判断行业类型（覆盖 19 种；优先 appName/displayName，避免 screen id 误判） */
+/** 从 Spec 判断行业类型（覆盖 17 种） */
 export function detectIndustry(spec: Record<string, unknown>): IndustryCategory {
   const metadata = (spec.metadata ?? {}) as Record<string, unknown>;
   const cat = (metadata?.category as string ?? "").toLowerCase();
   const name = ((spec.displayName as string) ?? "").toLowerCase();
   const appName = ((spec.appName as string) ?? "").toLowerCase();
-  const coreBlob = [cat, name, appName].join(" ").toLowerCase();
+  const blob = [cat, name, appName, ...((spec.screens as Array<{ id: string }>) ?? []).map((s) => s.id)].join(" ").toLowerCase();
 
-  const match = (blob: string): IndustryCategory | null => {
-    if (/记账|财务|账单|理财|budget|finance|expense|transaction|记一笔/.test(blob)) return "finance";
-    if (/crm|客户|customer|client|lead|商机|销售|sales|pipeline/.test(blob)) return "crm";
-    if (/健身|运动|训练|workout|fitness|exercise|gym|跑步|瑜伽/.test(blob)) return "fitness";
-    if (/外卖|点餐|餐厅|饭店|美食|food_delivery|food|delivery|restaurant/.test(blob)) return "food";
-    if (/电商|购物|商城|shop|store|ecommerce|商品|product/.test(blob)) return "ecommerce";
-    if (/课表|课程|course|学校|作业|exam|成绩|学习|class|timetable|student/.test(blob)) return "education";
-    if (/博客|文章|阅读|blog|article|写作|专栏/.test(blob)) return "blog";
-    if (/照片|摄影|拍照|图库|photo_share|photo|gallery|camera/.test(blob)) return "photo";
-    if (/交友|相亲|匹配|dating|tinder/.test(blob)) return "dating";
-    if (/医疗|问诊|医院|医生|看病|medical|doctor|patient|处方/.test(blob)) return "medical";
-    if (/酒店|住宿|宾馆|民宿|hotel|booking|客房/.test(blob)) return "hotel";
-    if (/招聘|求职|找工作|职位|job|recruit|hr|简历/.test(blob)) return "recruitment";
-    if (/物业|小区|报修|缴费|门禁|property|repair/.test(blob)) return "property";
-    if (/视频|影音|播放|电影|video|movie|film|netflix/.test(blob)) return "video";
-    if (/天气|气象|预报|weather|forecast|temperature/.test(blob)) return "weather";
-    if (/体育|比赛|球队|赛程|sport|league|足球|篮球/.test(blob)) return "sports";
-    if (/游戏|game|flame|玩法|关卡|得分|对战|休闲|射击/.test(blob)) return "game";
-    if (/支付|付款|收银|stripe|pay|checkout|结算|充值/.test(blob)) return "payment";
-    if (/社交|社区|朋友圈|动态|social|feed|post|话题|小红书/.test(blob)) return "social";
-    return null;
-  };
+  if (/记账|财务|账单|理财|budget|finance|expense|transaction|记一笔/.test(blob)) return "finance";
+  if (/crm|客户|customer|client|lead|商机|销售|sales|pipeline/.test(blob)) return "crm";
+  if (/健身|运动|训练|workout|fitness|exercise|gym|跑步|瑜伽/.test(blob)) return "fitness";
+  if (/电商|购物|商城|shop|store|ecommerce|商品|product|cart/.test(blob)) return "ecommerce";
+  if (/课表|课程|course|学校|作业|exam|成绩|学习|class|timetable|student/.test(blob)) return "education";
+  if (/社交|社区|朋友圈|动态|social|feed|post|话题|小红书/.test(blob)) return "social";
+  if (/外卖|点餐|餐厅|饭店|美食|food|delivery|restaurant|menu/.test(blob)) return "food";
+  if (/酒店|住宿|宾馆|民宿|hotel|booking|客房/.test(blob)) return "hotel";
+  if (/招聘|求职|找工作|职位|job|recruit|hr|简历/.test(blob)) return "recruitment";
+  if (/物业|小区|报修|缴费|门禁|property|repair/.test(blob)) return "property";
+  if (/视频|影音|播放|电影|video|movie|film|netflix/.test(blob)) return "video";
+  if (/天气|气象|预报|weather|forecast|temperature/.test(blob)) return "weather";
+  if (/体育|比赛|球队|赛程|sport|match|league|足球|篮球/.test(blob)) return "sports";
+  if (/照片|摄影|拍照|图库|photo|image|gallery|camera/.test(blob)) return "photo";
+  if (/交友|相亲|匹配|dating|match|tinder/.test(blob)) return "dating";
+  if (/医疗|问诊|医院|医生|看病|medical|doctor|patient|处方/.test(blob)) return "medical";
+  if (/博客|文章|阅读|blog|article|写作|专栏/.test(blob)) return "blog";
+  if (/游戏|game|flame|玩法|关卡|得分|对战|休闲|射击|足球/.test(blob)) return "game";
+  if (/支付|付款|收银|stripe|pay|checkout|结算|充值/.test(blob)) return "payment";
 
-  const fromCore = match(coreBlob);
-  if (fromCore) return fromCore;
-
-  const screenBlob = ((spec.screens as Array<{ id: string }>) ?? [])
-    .map((s) => s.id)
-    .join(" ")
-    .toLowerCase();
-  return match(`${coreBlob} ${screenBlob}`) ?? "generic";
+  return "generic";
 }
 
 /** 获取行业对应的 Widget 文件内容 */

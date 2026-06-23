@@ -2,21 +2,20 @@
 
 > **用途**：开工第一眼；细节见 [执行计划.md](./执行计划.md)、[HANDOFF.md](./HANDOFF.md)。
 
-## 当前事实（截至 2026-05-19）
+## 当前事实（截至 2026-06-17）
 
 - **Claude / 全量记忆**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) · [CLAUDE.md](../CLAUDE.md)
 - **R1 发行**：[R1-发行路线图.md](./R1-发行路线图.md) — GHA 条件签名 · `/privacy` `/terms` ✅ 代码已合入
-- **行业 Pipeline** | 17 行业模板 + game/payment 真模板 · `npm run verify:industry:templates` · CI ✅
-- **9 Agent** | 安全合规顾问 · migration：`npm run db:apply:all-pending`（维护者/Agent 本机跑）
-- **生产** | https://app-factory-five.vercel.app · redeploy 后 `/privacy` `/terms` 可见
+- **9 Agent** | 安全合规顾问 + complianceFlags · **DB migration 待跑**
+- **生产** | https://app-factory-five.vercel.app · **redeploy 后才有 /privacy**
 - **本地** | `npm run dev:codegen:3001` → 3001 + Inngest 8288
 - **枪战** | `0ea7a53c-a645-4ad9-a43a-02263f9b7b4a`
 - **目录** | `/Users/guiming/Desktop/app生产工厂/app-factory`
 
 ## 明日优先
 
-1. `npm run db:apply:all-pending`（若 9 Agent 表未更新）  
-2. `npm run deploy:vercel`（若生产尚无 `/privacy`）  
+1. Supabase migration（9 Agent）  
+2. Vercel redeploy  
 3. Apple/Win GitHub Secrets（可选实跑签名 GHA）
 
 ## 入口
