@@ -132,6 +132,18 @@ export async function generateFlutterProject(
     const { copyIndustryTemplate } = await import("./copy-industry-template");
     const { copied } = await copyIndustryTemplate(appDir, industry);
     if (copied > 0) console.log(`[generateFlutterProject] 注入 ${industry} 行业模板 (${copied} 文件)`);
+
+    const { getIndustryWidgetsDart } = await import("./emit-industry");
+    const widgetsDart = getIndustryWidgetsDart(industry);
+    if (widgetsDart) {
+      const widgetDir = path.join(appDir, "lib", "features", industry, "widgets");
+      await fs.mkdir(widgetDir, { recursive: true });
+      await fs.writeFile(
+        path.join(widgetDir, `${industry}_widgets.dart`),
+        widgetsDart,
+        "utf8"
+      );
+    }
   }
 
   const flutterPlatforms = resolveFlutterPlatforms(spec);
@@ -302,14 +314,26 @@ export async function generateFlutterProject(
       content = emitFlutterWebRTCCallPage();
       fileName = `${screen.id}_call_page.dart`;
     } else if (screen.type === "payment") {
-      content = emitFlutterPaymentPage();
-      fileName = `${screen.id}_payment_page.dart`;
+      if (industry === "payment") {
+        const { emitFlutterIndustryPaymentPage } = await import("./emit-industry-pages");
+        content = emitFlutterIndustryPaymentPage(screen, spec);
+        fileName = `${screen.id}_payment_page.dart`;
+      } else {
+        content = emitFlutterPaymentPage();
+        fileName = `${screen.id}_payment_page.dart`;
+      }
     } else if (screen.type === "iot") {
       content = emitFlutterBLEScannerPage();
       fileName = `${screen.id}_iot_page.dart`;
     } else if (screen.type === "game") {
-      content = emitFlutterGamePage(spec.displayName);
-      fileName = `${screen.id}_game_page.dart`;
+      if (industry === "game") {
+        const { emitFlutterIndustryGamePage } = await import("./emit-industry-pages");
+        content = emitFlutterIndustryGamePage(screen, spec);
+        fileName = `${screen.id}_game_page.dart`;
+      } else {
+        content = emitFlutterGamePage(spec.displayName);
+        fileName = `${screen.id}_game_page.dart`;
+      }
     } else if (screen.type === "ar") {
       content = emitFlutterARPage();
       fileName = `${screen.id}_ar_page.dart`;
@@ -446,7 +470,15 @@ export async function generateFlutterProject(
   await fs.writeFile(appDartFilePath, appDartContent, "utf8");
 
   const routerPath = path.join(appDir, "lib", "router", "app_router.dart");
-  await fs.writeFile(routerPath, emitAppRouterDart(spec, complianceRoutes.length > 0 ? complianceRoutes : undefined), "utf8");
+  await fs.writeFile(
+    routerPath,
+    emitAppRouterDart(
+      spec,
+      complianceRoutes.length > 0 ? complianceRoutes : undefined,
+      industry
+    ),
+    "utf8"
+  );
 
   // 技能代码片段注入 (P1-2)
   try {

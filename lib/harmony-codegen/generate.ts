@@ -98,9 +98,27 @@ export async function generateHarmonyProject(
   const spec = validation.spec;
   const bundleName = harmonyBundleName(spec.appName);
 
+  const { detectIndustry } = await import("@/lib/flutter-codegen/emit-industry");
+  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
+
   const outRoot = await fs.mkdtemp(path.join(os.tmpdir(), "app-factory-harmony-"));
   const appDir = path.join(outRoot, bundleName);
   await copyTemplate(appDir);
+
+  const { emitHarmonyIndustryServicesEts } = await import("./emit-industry-services");
+  const servicesDir = path.join(appDir, "entry/src/main/ets/services");
+  await fs.mkdir(servicesDir, { recursive: true });
+  await fs.writeFile(
+    path.join(servicesDir, "IndustryServices.ets"),
+    emitHarmonyIndustryServicesEts(industry),
+    "utf8"
+  );
+
+  await fs.writeFile(
+    path.join(appDir, "industry.json"),
+    JSON.stringify({ industry, servicesModule: "entry/src/main/ets/services/IndustryServices.ets" }, null, 2) + "\n",
+    "utf8"
+  );
 
   await fs.writeFile(
     path.join(appDir, "app_spec.json"),

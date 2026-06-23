@@ -10,6 +10,8 @@ import {
 } from "@/lib/app-spec/entity-scaffold";
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 import { isListScreen } from "@/lib/app-spec/resolve-list-screen";
+import type { IndustryCategory } from "./emit-industry";
+import { resolveIndustryPageRef } from "./industry-page-ref";
 
 export { resolveTabScreens };
 
@@ -23,12 +25,20 @@ function routePath(screenId: string): string {
 
 export function pageWidgetRef(
   screen: AppSpecScreen,
-  options?: { spec?: AppSpec }
+  options?: { spec?: AppSpec; industry?: IndustryCategory }
 ): {
   importPath: string;
   className: string;
   needsGenerated: boolean;
 } {
+  const industry = options?.industry ?? "generic";
+  if (industry !== "generic" && options?.spec) {
+    const industryRef = resolveIndustryPageRef(screen, industry, options.spec);
+    if (industryRef) {
+      return { ...industryRef, needsGenerated: false };
+    }
+  }
+
   if (
     options?.spec &&
     isTodoAppSpec(options.spec) &&
@@ -412,7 +422,8 @@ class ${className} extends StatelessWidget {
 
 export function emitAppRouterDart(
   spec: AppSpec,
-  complianceRoutes?: Array<{ route: string; widget: string; importPath: string }>
+  complianceRoutes?: Array<{ route: string; widget: string; importPath: string }>,
+  industry: IndustryCategory = "generic"
 ): string {
   const tabs = resolveTabScreens(spec);
   const imports = new Set<string>();
@@ -421,7 +432,7 @@ export function emitAppRouterDart(
 
   // Tab 路由
   for (const screen of tabs) {
-    const ref = pageWidgetRef(screen, { spec });
+    const ref = pageWidgetRef(screen, { spec, industry });
     imports.add(`import "${ref.importPath}";`);
     const path = routePath(screen.id);
     // Detail类型的 tab 需要 itemId 参数
@@ -453,7 +464,7 @@ export function emitAppRouterDart(
     (s) => !tabs.some((t) => t.id === s.id)
   );
   for (const screen of nonTabScreens) {
-    const ref = pageWidgetRef(screen, { spec });
+    const ref = pageWidgetRef(screen, { spec, industry });
     if (!ref.needsGenerated) continue;
     imports.add(`import "${ref.importPath}";`);
     const path = routePath(screen.id);

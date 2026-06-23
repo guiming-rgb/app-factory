@@ -35,6 +35,11 @@ import {
   wechatPagePath
 } from "./emit";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
+import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import {
+  wechatIndustryListCall,
+  wechatIndustryRequireLine,
+} from "./industry-bindings";
 
 const TEMPLATE_DIR = path.join(
   process.cwd(),
@@ -48,7 +53,8 @@ async function copyTemplate(destDir: string): Promise<void> {
 
 async function ensureGeneratedPage(
   appDir: string,
-  screen: AppSpecScreen
+  screen: AppSpecScreen,
+  industry: IndustryCategory = "generic"
 ): Promise<void> {
   const pagePath = wechatPagePath(screen.id);
   if (pagePath === "pages/index/index" || pagePath === "pages/profile/profile") {
@@ -65,23 +71,40 @@ async function ensureGeneratedPage(
     specForPage = undefined;
   }
   // 扩展页面类型路由
-  const isExtended = ["dashboard", "card_grid", "calendar", "kanban"].includes(screen.type);
+  const isExtended = [
+    "dashboard",
+    "card_grid",
+    "calendar",
+    "kanban",
+    "chart",
+    "onboarding",
+  ].includes(screen.type);
   if (isExtended && specForPage) {
     const ext = await import("./emit-extended");
     if (screen.type === "dashboard") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatDashboardWxml(screen, specForPage), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatDashboardJs(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatDashboardJs(screen, specForPage, industry), "utf8");
     } else if (screen.type === "card_grid") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatCardGridWxml(screen, specForPage), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCardGridJs(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCardGridJs(screen, specForPage, industry), "utf8");
     } else if (screen.type === "calendar") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatCalendarWxml(screen), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCalendarJs(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatCalendarJs(screen, specForPage, industry), "utf8");
     } else if (screen.type === "kanban") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatKanbanWxml(screen), "utf8");
-      await fs.writeFile(`${fileBase}.js`, ext.emitWechatKanbanJs(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatKanbanJs(screen, specForPage, industry), "utf8");
+    } else if (screen.type === "chart") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatChartWxml(screen), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatChartJs(screen, specForPage), "utf8");
+    } else if (screen.type === "onboarding") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatOnboardingWxml(), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatOnboardingJs(), "utf8");
     }
-    await fs.writeFile(`${fileBase}.wxss`, ext.emitWechatExtendedWxss(), "utf8");
+    const wxss =
+      screen.type === "chart" || screen.type === "onboarding"
+        ? ext.emitWechatChartOnboardingWxss()
+        : ext.emitWechatExtendedWxss();
+    await fs.writeFile(`${fileBase}.wxss`, wxss, "utf8");
   } else {
     await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
     await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
@@ -105,11 +128,20 @@ export async function generateWechatProject(
   }
   const spec = validation.spec;
 
+  const { detectIndustry } = await import("@/lib/flutter-codegen/emit-industry");
+  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
+
   const outRoot = await fs.mkdtemp(
     path.join(os.tmpdir(), "app-factory-wechat-")
   );
   const appDir = path.join(outRoot, spec.appName);
   await copyTemplate(appDir);
+
+  await fs.writeFile(
+    path.join(appDir, "industry.json"),
+    JSON.stringify({ industry, servicesModule: "services/industry.js" }, null, 2) + "\n",
+    "utf8"
+  );
 
   await fs.writeFile(
     path.join(appDir, "app_spec.json"),
@@ -216,7 +248,7 @@ export async function generateWechatProject(
       emitEntityListIndexWxml(spec, listScreen),
       "utf8"
     );
-    await fs.writeFile(indexJs, emitEntityListIndexJs(spec, listScreen), "utf8");
+    await fs.writeFile(indexJs, emitEntityListIndexJs(spec, listScreen, industry), "utf8");
     const baseWxss = await fs.readFile(path.join(appDir, "app.wxss"), "utf8");
     await fs.writeFile(
       indexWxss,
@@ -250,7 +282,7 @@ export async function generateWechatProject(
   }
 
   for (const screen of resolveCodegenScreens(spec)) {
-    await ensureGeneratedPage(appDir, screen);
+    await ensureGeneratedPage(appDir, screen, industry);
   }
 
   // Form 页面：为 form 类型的 screen 和没有专门列表的添加表单入口

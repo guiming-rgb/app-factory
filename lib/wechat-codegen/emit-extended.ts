@@ -3,6 +3,11 @@
  * dashboard / card_grid / calendar / kanban
  */
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import {
+  wechatIndustryFetchExpr,
+  wechatIndustryRequireLine,
+} from "./industry-bindings";
 
 function escapeWxml(s: string): string {
   return s.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -78,13 +83,22 @@ ${statCards}
 </view>`;
 }
 
-export function emitWechatDashboardJs(screen: AppSpecScreen, spec: AppSpec): string {
+export function emitWechatDashboardJs(
+  screen: AppSpecScreen,
+  spec: AppSpec,
+  industry: IndustryCategory = "generic"
+): string {
   const entity = entityOrFirst(spec, screen);
   const table = tableName(entity);
   const numericFields = entity.fields.filter((f) => ["int", "float", "number"].includes(f.type));
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const fetchRows = wechatIndustryFetchExpr(
+    industry,
+    `request("${table}?order=created_at.desc&limit=5")`
+  );
 
   return `const { request } = require("../../utils/supabase");
-
+${industryRequire}
 Page({
   data: {
     showPrivacy: false,
@@ -108,7 +122,7 @@ Page({
 
   async loadDashboard() {
     try {
-      const rows = await request("${table}?order=created_at.desc&limit=5");
+      const rows = await ${fetchRows};
       const recent = (rows || []).map(r => ({ ...r, id: String(r.id) }));
       const summary = { total: recent.length ${numericFields.map((f) => `, "${f.name}": (rows || []).reduce((s, r) => s + (Number(r["${f.name}"]) || 0), 0)`).join("")} };
       this.setData({ recentItems: recent, summary });
@@ -162,13 +176,27 @@ export function emitWechatCardGridWxml(screen: AppSpecScreen, spec: AppSpec): st
 </view>`;
 }
 
-export function emitWechatCardGridJs(screen: AppSpecScreen, spec: AppSpec): string {
+export function emitWechatCardGridJs(
+  screen: AppSpecScreen,
+  spec: AppSpec,
+  industry: IndustryCategory = "generic"
+): string {
   const entity = entityOrFirst(spec, screen);
   const table = tableName(entity);
   const tf = titleField(entity);
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const fetchAll = wechatIndustryFetchExpr(
+    industry,
+    `request(query)`
+  );
+  const loadQueryBlock = industry !== "generic"
+    ? `      const rows = await ${fetchAll};`
+    : `      let query = "${table}?order=created_at.desc&limit=50";
+      if (search) query += "&${tf}=ilike.*" + encodeURIComponent(search) + "*";
+      const rows = await request(query);`;
 
   return `const { request } = require("../../utils/supabase");
-
+${industryRequire}
 Page({
   data: {
     showPrivacy: false,
@@ -202,9 +230,7 @@ Page({
   async loadItems(search) {
     this.setData({ loading: true });
     try {
-      let query = "${table}?order=created_at.desc&limit=50";
-      if (search) query += "&${tf}=ilike.*" + encodeURIComponent(search) + "*";
-      const rows = await request(query);
+${loadQueryBlock}
       this.setData({ items: (rows || []).map(r => ({ ...r, id: String(r.id) })), loading: false });
     } catch (e) {
       this.setData({ loading: false });
@@ -262,13 +288,22 @@ export function emitWechatCalendarWxml(screen: AppSpecScreen): string {
 </view>`;
 }
 
-export function emitWechatCalendarJs(screen: AppSpecScreen, spec: AppSpec): string {
+export function emitWechatCalendarJs(
+  screen: AppSpecScreen,
+  spec: AppSpec,
+  industry: IndustryCategory = "generic"
+): string {
   const entity = entityOrFirst(spec, screen);
   const table = tableName(entity);
   const dateField = entity.fields.find((f) => f.type === "datetime" || f.name.includes("date"))?.name ?? "created_at";
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const fetchRows = wechatIndustryFetchExpr(
+    industry,
+    `request("${table}?order=${dateField}.asc&limit=200")`
+  );
 
   return `const { request } = require("../../utils/supabase");
-
+${industryRequire}
 Page({
   data: {
     showPrivacy: false,
@@ -332,7 +367,7 @@ Page({
 
   async loadEvents() {
     try {
-      const rows = await request("${table}?order=${dateField}.asc&limit=200");
+      const rows = await ${fetchRows};
       this.setData({ allEvents: (rows || []).map(r => ({ ...r, id: String(r.id) })) });
       this.generateCalendar();
     } catch (e) {
@@ -383,13 +418,22 @@ export function emitWechatKanbanWxml(screen: AppSpecScreen): string {
 </view>`;
 }
 
-export function emitWechatKanbanJs(screen: AppSpecScreen, spec: AppSpec): string {
+export function emitWechatKanbanJs(
+  screen: AppSpecScreen,
+  spec: AppSpec,
+  industry: IndustryCategory = "generic"
+): string {
   const entity = entityOrFirst(spec, screen);
   const table = tableName(entity);
   const statusField = entity.fields.find((f) => f.name.includes("status") || f.name.includes("stage") || f.name.includes("state"))?.name ?? "status";
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const fetchRows = wechatIndustryFetchExpr(
+    industry,
+    `request("${table}?order=created_at.desc&limit=50")`
+  );
 
   return `const { request } = require("../../utils/supabase");
-
+${industryRequire}
 const COLUMNS = [
   { key: "todo", label: "待办", color: "#3B82F6" },
   { key: "in_progress", label: "进行中", color: "#F59E0B" },
@@ -420,7 +464,7 @@ Page({
 
   async loadBoard() {
     try {
-      const rows = await request("${table}?order=created_at.desc&limit=50");
+      const rows = await ${fetchRows};
       const items = (rows || []).map(r => ({ ...r, id: String(r.id) }));
       const columns = COLUMNS.map(c => ({
         ...c,

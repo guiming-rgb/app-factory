@@ -1,4 +1,5 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
 import {
   buildEntityListRows,
   entityTableName,
@@ -8,6 +9,11 @@ import {
   supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
 import { ENTITY_DETAIL_PAGE_PATH } from "./emit-entity-detail";
+import {
+  wechatIndustryListCall,
+  wechatIndustryRequireLine,
+  wechatIndustryServiceName,
+} from "./industry-bindings";
 
 function escJs(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ");
@@ -67,7 +73,8 @@ export function emitEntityListIndexWxml(
 
 export function emitEntityListIndexJs(
   spec: AppSpec,
-  screen: AppSpecScreen
+  screen: AppSpecScreen,
+  industry: IndustryCategory = "generic"
 ): string {
   const entity = resolveEntityForScreen(spec, screen);
   if (!entity) return "";
@@ -84,9 +91,59 @@ export function emitEntityListIndexJs(
   const titleField = escJs(listTitleField(entity));
   const select = escJs(supabaseSelectColumns(entity));
   const detailPath = escJs(`/${ENTITY_DETAIL_PAGE_PATH}`);
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const industrySvc = wechatIndustryServiceName(industry);
+  const listFetch = wechatIndustryListCall(industry, table);
+
+  const loadItemsBody = industrySvc
+    ? `    this.setData({ loading: true, loadError: "" });
+    return ${listFetch}
+      .then((rows) => {
+        const list = Array.isArray(rows) ? rows : [];
+        const tf = this.data.titleField;
+        const pk = this.data.pk;
+        const newItems = list.map((row, i) => {
+          const id = row[pk] != null ? String(row[pk]) : String(i + 1);
+          const title = row[tf] != null ? String(row[tf]) : (row.title != null ? String(row.title) : "—");
+          return { id, title, subtitle: this.data.entityName + " · " + id };
+        });
+        this.setData({ items: newItems, loading: false, page: 0, hasMore: false });
+      })
+      .catch((err) => {
+        if (reset) this.setData({ items: FALLBACK_ITEMS });
+        this.setData({
+          loadError: err && err.message ? err.message : "拉取失败",
+          loading: false
+        });
+      });`
+    : `    let url = this.data.table + "?select=${select}";
+    if (this.data.searchText) url += "&" + encodeURIComponent(this.data.titleField) + "=ilike.*" + encodeURIComponent(this.data.searchText) + "*";
+    url += "&limit=" + PAGE_SIZE + "&offset=" + from + "&order=created_at.desc";
+
+    this.setData({ loading: true, loadError: "" });
+    return request(url, { method: "GET" })
+      .then((rows) => {
+        const list = Array.isArray(rows) ? rows : [];
+        const tf = this.data.titleField;
+        const pk = this.data.pk;
+        const newItems = list.map((row, i) => {
+          const id = row[pk] != null ? String(row[pk]) : String(from + i + 1);
+          const title = row[tf] != null ? String(row[tf]) : (row.title != null ? String(row.title) : "—");
+          return { id, title, subtitle: this.data.entityName + " · " + id };
+        });
+        const items = reset ? newItems : this.data.items.concat(newItems);
+        this.setData({ items, loading: false, page, hasMore: list.length >= PAGE_SIZE });
+      })
+      .catch((err) => {
+        if (reset) this.setData({ items: FALLBACK_ITEMS });
+        this.setData({
+          loadError: err && err.message ? err.message : "拉取失败",
+          loading: false
+        });
+      });`;
 
   return `const { request, isSupabaseConfigured } = require("../../utils/supabase");
-
+${industryRequire}
 const FALLBACK_ITEMS = [
 ${items}
 ];
@@ -141,32 +198,7 @@ Page({
     }
     const page = reset ? 0 : this.data.page + 1;
     const from = page * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    let url = this.data.table + "?select=${select}";
-    if (this.data.searchText) url += "&" + encodeURIComponent(this.data.titleField) + "=ilike.*" + encodeURIComponent(this.data.searchText) + "*";
-    url += "&limit=" + PAGE_SIZE + "&offset=" + from + "&order=created_at.desc";
-
-    this.setData({ loading: true, loadError: "" });
-    return request(url, { method: "GET" })
-      .then((rows) => {
-        const list = Array.isArray(rows) ? rows : [];
-        const tf = this.data.titleField;
-        const pk = this.data.pk;
-        const newItems = list.map((row, i) => {
-          const id = row[pk] != null ? String(row[pk]) : String(from + i + 1);
-          const title = row[tf] != null ? String(row[tf]) : (row.title != null ? String(row.title) : "—");
-          return { id, title, subtitle: this.data.entityName + " · " + id };
-        });
-        const items = reset ? newItems : this.data.items.concat(newItems);
-        this.setData({ items, loading: false, page, hasMore: list.length >= PAGE_SIZE });
-      })
-      .catch((err) => {
-        if (reset) this.setData({ items: FALLBACK_ITEMS });
-        this.setData({
-          loadError: err && err.message ? err.message : "拉取失败",
-          loading: false
-        });
-      });
+${loadItemsBody}
   },
 
   loadMore() { this.loadItems(false); },
