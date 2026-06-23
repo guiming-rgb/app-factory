@@ -1,0 +1,39 @@
+<view class="page">
+  <privacy-popup show="{{showPrivacy}}" bind:accept="onPrivacyAccept" />
+
+  <view class="dashboard-header">
+    <text class="dashboard-title">总览</text>
+    <text class="dashboard-subtitle">数据概览</text>
+  </view>
+
+  <view class="stat-grid">
+    <view class="stat-card">
+      <text class="stat-value">{{summary.amount || 0}}</text>
+      <text class="stat-label">amount</text>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title">快捷操作</text>
+    <view class="quick-actions">
+      <view class="action-btn" bindtap="onAddRecord">
+        <text class="action-icon">+</text>
+        <text>添加</text>
+      </view>
+      <view class="action-btn" bindtap="onViewAll">
+        <text class="action-icon">☰</text>
+        <text>查看全部</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{recentItems.length > 0}}">
+    <text class="section-title">最近记录</text>
+    <block wx:for="{{recentItems}}" wx:key="id">
+      <view class="list-item">
+        <text>{{item.title || '—'}}</text>
+        <text class="item-date">{{item.created_at}}</text>
+      </view>
+    </block>
+  </view>
+</view>

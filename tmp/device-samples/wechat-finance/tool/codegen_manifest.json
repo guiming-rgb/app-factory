@@ -1,0 +1,6 @@
+{
+  "templateId": "wechat-miniprogram-minimal",
+  "version": "0.2.0",
+  "pages": ["pages/index/index", "pages/profile/profile"],
+  "notes": "v0.2: 81x81 tab icons, __usePrivacyCheck__, 副包由 generator 动态注入"
+}

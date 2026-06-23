@@ -11,6 +11,7 @@ import {
 import { resolveTabScreens } from "@/lib/app-spec/resolve-tabs";
 import { isListScreen } from "@/lib/app-spec/resolve-list-screen";
 import type { IndustryCategory } from "./emit-industry";
+import { detectIndustry } from "./emit-industry";
 import { resolveIndustryPageRef } from "./industry-page-ref";
 
 export { resolveTabScreens };
@@ -65,7 +66,17 @@ export function pageWidgetRef(
       needsGenerated: false
     };
   }
-  // Detail 页面
+  // 行业 detail/form — 优先用模板页，不生成 generic
+  if ((screen.type === "detail" || screen.type === "form") && options?.spec) {
+    const industry = detectIndustry(options.spec as unknown as Record<string, unknown>);
+    if (industry !== "generic") {
+      const ref = resolveIndustryPageRef(screen, industry, options.spec);
+      if (ref) {
+        return { importPath: ref.importPath, className: ref.className, needsGenerated: false };
+      }
+    }
+  }
+  // Detail 页面 — generic fallback
   if (screen.type === "detail" && options?.spec) {
     const className = `${pascalCase(screen.id)}DetailPage`;
     return {
@@ -74,7 +85,7 @@ export function pageWidgetRef(
       needsGenerated: true
     };
   }
-  // Form 页面
+  // Form 页面 — generic fallback
   if (screen.type === "form" && options?.spec) {
     const className = `${pascalCase(screen.id)}FormPage`;
     return {

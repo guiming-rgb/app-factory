@@ -49,7 +49,7 @@ async function emitHarmonyScreens(
     const filePath = path.join(pagesDir, `${componentName}.ets`);
 
     // 扩展页面类型路由
-    if (screen.type === "dashboard" || screen.type === "card_grid" || screen.type === "calendar" || screen.type === "chart" || screen.type === "kanban" || screen.type === "onboarding") {
+    if (screen.type === "dashboard" || screen.type === "card_grid" || screen.type === "calendar" || screen.type === "chart" || screen.type === "kanban" || screen.type === "onboarding" || screen.type === "game" || screen.type === "payment") {
       const ext = await import("./emit-extended");
       let content: string;
       if (screen.type === "dashboard") content = ext.emitHarmonyDashboard(screen, spec);
@@ -57,7 +57,9 @@ async function emitHarmonyScreens(
       else if (screen.type === "calendar") content = ext.emitHarmonyCalendar(screen, spec);
       else if (screen.type === "chart") content = ext.emitHarmonyChart(screen);
       else if (screen.type === "kanban") content = ext.emitHarmonyKanban(screen);
-      else content = ext.emitHarmonyOnboarding(screen);
+      else if (screen.type === "onboarding") content = ext.emitHarmonyOnboarding(screen);
+      else if (screen.type === "game") content = ext.emitHarmonyGame();
+      else content = ext.emitHarmonyPayment();
       await fs.writeFile(filePath, content, "utf8");
     } else {
       await fs.writeFile(

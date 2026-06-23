@@ -1,0 +1,93 @@
+{
+  "specVersion": "0.1.0",
+  "appName": "finance_device_sample",
+  "displayName": "记账本·真机样本",
+  "targets": {
+    "flutter": {
+      "enabled": true,
+      "platforms": [
+        "ios",
+        "android",
+        "macos"
+      ],
+      "formFactors": [
+        "phone"
+      ]
+    },
+    "wechatMiniProgram": {
+      "enabled": true
+    },
+    "harmony": {
+      "enabled": true
+    },
+    "backend": {
+      "provider": "supabase"
+    }
+  },
+  "screens": [
+    {
+      "id": "home",
+      "title": "首页",
+      "type": "tabRoot"
+    },
+    {
+      "id": "dashboard_view",
+      "title": "总览",
+      "type": "dashboard"
+    },
+    {
+      "id": "transaction_list",
+      "title": "账单",
+      "type": "list",
+      "entity": "transactions"
+    },
+    {
+      "id": "add_transaction",
+      "title": "记一笔",
+      "type": "form",
+      "entity": "transactions"
+    },
+    {
+      "id": "profile",
+      "title": "我的",
+      "type": "placeholder"
+    }
+  ],
+  "entities": [
+    {
+      "name": "transactions",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "primary": true
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "float"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime"
+        }
+      ]
+    }
+  ],
+  "navigation": {
+    "tabs": [
+      "home",
+      "transaction_list",
+      "profile"
+    ]
+  },
+  "limitations": [
+    "真机验收样本"
+  ],
+  "metadata": {
+    "category": "finance"
+  }
+}

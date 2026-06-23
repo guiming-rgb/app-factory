@@ -1,73 +1,84 @@
 import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
 
+/** 与微信 services/industry.js 完全对齐的 19 命名 service 导出 */
+const INDUSTRY_CONFIG: Record<string, { table: string; label: string }> = {
+  finance: { table: "transactions", label: "记账" },
+  crm: { table: "contacts", label: "CRM" },
+  fitness: { table: "workouts", label: "健身" },
+  ecommerce: { table: "products", label: "电商" },
+  education: { table: "courses", label: "教育" },
+  social: { table: "posts", label: "社交" },
+  food: { table: "restaurants", label: "外卖" },
+  hotel: { table: "hotels", label: "酒店" },
+  recruitment: { table: "jobs", label: "招聘" },
+  property: { table: "repairs", label: "物业" },
+  video: { table: "videos", label: "影音" },
+  weather: { table: "cities", label: "天气" },
+  sports: { table: "matches", label: "体育" },
+  photo: { table: "photos", label: "照片" },
+  dating: { table: "user_profiles", label: "交友" },
+  medical: { table: "doctors", label: "医疗" },
+  blog: { table: "articles", label: "博客" },
+  game: { table: "game_scores", label: "游戏" },
+  payment: { table: "orders", label: "支付" },
+};
+
 /**
- * 鸿蒙 IndustryServices.ets — 与微信 services/industry.js 对齐的 REST 封装
+ * 生成 IndustryServices.ets — 包含 19 个命名 service 对象
+ * 每个 service 有: list(), get(id), create(data), update(id,data), remove(id)
  */
-export function emitHarmonyIndustryServicesEts(
-  industry: IndustryCategory
-): string {
-  const industryComment =
-    industry === "generic"
-      ? "通用 CRUD"
-      : `行业: ${industry}`;
+export function emitHarmonyIndustryServicesEts(_industry: IndustryCategory): string {
+  // 生成 19 个 service 导出
+  const serviceBlocks = Object.entries(INDUSTRY_CONFIG).map(([name, cfg]) => {
+    return `// ${cfg.label} (${name}) — ${cfg.table}
+export const ${name}Service = {
+  list: (params?: string): Promise<Array<Record<string, Object>> | null> =>
+    restFetch("${cfg.table}?order=created_at.desc&limit=50" + (params ? "&" + params : "")),
+  get: (id: string): Promise<Record<string, Object> | null> =>
+    restFetch("${cfg.table}?id=eq." + id + "&limit=1").then((r: object | Array<object> | null) => ((r as Array<Record<string, Object>>)?.[0] ?? null) as Record<string, Object> | null),
+  create: (data: Record<string, Object>): Promise<Record<string, Object> | null> =>
+    restFetch("${cfg.table}", { method: "POST", extraData: data }),
+  update: (id: string, data: Record<string, Object>): Promise<Record<string, Object> | null> =>
+    restFetch("${cfg.table}?id=eq." + id, { method: "PATCH", extraData: data }),
+  remove: (id: string): Promise<object | null> =>
+    restFetch("${cfg.table}?id=eq." + id, { method: "DELETE" }),
+};
+`;
+  }).join("\n");
 
   return `/**
- * Supabase REST 服务层 — ${industryComment}
- * 生成于 App 生产工厂 codegen
+ * App 生产工厂 — 鸿蒙 IndustryServices（三栈 Parity 对齐微信 exports）
+ * 19 行业 Supabase REST 封装
  */
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../utils/SupabaseConfig';
 
-async function restFetch(path: string, options?: RequestInit): Promise<object | Array<object> | null> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return null;
-  }
+interface RequestInitExtended extends RequestInit {
+  extraData?: Record<string, Object>;
+}
+
+async function restFetch(path: string, options?: RequestInitExtended): Promise<Array<Record<string, Object>> | null> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   const url = SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/' + path;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...(options?.headers as Record<string, string> ?? {}),
-    },
-  });
-  if (!res.ok) {
-    throw new Error('HTTP ' + res.status);
-  }
-  const text = await res.text();
-  if (!text) return null;
   try {
-    return JSON.parse(text) as object | Array<object>;
-  } catch {
-    return null;
-  }
+    const resp = await fetch(url, {
+      method: options?.method ?? 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        ...(options?.headers ?? {}),
+      },
+      body: options?.extraData ? JSON.stringify(options.extraData) : undefined,
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data as Array<Record<string, Object>>;
+  } catch (_e) { return null; }
 }
 
-export class IndustryCrud {
-  static list(table: string, limit: number = 50): Promise<Array<object>> {
-    return restFetch(table + '?order=created_at.desc&limit=' + limit, { method: 'GET' })
-      .then(r => Array.isArray(r) ? r as Array<object> : []);
-  }
+${serviceBlocks}
 
-  static get(table: string, id: string): Promise<object | null> {
-    return restFetch(table + '?id=eq.' + encodeURIComponent(id) + '&limit=1', { method: 'GET' })
-      .then(r => {
-        const rows = Array.isArray(r) ? r : [];
-        return rows.length > 0 ? rows[0] as object : null;
-      });
-  }
-
-  static create(table: string, data: object): Promise<object | null> {
-    return restFetch(table, { method: 'POST', body: JSON.stringify(data) })
-      .then(r => {
-        const rows = Array.isArray(r) ? r : (r ? [r] : []);
-        return rows.length > 0 ? rows[0] as object : null;
-      });
-  }
-}
-
-/** 当前 Spec 检测到的行业（generic 时仅用 IndustryCrud） */
-export const DETECTED_INDUSTRY: string = '${industry}';
+// 当前检测到的行业
+export const DETECTED_INDUSTRY: string = '${_industry}';
 `;
 }

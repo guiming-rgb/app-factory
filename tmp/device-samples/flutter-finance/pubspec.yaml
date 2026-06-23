@@ -1,0 +1,29 @@
+name: finance_device_sample
+description: "记账本·真机样本 — App 生产工厂生成（App Spec v0.1）"
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  file_picker: ^8.1.6
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  supabase_flutter: ^2.9.0
+  fl_chart: ^0.70.2
+  table_calendar: ^3.1.3
+  shared_preferences: ^2.5.3
+  intl: ^0.19.0
+  http: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

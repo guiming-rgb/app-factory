@@ -1,8 +1,8 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-17（今日收工：R1 发行层 — GHA 签名 + 隐私/条款页）  
-> **今日收工**：[收工记录-20260617-今日收工.md](./收工记录-20260617-今日收工.md) · [R1-发行路线图.md](./R1-发行路线图.md) · [收工记录-20260616-今日收工.md](./收工记录-20260616-今日收工.md)  
-> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [跨平台运行说明.md](./跨平台运行说明.md) · [执行计划.md](./执行计划.md) · **[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)** · [产品路径一览.md](./产品路径一览.md) · [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md)
+> **最后更新**：2026-06-23（三栈 Parity 阶段 P0 起跑 — 19 行业全链路打通）  
+> **今日收工**：[下一阶段-三栈parity-Claude接力.md](./下一阶段-三栈parity-Claude接力.md) · [模板能力矩阵.md](./模板能力矩阵.md)  
+> **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [产品路径一览.md](./产品路径一览.md) · [Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)
 
 ## 当前进度（勾选）
 
@@ -71,6 +71,15 @@
 - [x] **2026-06-16 收工**：Claude/路径/环境 **共享记忆落盘**（commit `8846d06`）· 开工/端口 Q&A → [今日收工](./收工记录-20260616-今日收工.md)
 - [x] **安全合规 Agent**：9 Agent 链 · Spec 合规 emit · SpecVersionPanel · migration · build ✅ · push `664ccc2`（2026-06-16）
 - [x] **R1 发行层（代码）**：GHA 条件签名 · `/privacy` `/terms` · 生成 App 隐私 API/模板 · [R1-发行路线图](./R1-发行路线图.md)（2026-06-17）
+- [x] **v6 安全底座**：Auth/RLS/限流/鉴权 全量合入 · middleware 加固（2026-06-22）
+- [x] **v6 行业真模板**：19 行业四层模板 + detectIndustry + copyIndustryTemplate（2026-06-22）
+- [x] **v6 端到端验证**：`verify:industry:templates` 104/104 · `verify:industry:e2e` 58/58（2026-06-23）
+- [ ] **三栈 Parity P0**：矩阵 v4 + parity 门禁 + 文档基线（进行中 2026-06-23）
+- [ ] **三栈 Parity P1**：Flutter detail/form 行业路由
+- [ ] **三栈 Parity P2**：微信 game/payment 页面 + detail/form 对接
+- [ ] **三栈 Parity P3**：鸿蒙 19 service + game/payment 页面
+- [ ] **三栈 Parity P4**：三栈 E2E 统一（19×3）
+- [ ] **三栈 Parity P5**：文档收尾
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -162,6 +171,7 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-06-23 | **三栈 parity 下一阶段**：finance analyze 0 error · 接力单 [下一阶段-三栈parity-Claude接力.md](./下一阶段-三栈parity-Claude接力.md) |
 | 2026-06-17 | **R1 发行层**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · [收工记录-20260617](./收工记录-20260617-今日收工.md) |
 | 2026-06-16 | **今日收工**：记忆共享 · 安全合规 Agent · push `664ccc2` → [收工记录-20260616](./收工记录-20260616-今日收工.md) |
 | 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |

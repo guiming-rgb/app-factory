@@ -133,6 +133,7 @@
     "verify:production:hardening": "node scripts/verify-production-hardening.mjs",
     "verify:industry:templates": "node scripts/verify-industry-templates.mjs",
     "verify:industry:e2e": "npx tsx scripts/verify-industry-e2e.mjs",
+    "verify:industry:parity": "npx tsx scripts/verify-industry-parity.mjs",
     "verify:industry:device": "npx tsx scripts/verify-industry-device.mjs",
     "export:industry:device-samples": "npx tsx scripts/export-industry-device-samples.mjs"
   },

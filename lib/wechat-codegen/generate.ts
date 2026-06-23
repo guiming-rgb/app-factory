@@ -78,6 +78,8 @@ async function ensureGeneratedPage(
     "kanban",
     "chart",
     "onboarding",
+    "game",
+    "payment",
   ].includes(screen.type);
   if (isExtended && specForPage) {
     const ext = await import("./emit-extended");
@@ -99,11 +101,19 @@ async function ensureGeneratedPage(
     } else if (screen.type === "onboarding") {
       await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatOnboardingWxml(), "utf8");
       await fs.writeFile(`${fileBase}.js`, ext.emitWechatOnboardingJs(), "utf8");
+    } else if (screen.type === "game") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatGameWxml(), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatGameJs(), "utf8");
+    } else if (screen.type === "payment") {
+      await fs.writeFile(`${fileBase}.wxml`, ext.emitWechatPaymentWxml(), "utf8");
+      await fs.writeFile(`${fileBase}.js`, ext.emitWechatPaymentJs(), "utf8");
     }
     const wxss =
       screen.type === "chart" || screen.type === "onboarding"
         ? ext.emitWechatChartOnboardingWxss()
-        : ext.emitWechatExtendedWxss();
+        : screen.type === "game" || screen.type === "payment"
+          ? ext.emitWechatGamePaymentWxss()
+          : ext.emitWechatExtendedWxss();
     await fs.writeFile(`${fileBase}.wxss`, wxss, "utf8");
   } else {
     await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");

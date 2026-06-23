@@ -439,3 +439,15 @@ export function emitHarmonyOnboarding(screen: AppSpecScreen): string {
     '}',
   ].join("\n");
 }
+
+// ─── Game (点击游戏) ──────────────────────────────
+
+export function emitHarmonyGame(): string {
+  return '@Entry @Component struct GamePage { @State score:number=0; @State playing:boolean=false; @State timeLeft:number=10; @State tx:number=150; @State ty:number=200; private timer?:number; start(){this.score=0;this.timeLeft=10;this.playing=true;this.moveTarget();this.timer=setInterval(()=>{if(this.timeLeft<=1){this.endGame();return}this.timeLeft--},1000)}; endGame(){clearInterval(this.timer);this.playing=false}; moveTarget(){this.tx=Math.random()*300;this.ty=Math.random()*400}; onTap(){if(!this.playing)return;this.score++;this.moveTarget()}; build(){Column(){Text("点击挑战").fontSize(28).fontWeight(FontWeight.Bold).margin(20);Text("得分: "+this.score).fontSize(48).fontWeight(FontWeight.Bold).fontColor("#0D9488");Text("剩余: "+this.timeLeft+"s").fontSize(16).fontColor("#9CA3AF");Stack(){Column(){Text("🎯").fontSize(48).position({x:this.tx,y:this.ty})}.width("100%").height(400).backgroundColor("#F0FDFA").borderRadius(16).margin(16).onClick(()=>{this.onTap()})};if(!this.playing){Button("开始游戏").type(ButtonType.Capsule).onClick(()=>{this.start()}).margin(20)}}}.width("100%").height("100%")}';
+}
+
+// ─── Payment (收银台) ─────────────────────────────
+
+export function emitHarmonyPayment(): string {
+  return '@Entry @Component struct PaymentPage { @State amount:string=""; @State method:string="stripe"; @State paying:boolean=false; build(){Column(){Text("收银台").fontSize(28).fontWeight(FontWeight.Bold).margin(20);Column(){Text("金额 (¥)").fontSize(14).fontColor("#6B7280");TextInput({text:this.amount,placeholder:"0.00"}).fontSize(32).fontWeight(FontWeight.Bold).onChange((v:string)=>{this.amount=v}).border({width:{bottom:1},color:"#E5E7EB"}).margin({top:8,bottom:24})}.padding(16);Row(){Button({type:this.method==="stripe"?ButtonType.Capsule:ButtonType.Normal},{text:"💳 银行卡"}).onClick(()=>{this.method="stripe"}).margin(4);Button({type:this.method==="wechat"?ButtonType.Capsule:ButtonType.Normal},{text:"💚 微信"}).onClick(()=>{this.method="wechat"}).margin(4);Button({type:this.method==="alipay"?ButtonType.Capsule:ButtonType.Normal},{text:"💙 支付宝"}).onClick(()=>{this.method="alipay"}).margin(4)}.padding(16);Button(this.paying?"支付中…":"确认支付").type(ButtonType.Capsule).width("100%").enabled(!this.paying&&this.amount.length>0).onClick(()=>{this.paying=true;setTimeout(()=>{this.paying=false;this.amount=""},2000)})}.width("100%").height("100%")}';
+}

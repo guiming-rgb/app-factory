@@ -1,0 +1,9 @@
+{
+  "name": "harmony_minimal",
+  "version": "1.0.0",
+  "description": "App Factory Harmony minimal template",
+  "main": "",
+  "author": "App Factory",
+  "license": "MIT",
+  "dependencies": {}
+}

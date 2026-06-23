@@ -51,5 +51,17 @@ export function resolveIndustryPageRef(
       className: pages.list,
     };
   }
+  if (screen.type === "detail") {
+    return {
+      importPath: `../features/${feature}/pages/detail_page.dart`,
+      className: pages.detail,
+    };
+  }
+  if (screen.type === "form") {
+    return {
+      importPath: `../features/${feature}/pages/form_page.dart`,
+      className: pages.form,
+    };
+  }
   return null;
 }
