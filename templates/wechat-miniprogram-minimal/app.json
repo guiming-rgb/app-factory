@@ -29,8 +29,16 @@
       }
     ]
   },
+  "usingComponents": {
+    "privacy-popup": "components/privacy-popup/privacy-popup"
+  },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents",
-  "__usePrivacyCheck__": true
+  "__usePrivacyCheck__": true,
+  "requiredPrivateInfos": [
+    "chooseAddress",
+    "chooseLocation",
+    "getFuzzyLocation"
+  ]
 }

@@ -130,8 +130,7 @@
     "maintainer:remind": "bash scripts/maintainer-daily-remind.sh",
     "maintainer:install-reminders": "bash scripts/install-maintainer-cron-reminders.sh",
     "maintainer:uninstall-reminders": "bash scripts/uninstall-maintainer-cron-reminders.sh",
-    "verify:production:hardening": "node scripts/verify-production-hardening.mjs",
-    "verify:industry:templates": "node scripts/verify-industry-templates.mjs"
+    "verify:production:hardening": "node scripts/verify-production-hardening.mjs"
   },
   "dependencies": {
     "@octokit/rest": "^21.1.1",
