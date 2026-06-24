@@ -136,6 +136,10 @@
     "verify:industry:parity": "npx tsx scripts/verify-industry-parity.mjs",
     "verify:industry:device": "npx tsx scripts/verify-industry-device.mjs",
     "verify:industry:widgets": "npx tsx scripts/verify-industry-widgets.mjs",
+    "verify:perf:flutter": "npx tsx scripts/verify-performance-flutter.mjs",
+    "verify:perf:wechat": "npx tsx scripts/verify-performance-wechat.mjs",
+    "verify:perf:harmony": "npx tsx scripts/verify-performance-harmony.mjs",
+    "verify:perf:all": "npm run verify:perf:flutter && npm run verify:perf:wechat && npm run verify:perf:harmony",
     "export:industry:device-samples": "npx tsx scripts/export-industry-device-samples.mjs"
   },
   "dependencies": {
