@@ -581,33 +581,116 @@ class GradeBadge extends StatelessWidget {
 
 export type IndustryCategory = "finance" | "crm" | "fitness" | "ecommerce" | "education" | "social" | "food" | "hotel" | "recruitment" | "property" | "video" | "weather" | "sports" | "photo" | "dating" | "medical" | "blog" | "game" | "payment" | "generic";
 
-/** 从 Spec 判断行业类型（覆盖 17 种） */
+/**
+ * 从 Spec 判断行业类型（Q2-M2 v2: 元数据优先 + 去歧义正则，目标准确率 ≥95%）
+ *
+ * 策略：
+ *   1. 如果 metadata.category 明确且不被 screen IDs 污染，直接返回
+ *   2. 高信号 blob（仅 displayName + appName + category）
+ *   3. 完整 blob（含 screen IDs，仅兜底）
+ *   4. 去歧义：移除过于通用的短关键词（feed/shop/cart/match），加词边界
+ */
 export function detectIndustry(spec: Record<string, unknown>): IndustryCategory {
   const metadata = (spec.metadata ?? {}) as Record<string, unknown>;
   const cat = (metadata?.category as string ?? "").toLowerCase();
   const name = ((spec.displayName as string) ?? "").toLowerCase();
   const appName = ((spec.appName as string) ?? "").toLowerCase();
-  const blob = [cat, name, appName, ...((spec.screens as Array<{ id: string }>) ?? []).map((s) => s.id)].join(" ").toLowerCase();
+  const screenIds = ((spec.screens as Array<{ id: string }>) ?? []).map((s) => s.id).join(" ").toLowerCase();
 
-  if (/记账|财务|账单|理财|budget|finance|expense|transaction|记一笔/.test(blob)) return "finance";
-  if (/crm|客户|customer|client|lead|商机|销售|sales|pipeline/.test(blob)) return "crm";
-  if (/健身|运动|训练|workout|fitness|exercise|gym|跑步|瑜伽/.test(blob)) return "fitness";
-  if (/电商|购物|商城|shop|store|ecommerce|商品|product|cart/.test(blob)) return "ecommerce";
-  if (/课表|课程|course|学校|作业|exam|成绩|学习|class|timetable|student/.test(blob)) return "education";
-  if (/社交|社区|朋友圈|动态|social|feed|post|话题|小红书/.test(blob)) return "social";
-  if (/外卖|点餐|餐厅|饭店|美食|food|delivery|restaurant|menu/.test(blob)) return "food";
-  if (/酒店|住宿|宾馆|民宿|hotel|booking|客房/.test(blob)) return "hotel";
-  if (/招聘|求职|找工作|职位|job|recruit|hr|简历/.test(blob)) return "recruitment";
-  if (/物业|小区|报修|缴费|门禁|property|repair/.test(blob)) return "property";
-  if (/视频|影音|播放|电影|video|movie|film|netflix/.test(blob)) return "video";
-  if (/天气|气象|预报|weather|forecast|temperature/.test(blob)) return "weather";
-  if (/体育|比赛|球队|赛程|sport|match|league|足球|篮球/.test(blob)) return "sports";
-  if (/照片|摄影|拍照|图库|photo|image|gallery|camera/.test(blob)) return "photo";
-  if (/交友|相亲|匹配|dating|match|tinder/.test(blob)) return "dating";
-  if (/医疗|问诊|医院|医生|看病|medical|doctor|patient|处方/.test(blob)) return "medical";
-  if (/博客|文章|阅读|blog|article|写作|专栏/.test(blob)) return "blog";
-  if (/游戏|game|flame|玩法|关卡|得分|对战|休闲|射击|足球/.test(blob)) return "game";
-  if (/支付|付款|收银|stripe|pay|checkout|结算|充值/.test(blob)) return "payment";
+  const hiBlob = [cat, name, appName].join(" ").toLowerCase();
+  const fullBlob = [cat, name, appName, screenIds].join(" ").toLowerCase();
+
+  function match(hiRe: RegExp, fullRe?: RegExp): boolean {
+    if (hiRe.test(hiBlob)) return true;
+    return (fullRe ?? hiRe).test(fullBlob);
+  }
+
+  // ── 元数据直接命中（category 可靠时跳过全文匹配）──
+  // 仅当 metadata.category 与 displayName 无冲突时直接返回
+  const catMap: Record<string, IndustryCategory> = {
+    finance: "finance", crm: "crm", fitness: "fitness", ecommerce: "ecommerce",
+    education: "education", social: "social", food: "food", hotel: "hotel",
+    recruitment: "recruitment", property: "property", video: "video",
+    weather: "weather", sports: "sports", photo: "photo", dating: "dating",
+    medical: "medical", blog: "blog", game: "game", payment: "payment",
+  };
+  if (cat && catMap[cat] && match(new RegExp(cat))) {
+    // 验证 hiBlob 不包含冲突行业关键词（防止 metadata 标记错误）
+    const conflicts: Array<[RegExp, string]> = [
+      [/外卖|点餐|餐厅|饭店|美食|delivery|restaurant|menu/, "food"],
+      [/电商|购物|商城|商品|ecommerce/, "ecommerce"],
+      [/视频|影音|电影|netflix/, "video"],
+      [/体育|比赛|球队|赛程|足球|篮球/, "sports"],
+      [/交友|相亲|配对|dating|tinder/, "dating"],
+      [/游戏|玩法|关卡|对战|射击/, "game"],
+      [/支付|付款|收银|结算|充值|stripe/, "payment"],
+      [/医疗|问诊|医院|医生|看病|处方/, "medical"],
+    ];
+    let hasConflict = false;
+    for (const [re, conflictCat] of conflicts) {
+      if (conflictCat !== cat && re.test(hiBlob)) {
+        hasConflict = true;
+        break;
+      }
+    }
+    if (!hasConflict) return catMap[cat];
+  }
+
+  // ── 逐行业匹配（去歧义版）──
+  // 注意：移除 feed/shop/cart/match 等过于通用的短关键词
+
+  if (match(/记账|财务|账单|理财|记一笔|budget|finance|expense|transaction/)) return "finance";
+  if (match(/\bcrm\b|客户|customer|client|商机|销售|sales|pipeline/)) return "crm";
+  if (match(/健身|运动|训练|跑步|瑜伽|workout|fitness|exercise|gym/)) return "fitness";
+  if (match(/课表|课程|学校|作业|考试|成绩|学习|course|class|timetable|student|exam/)) return "education";
+
+  // food 先于 ecommerce（"点餐"相关优先级高）
+  if (match(/外卖|点餐|餐厅|饭店|美食|\bfood\b|delivery|restaurant|menu/)) return "food";
+
+  // ecommerce（移除了 shop/cart 防止 screen ID 污染）
+  if (match(/电商|购物|商城|商品|\bstore\b|ecommerce/)) return "ecommerce";
+
+  if (match(/招聘|求职|找工作|职位|简历|\bjob\b|recruit|hiring/)) return "recruitment";
+
+  // dating 先于 sports（"匹配" 易被 sports 的 match 误判）
+  if (match(/交友|相亲|配对|dating|tinder|探探/)) return "dating";
+
+  // game 先于 sports（"足球游戏" 含 "游戏" 应优先判 game）
+  if (match(/游戏|玩法|关卡|得分|对战|射击|flame|\bgame\b/)) return "game";
+
+  // sports（移除 match 防止 dating 误判）
+  if (match(/体育|比赛|球队|赛程|足球|篮球|球迷|懂球|\bsport\b|league/)) return "sports";
+
+  if (match(/物业|小区|报修|缴费|门禁|property|repair/)) return "property";
+  if (match(/天气|气象|预报|weather|forecast|temperature/)) return "weather";
+
+  // photo（加 图片、Instagram）
+  if (match(/照片|摄影|拍照|图库|相册|图片|photo|image|gallery|camera|instagram/)) return "photo";
+
+  // video（加 \b 防 videos 子串匹配）
+  if (match(/视频|影音|播放|电影|netflix|\bvideo\b|movie|film/)) return "video";
+
+  // hotel（\bbooking\b 防 hospital_booking 子串）
+  if (match(/酒店|住宿|宾馆|民宿|\bhotel\b|\bbooking\b|客房/)) return "hotel";
+
+  // medical
+  if (match(/医疗|问诊|医院|医生|看病|处方|medical|doctor|patient/)) return "medical";
+
+  // payment（加 收款）
+  if (match(/支付|付款|收银|收款|结算|充值|stripe|\bpay\b|checkout/)) return "payment";
+
+  // blog
+  if (match(/博客|文章|阅读|写作|专栏|\bblog\b|article/)) return "blog";
+
+  // 兜底：social（移除 feed — 太多 App 有 feed 页面）
+  if (match(/社交|朋友圈|动态|话题|小红书|social|帖子/)) return "social";
+
+  // 最后：社区关键词既可能属 social 也可能属 photo/property
+  if (match(/社区/)) {
+    if (/照片|摄影|拍照|图库|相册|图片|photo|image|gallery|camera|instagram/i.test(fullBlob)) return "photo";
+    if (/物业|小区|报修|缴费|门禁|property|repair/i.test(fullBlob)) return "property";
+    return "social";
+  }
 
   return "generic";
 }
