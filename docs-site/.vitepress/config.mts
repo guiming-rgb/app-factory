@@ -2,73 +2,151 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   title: "App 生产工厂",
-  description: "AI 原生软件生产平台 — 文档站",
+  description: "AI 原生软件生产平台 — 输入 App 想法，自动完成立项、设计、架构、代码生成和三平台部署",
   lang: "zh-CN",
   base: "/docs/",
   lastUpdated: true,
+  cleanUrls: true,
+
+  head: [
+    ["link", { rel: "icon", href: "/docs/favicon.ico" }],
+    ["meta", { name: "theme-color", content: "#0d9488" }],
+    ["meta", { property: "og:title", content: "App 生产工厂" }],
+    [
+      "meta",
+      {
+        property: "og:description",
+        content:
+          "AI 原生软件生产平台 — 输入 App 想法，8 个 AI Agent 自动协作完成产品设计、架构、代码生成和三平台部署",
+      },
+    ],
+  ],
 
   themeConfig: {
+    logo: "/docs/logo.svg",
+    siteTitle: "App 生产工厂",
+
     nav: [
-      { text: "首页", link: "/" },
-      { text: "架构", link: "/architecture" },
-      { text: "开发", link: "/development" },
-      { text: "部署", link: "/deployment" },
+      { text: "指南", link: "/guide/", activeMatch: "/guide/" },
+      { text: "API 参考", link: "/api/", activeMatch: "/api/" },
+      { text: "行业模板", link: "/guide/industries", activeMatch: "/guide/industries" },
+      { text: "定价", link: "/guide/billing", activeMatch: "/guide/billing" },
+      {
+        text: "GitHub",
+        link: "https://github.com/guiming-rgb/app-factory",
+      },
     ],
 
     sidebar: {
-      "/": [
+      "/guide/": [
         {
-          text: "概述",
+          text: "快速开始",
+          collapsed: false,
           items: [
-            { text: "项目简介", link: "/" },
-            { text: "一页纸概述", link: "/one-pager" },
-            { text: "路线图", link: "/roadmap" },
+            { text: "简介", link: "/guide/" },
+            { text: "App Spec 规范", link: "/guide/app-spec" },
           ],
         },
         {
-          text: "架构设计",
+          text: "平台指南",
+          collapsed: false,
           items: [
-            { text: "架构交接", link: "/architecture" },
-            { text: "版本与分支", link: "/versions" },
-            { text: "安全审计", link: "/security" },
+            { text: "平台概览", link: "/guide/platforms" },
+            { text: "发布指南", link: "/guide/publishing" },
           ],
         },
         {
-          text: "核心功能",
+          text: "行业模板",
+          collapsed: false,
           items: [
-            { text: "App Spec IR", link: "/app-spec" },
-            { text: "代码生成 (v2a)", link: "/codegen-v2a" },
-            { text: "微信小程序 (v2b)", link: "/codegen-v2b" },
-            { text: "沙箱 Docker (v2.1)", link: "/sandbox" },
-            { text: "GitHub OAuth (C4)", link: "/github-oauth" },
-            { text: "发版全链路 (S6)", link: "/release" },
-            { text: "Auth & RLS (v4)", link: "/auth" },
-            { text: "记忆与技能 (v5)", link: "/memories-skills" },
+            { text: "20 个行业模板", link: "/guide/industries" },
           ],
         },
         {
-          text: "开发指南",
+          text: "运营",
+          collapsed: false,
           items: [
-            { text: "开发纲要", link: "/development" },
-            { text: "本地运行", link: "/local-dev" },
-            { text: "部署指南 (v3)", link: "/deployment" },
-            { text: "验收指南", link: "/verification" },
+            { text: "定价与计费", link: "/guide/billing" },
           ],
         },
+      ],
+
+      "/api/": [
         {
-          text: "参考",
+          text: "API 参考",
+          collapsed: false,
           items: [
-            { text: "模板能力矩阵", link: "/capability-matrix" },
-            { text: "模板能力矩阵-微信", link: "/capability-wechat" },
-            { text: "Flutter 模板目录", link: "/flutter-template" },
-            { text: "微信模板目录", link: "/wechat-template" },
-            { text: "桌面发行包", link: "/desktop-release" },
+            { text: "概述", link: "/api/" },
+            { text: "Workspaces", link: "/api/workspaces" },
+            { text: "Marketplace", link: "/api/marketplace" },
+            { text: "Analytics", link: "/api/analytics" },
+            { text: "Billing", link: "/api/billing" },
+            { text: "Experiments", link: "/api/experiments" },
           ],
         },
       ],
     },
 
-    socialLinks: [{ icon: "github", link: "https://github.com" }],
-    search: { provider: "local" },
+    search: {
+      provider: "local",
+      options: {
+        locales: {
+          root: {
+            translations: {
+              button: {
+                buttonText: "搜索文档",
+                buttonAriaLabel: "搜索文档",
+              },
+              modal: {
+                noResultsText: "未找到相关结果",
+                resetButtonTitle: "清除搜索条件",
+                footer: {
+                  selectText: "选择",
+                  navigateText: "切换",
+                  closeText: "关闭",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    editLink: {
+      pattern: "https://github.com/guiming-rgb/app-factory/edit/main/docs-site/:path",
+      text: "在 GitHub 上编辑此页",
+    },
+
+    footer: {
+      message: "基于 MIT 许可证发布",
+      copyright: `Copyright ${new Date().getFullYear()} App 生产工厂`,
+    },
+
+    docFooter: {
+      prev: "上一页",
+      next: "下一页",
+    },
+
+    outline: {
+      label: "本页目录",
+      level: "deep",
+    },
+
+    returnToTopLabel: "返回顶部",
+    sidebarMenuLabel: "菜单",
+    darkModeSwitchLabel: "主题",
+    lightModeSwitchTitle: "切换到浅色模式",
+    darkModeSwitchTitle: "切换到深色模式",
+
+    socialLinks: [
+      {
+        icon: "github",
+        link: "https://github.com/guiming-rgb/app-factory",
+      },
+    ],
+  },
+
+  markdown: {
+    lineNumbers: true,
   },
 });
