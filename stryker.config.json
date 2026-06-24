@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "reporters": ["html", "clear-text", "progress"],
+  "testRunner": "vitest",
+  "testRunner_comment": "@stryker-mutator/vitest-runner",
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "lib/flutter-codegen/emit-industry.ts",
+    "lib/flutter-codegen/dart-emit.ts",
+    "lib/flutter-codegen/industry-page-ref.ts",
+    "lib/app-spec/auto-fix.ts",
+    "lib/payment/payment-state-machine.ts",
+    "lib/security/input-sanitizer.ts",
+    "lib/security/rate-limiter.ts",
+    "lib/harmony-codegen/emit-industry-services.ts"
+  ],
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    ".next",
+    "coverage",
+    "tmp",
+    "templates"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 50
+  },
+  "timeoutMS": 30000,
+  "concurrency": 4
+}
