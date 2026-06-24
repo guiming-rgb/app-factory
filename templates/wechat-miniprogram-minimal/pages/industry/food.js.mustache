@@ -1,0 +1,89 @@
+// {{displayName}} — Food Delivery Restaurant List (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    restaurants: [],
+    categories: [
+      { id: 'all', name: '全部', active: true },
+      { id: 'chinese', name: '中餐' },
+      { id: 'western', name: '西餐' },
+      { id: 'japanese', name: '日料' },
+      { id: 'dessert', name: '甜点' },
+      { id: 'drinks', name: '饮品' },
+    ],
+    loading: false,
+    hasMore: true,
+    page: 0,
+    keyword: '',
+    activeCategory: 'all',
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadRestaurants();
+  },
+
+  async loadRestaurants() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      this.setData({
+        restaurants: [...this.data.restaurants, ...list.map(item => ({
+          id: item.id,
+          name: item.name || item.title || '',
+          logoUrl: item.logo_url || item.logoUrl || item.image_url,
+          rating: item.rating || 0,
+          cuisineTags: item.cuisine_tags || item.cuisineTags || ['中餐', '简餐'],
+          deliveryTime: item.delivery_time || item.deliveryTime || '30min',
+          deliveryFee: item.delivery_fee || item.deliveryFee || '免配送费',
+          minOrder: item.min_order || item.minOrder || 0,
+        }))],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('loadRestaurants error:', e);
+      this.setData({ loading: false });
+    }
+  },
+
+  onLoadMore() {
+    this.loadRestaurants();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+    if (this.data.searchTimer) clearTimeout(this.data.searchTimer);
+    const timer = setTimeout(() => {
+      this.setData({ restaurants: [], page: 0, hasMore: true });
+      this.loadRestaurants();
+    }, 500);
+    this.setData({ searchTimer: timer });
+  },
+
+  onCategoryTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const cats = this.data.categories.map(c => ({ ...c, active: c.id === id }));
+    this.setData({ categories: cats, activeCategory: id, restaurants: [], page: 0, hasMore: true });
+    this.loadRestaurants();
+  },
+
+  onRestaurantTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/restaurant_detail/restaurant_detail?id=${id}` });
+  },
+});

@@ -1,0 +1,97 @@
+// {{displayName}} — Finance / Bookkeeping Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const dateUtil = require('../../utils/date');
+
+Page({
+  data: {
+    transactions: [],
+    monthlyIncome: 0,
+    monthlyExpense: 0,
+    balance: 0,
+    currentMonth: '',
+    loading: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 50,
+  },
+
+  onLoad() {
+    const now = new Date();
+    const month = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+    this.setData({ currentMonth: month });
+    this.loadTransactions();
+  },
+
+  onShow() {
+    this.loadTransactions();
+  },
+
+  async loadTransactions() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      const formatted = list.map(item => ({
+        id: item.id,
+        title: item.title || item.name || item.description || '',
+        amount: item.amount || 0,
+        isIncome: item.is_income || item.isIncome || item.type === 'income',
+        category: item.category || '其他',
+        categoryIcon: item.category_icon || item.categoryIcon,
+        date: item.date || item.created_at?.slice(0, 10) || '',
+      }));
+
+      const income = formatted.reduce((sum, t) => sum + (t.isIncome ? t.amount : 0), 0);
+      const expense = formatted.reduce((sum, t) => sum + (!t.isIncome ? t.amount : 0), 0);
+
+      this.setData({
+        transactions: [...this.data.transactions, ...formatted],
+        monthlyIncome: this.data.monthlyIncome + income,
+        monthlyExpense: this.data.monthlyExpense + expense,
+        balance: (this.data.monthlyIncome + income) - (this.data.monthlyExpense + expense),
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('loadTransactions error:', e);
+      this.setData({ loading: false });
+    }
+  },
+
+  onLoadMore() {
+    this.loadTransactions();
+  },
+
+  onAddIncome() {
+    wx.navigateTo({ url: '/pages/transaction_form/transaction_form?type=income' });
+  },
+
+  onAddExpense() {
+    wx.navigateTo({ url: '/pages/transaction_form/transaction_form?type=expense' });
+  },
+
+  onViewStats() {
+    wx.navigateTo({ url: '/pages/statistics/statistics' });
+  },
+
+  onViewAll() {
+    wx.navigateTo({ url: '/pages/transaction_list/transaction_list' });
+  },
+
+  onTransactionTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/transaction_detail/transaction_detail?id=${id}` });
+  },
+});

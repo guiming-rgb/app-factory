@@ -1,0 +1,146 @@
+// {{displayName}} — Finance / Bookkeeping Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct TransactionItem {
+  @State title: string = ''
+  @State amount: number = 0
+  @State isIncome: boolean = false
+  @State category: string = ''
+  @State date: string = ''
+  transactionId: string = ''
+
+  build() {
+    Row() {
+      // Category icon
+      Text(this.category.slice(0, 1))
+        .fontSize(18)
+        .width(44).height(44)
+        .textAlign(TextAlign.Center)
+        .backgroundColor(this.isIncome ? '#e8f5e9' : '#ffebee')
+        .fontColor(this.isIncome ? '#2e7d32' : '#c62828')
+        .borderRadius(22)
+
+      Column() {
+        Text(this.title).fontSize(15).fontWeight(FontWeight.Medium)
+        Text(this.category).fontSize(12).fontColor('#999').margin({ top: 2 })
+        Text(this.date).fontSize(11).fontColor('#bbb').margin({ top: 1 })
+      }.alignItems(HorizontalAlign.Start).margin({ left: 12 }).layoutWeight(1)
+
+      Text(`${this.isIncome ? '+' : '-'}¥${this.amount.toFixed(2)}`)
+        .fontSize(16).fontWeight(FontWeight.Bold)
+        .fontColor(this.isIncome ? '#2e7d32' : '#c62828')
+    }
+    .width('100%').padding({ left: 16, right: 16, top: 12, bottom: 12 })
+    .backgroundColor(Color.White)
+    .borderRadius(8)
+    .margin({ bottom: 6 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/TransactionDetail', params: { id: this.transactionId } })
+    })
+  }
+}
+
+@Entry
+@Component
+struct FinancePage {
+  @State transactions: Array<{
+    id: string, title: string, amount: number,
+    isIncome: boolean, category: string, date: string
+  }> = []
+  @State monthlyIncome: number = 0
+  @State monthlyExpense: number = 0
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadTransactions()
+  }
+
+  async loadTransactions() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").order("created_at", { ascending: false }).limit(50)
+    const sampleData = [
+      { id: '1', title: '工资收入', amount: 15000, isIncome: true, category: '工资', date: '2026-06-01' },
+      { id: '2', title: '午餐', amount: 35, isIncome: false, category: '餐饮', date: '2026-06-02' },
+      { id: '3', title: '交通卡充值', amount: 100, isIncome: false, category: '交通', date: '2026-06-03' },
+      { id: '4', title: '理财收益', amount: 256, isIncome: true, category: '投资', date: '2026-06-05' },
+    ]
+    this.transactions = sampleData
+    this.monthlyIncome = sampleData.filter(t => t.isIncome).reduce((s, t) => s + t.amount, 0)
+    this.monthlyExpense = sampleData.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0)
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      // Header summary
+      Column() {
+        Text('本月').fontSize(14).fontColor('#ffffffb3')
+        Row() {
+          Column() {
+            Text(`¥${this.monthlyIncome.toFixed(2)}`).fontSize(18).fontWeight(FontWeight.Bold).fontColor('#4caf50')
+            Text('收入').fontSize(12).fontColor('#ffffffb3')
+          }.margin({ right: 32 })
+          Column() {
+            Text(`¥${this.monthlyExpense.toFixed(2)}`).fontSize(18).fontWeight(FontWeight.Bold).fontColor('#ef5350')
+            Text('支出').fontSize(12).fontColor('#ffffffb3')
+          }
+          Column().margin({ left: 32 })
+          Column() {
+            Text(`¥${(this.monthlyIncome - this.monthlyExpense).toFixed(2)}`)
+              .fontSize(18).fontWeight(FontWeight.Bold)
+              .fontColor(this.monthlyIncome >= this.monthlyExpense ? '#4caf50' : '#ef5350')
+            Text('结余').fontSize(12).fontColor('#ffffffb3')
+          }
+        }.margin({ top: 16 })
+      }
+      .width('100%').padding(24)
+      .backgroundColor('{{primaryColor}}')
+      .borderRadius({ bottomLeft: 24, bottomRight: 24 })
+
+      // Quick actions
+      Row() {
+        Column() {
+          Text('+').fontSize(28).fontColor('#4caf50')
+          Text('记收入').fontSize(12).margin({ top: 4 })
+        }.onClick(() => { router.pushUrl({ url: 'pages/TransactionForm', params: { type: 'income' } }) })
+
+        Column() {
+          Text('-').fontSize(28).fontColor('#ef5350')
+          Text('记支出').fontSize(12).margin({ top: 4 })
+        }.margin({ left: 40, right: 40 })
+        .onClick(() => { router.pushUrl({ url: 'pages/TransactionForm', params: { type: 'expense' } }) })
+
+        Column() {
+          Text('📊').fontSize(24)
+          Text('统计').fontSize(12).margin({ top: 4 })
+        }.onClick(() => { router.pushUrl({ url: 'pages/Statistics' }) })
+      }.width('100%').justifyContent(FlexAlign.Center).padding(16)
+
+      // Transaction list
+      Text('最近交易').fontSize(17).fontWeight(FontWeight.Bold).width('100%').padding({ left: 16, top: 8 })
+
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 20 })
+      } else {
+        List() {
+          ForEach(this.transactions, (item: {
+            id: string, title: string, amount: number,
+            isIncome: boolean, category: string, date: string
+          }) => {
+            ListItem() {
+              TransactionItem({ ...item, transactionId: item.id })
+            }
+          })
+        }
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16, top: 8 })
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

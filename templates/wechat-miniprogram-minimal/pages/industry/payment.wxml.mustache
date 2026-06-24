@@ -1,0 +1,57 @@
+<!-- {{displayName}} — Payment / Checkout (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="order-summary">
+    <text class="summary-title">订单汇总</text>
+    <view class="summary-row">
+      <text>商品金额</text>
+      <text>¥{{totalAmount}}</text>
+    </view>
+    <view class="summary-row">
+      <text>配送费</text>
+      <text wx:if="{{deliveryFee > 0}}">¥{{deliveryFee}}</text>
+      <text wx:else>免运费</text>
+    </view>
+    <view class="summary-row total">
+      <text>合计</text>
+      <text class="total-amount">¥{{finalAmount}}</text>
+    </view>
+  </view>
+
+  <view class="payment-methods">
+    <text class="section-title">支付方式</text>
+    <view wx:for="{{paymentMethods}}" wx:key="id"
+      class="payment-method {{item.selected ? 'selected' : ''}}"
+      bindtap="onSelectMethod" data-id="{{item.id}}">
+      <image class="method-icon" src="{{item.icon}}" mode="aspectFit" />
+      <view class="method-info">
+        <text class="method-name">{{item.name}}</text>
+        <text class="method-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
+      </view>
+      <view class="method-check {{item.selected ? 'checked' : ''}}"></view>
+    </view>
+  </view>
+
+  <view class="order-items">
+    <text class="section-title">订单商品</text>
+    <view wx:for="{{orderItems}}" wx:key="id" class="order-item">
+      <image class="item-image" src="{{item.imageUrl || 'https://via.placeholder.com/60'}}" mode="aspectFill" />
+      <view class="item-info">
+        <text class="item-name">{{item.name}}</text>
+        <text class="item-price">¥{{item.price}} × {{item.quantity || 1}}</text>
+      </view>
+      <text class="item-total">¥{{(item.price * (item.quantity || 1)).toFixed(2)}}</text>
+    </view>
+  </view>
+
+  <view class="action-bar">
+    <view class="action-total">
+      <text>合计: </text>
+      <text class="action-price">¥{{finalAmount}}</text>
+    </view>
+    <button class="pay-btn" bindtap="onPay" loading="{{paying}}">
+      {{paying ? '支付中...' : '立即支付'}}
+    </button>
+  </view>
+</view>

@@ -1,0 +1,101 @@
+// {{displayName}} — E-commerce Product List Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    products: [],
+    loading: false,
+    hasMore: true,
+    page: 0,
+    keyword: '',
+    sortBy: 'default',
+    category: '',
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadProducts();
+  },
+
+  onShow() {
+    if (this.data.products.length === 0) {
+      this.loadProducts();
+    }
+  },
+
+  async loadProducts() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      this.setData({
+        products: [...this.data.products, ...list.map(item => ({
+          id: item.id,
+          name: item.name || item.title || '',
+          price: item.price || 0,
+          originalPrice: item.original_price || item.originalPrice,
+          imageUrl: item.image_url || item.imageUrl,
+          sales: item.sales || 0,
+          rating: item.rating || 0,
+          category: item.category || '',
+        }))],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('loadProducts error:', e);
+      this.setData({ loading: false });
+    }
+  },
+
+  onLoadMore() {
+    this.loadProducts();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  async onSearch() {
+    this.setData({ products: [], page: 0, hasMore: true });
+    await this.loadProducts();
+  },
+
+  onSortBySales() {
+    this.setData({ sortBy: 'sales', products: [], page: 0, hasMore: true });
+    this.loadProducts();
+  },
+
+  onSortByPrice() {
+    this.setData({ sortBy: 'price', products: [], page: 0, hasMore: true });
+    this.loadProducts();
+  },
+
+  onFilterCategory() {
+    wx.showActionSheet({
+      itemList: ['全部', '服装', '数码', '食品', '家居'],
+      success: (res) => {
+        const categories = ['', 'clothing', 'digital', 'food', 'home'];
+        this.setData({ category: categories[res.tapIndex] || '', products: [], page: 0, hasMore: true });
+        this.loadProducts();
+      },
+    });
+  },
+
+  onProductTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/product_detail/product_detail?id=${id}` });
+  },
+});

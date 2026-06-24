@@ -39,6 +39,7 @@ import {
   markCodegenRunCompleted,
   markCodegenRunFailed,
 } from "@/lib/codegen/runs";
+import type { CodegenTarget } from "@/lib/codegen/types";
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -53,9 +54,6 @@ export interface CodegenExecutorInput {
   runId: string;
   userId?: string;
 }
-
-/** 平台标识 */
-export type CodegenTarget = "flutter" | "wechat" | "harmony";
 
 /** 代码生成输出（平台生成器返回） */
 export interface CodegenOutput {
@@ -425,11 +423,8 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
 // Sync Runner Factory — 所有平台共用
 // ============================================================
 
-import {
-  createCodegenRun,
-  getCodegenRun,
-  type CodegenRunRow,
-} from "@/lib/codegen/runs";
+import { createCodegenRun, getCodegenRun } from "@/lib/codegen/runs";
+import type { CodegenRunRow } from "@/lib/codegen/types";
 
 export async function runCodegenSync(
   target: CodegenTarget,

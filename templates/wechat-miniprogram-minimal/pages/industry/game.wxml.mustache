@@ -1,0 +1,51 @@
+<!-- {{displayName}} — Game Center (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="banner-section">
+    <swiper indicator-dots autoplay interval="3000">
+      <swiper-item wx:for="{{banners}}" wx:key="id">
+        <image src="{{item.imageUrl}}" mode="aspectFill" class="banner-image" />
+        <view class="banner-title">{{item.title}}</view>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">热门游戏</text>
+    <text class="section-more" bindtap="onViewAllGames">查看更多 〉</text>
+  </view>
+
+  <scroll-view class="game-grid" scroll-x>
+    <view wx:for="{{games}}" wx:key="id" class="game-card" bindtap="onGameTap" data-id="{{item.id}}">
+      <image class="game-cover" src="{{item.coverUrl || 'https://via.placeholder.com/140x200'}}" mode="aspectFill" />
+      <view class="game-info">
+        <text class="game-name">{{item.name}}</text>
+        <text class="game-genre">{{item.genre || '休闲'}}</text>
+        <view class="game-meta">
+          <text class="game-rating">⭐ {{item.rating || '-'}}</text>
+          <text class="game-players">{{item.playerCount || 0}} 人玩</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="section-header">
+    <text class="section-title">排行榜</text>
+  </view>
+
+  <scroll-view class="leaderboard" scroll-y>
+    <view wx:for="{{leaderboard}}" wx:key="id" class="rank-card" bindtap="onLeaderboardTap" data-id="{{item.id}}">
+      <text class="rank-number {{item.rank <= 3 ? 'top' : ''}}">{{item.rank}}</text>
+      <image class="rank-avatar" src="{{item.avatar || 'https://via.placeholder.com/40'}}" mode="aspectFill" />
+      <view class="rank-info">
+        <text class="rank-name">{{item.playerName}}</text>
+        <text class="rank-score">得分 {{item.score}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

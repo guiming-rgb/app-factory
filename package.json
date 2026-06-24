@@ -20,7 +20,7 @@
     "db:migration:status": "node scripts/db-migration-status.mjs",
     "changelog": "node scripts/generate-changelog.mjs",
     "search:index": "node scripts/build-search-index.mjs",
-    "db:backup": "node scripts/db-backup.mjs",
+    "db:backup": "node scripts/supabase-backup.mjs",
     "perf:regression": "node scripts/perf-regression.mjs",
     "setup:precommit": "node scripts/setup-precommit.mjs",
     "inngest:dev": "inngest-cli dev -u http://localhost:3000/api/inngest",

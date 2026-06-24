@@ -3,15 +3,9 @@ import {
   desktopBuildMetadata,
   shouldAttemptDesktopBuild,
   writeDesktopReleasesIntoProject,
-  type DesktopBuildSummary
 } from "./desktop-build";
+import type { DesktopArtifactPaths } from "@/lib/sandbox/desktop-types";
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
-
-export type DesktopArtifactPaths = {
-  summary: DesktopBuildSummary;
-  /** run 元数据扩展（含各平台 artifact 相对路径） */
-  metadata: Record<string, unknown>;
-};
 
 /**
  * 在 Flutter 工程目录上尝试构建 .app / .exe zip，并可选写入 codegen run 的独立下载文件。

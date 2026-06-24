@@ -1,0 +1,102 @@
+// {{displayName}} — Game Center (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    banners: [],
+    games: [],
+    leaderboard: [],
+    loading: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadBanners();
+    this.loadGames();
+    this.loadLeaderboard();
+  },
+
+  loadBanners() {
+    // Static banners for game center
+    this.setData({
+      banners: [
+        { id: 1, title: '新游上线', imageUrl: 'https://via.placeholder.com/375x180/{{primaryColor}}/fff?text=新游上线' },
+        { id: 2, title: '限时活动', imageUrl: 'https://via.placeholder.com/375x180/333/fff?text=限时活动' },
+      ],
+    });
+  },
+
+  async loadGames() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      this.setData({
+        games: [...this.data.games, ...list.map(item => ({
+          id: item.id,
+          name: item.name || item.title || '',
+          coverUrl: item.cover_url || item.coverUrl || item.image_url,
+          genre: item.genre || '休闲',
+          rating: item.rating || 0,
+          playerCount: item.player_count || item.playerCount || 0,
+        }))],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('loadGames error:', e);
+      this.setData({ loading: false });
+    }
+  },
+
+  async loadLeaderboard() {
+    try {
+      const { request } = require('../../utils/supabase');
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=10&order=score.desc`
+      );
+
+      if (error) throw error;
+
+      const list = (data || []).map((item, i) => ({
+        id: item.id,
+        rank: i + 1,
+        playerName: item.player_name || item.playerName || item.name || `玩家${i + 1}`,
+        score: item.score || 0,
+        avatar: item.avatar || item.image_url,
+      }));
+
+      this.setData({ leaderboard: list });
+    } catch (e) {
+      console.error('loadLeaderboard error:', e);
+    }
+  },
+
+  onGameTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/game_detail/game_detail?id=${id}` });
+  },
+
+  onLeaderboardTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/game_detail/game_detail?id=${id}` });
+  },
+
+  onViewAllGames() {
+    wx.showToast({ title: '查看全部游戏', icon: 'none' });
+  },
+});

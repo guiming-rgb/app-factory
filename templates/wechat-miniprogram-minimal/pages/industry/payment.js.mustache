@@ -1,0 +1,127 @@
+// {{displayName}} — Payment / Checkout Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    totalAmount: 0,
+    deliveryFee: 0,
+    finalAmount: 0,
+    orderItems: [],
+    paymentMethods: [
+      { id: 'wechat', name: '微信支付', icon: '/images/wechat_pay.png', desc: '推荐', selected: true },
+      { id: 'alipay', name: '支付宝', icon: '/images/alipay.png', selected: false },
+      { id: 'card', name: '银行卡', icon: '/images/card.png', desc: '支持信用卡', selected: false },
+    ],
+    selectedMethod: 'wechat',
+    paying: false,
+    orderId: '',
+  },
+
+  onLoad(options) {
+    if (options.orderId) {
+      this.setData({ orderId: options.orderId });
+      this.loadOrderDetail(options.orderId);
+    } else {
+      this.loadFromCart();
+    }
+  },
+
+  async loadOrderDetail(orderId) {
+    try {
+      const { request } = require('../../utils/supabase');
+      const { data, error } = await request(`{{tableName}}?select=*&id=eq.${orderId}&limit=1`);
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const order = data[0];
+        this.setData({
+          orderItems: order.items || [],
+          totalAmount: order.total_amount || order.totalAmount || 0,
+          deliveryFee: order.delivery_fee || order.deliveryFee || 0,
+          finalAmount: (order.total_amount || order.totalAmount || 0) + (order.delivery_fee || order.deliveryFee || 0),
+        });
+      }
+    } catch (e) {
+      console.error('loadOrderDetail error:', e);
+    }
+  },
+
+  loadFromCart() {
+    // Load from local cart cache or storage
+    try {
+      const cart = wx.getStorageSync('cart') || [];
+      const items = cart.map(item => ({
+        id: item.id,
+        name: item.name || '商品',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        imageUrl: item.image_url || item.imageUrl,
+      }));
+      const total = items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+      const delivery = total >= 50 ? 0 : 8;
+
+      this.setData({
+        orderItems: items,
+        totalAmount: total,
+        deliveryFee: delivery,
+        finalAmount: total + delivery,
+      });
+    } catch (e) {
+      console.error('loadFromCart error:', e);
+    }
+  },
+
+  onSelectMethod(e) {
+    const id = e.currentTarget.dataset.id;
+    const methods = this.data.paymentMethods.map(m => ({ ...m, selected: m.id === id }));
+    this.setData({ paymentMethods: methods, selectedMethod: id });
+  },
+
+  async onPay() {
+    if (this.data.paying) return;
+    this.setData({ paying: true });
+
+    try {
+      if (this.data.selectedMethod === 'wechat') {
+        const { request } = require('../../utils/supabase');
+        const { data, error } = await request('wechat-prepay', {
+          method: 'POST',
+          body: JSON.stringify({
+            orderId: this.data.orderId || `order_${Date.now()}`,
+            amount: Math.round(this.data.finalAmount * 100),
+            description: `{{displayName}}订单`,
+          }),
+        });
+
+        if (error) throw error;
+
+        if (data && data.prepay_id) {
+          const { wxpay } = require('../../utils/wxpay');
+          const result = await wxpay.requestPayment({
+            timeStamp: data.timeStamp,
+            nonceStr: data.nonceStr,
+            package: `prepay_id=${data.prepay_id}`,
+            signType: 'RSA',
+            paySign: data.paySign,
+          });
+
+          if (result.errMsg === 'requestPayment:ok') {
+            wx.showToast({ title: '支付成功', icon: 'success' });
+            wx.redirectTo({ url: '/pages/payment_result/payment_result?status=success' });
+          } else {
+            wx.showToast({ title: '支付取消', icon: 'none' });
+          }
+        }
+      } else {
+        wx.showToast({ title: '支付功能开发中', icon: 'none' });
+      }
+    } catch (e) {
+      console.error('pay error:', e);
+      wx.showToast({ title: '支付失败', icon: 'error' });
+    } finally {
+      this.setData({ paying: false });
+    }
+  },
+});

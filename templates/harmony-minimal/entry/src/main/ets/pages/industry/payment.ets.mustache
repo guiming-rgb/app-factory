@@ -1,0 +1,143 @@
+// {{displayName}} — Payment / Checkout Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct PaymentMethodCard {
+  @State name: string = ''
+  @State icon: string = ''
+  @State desc: string = ''
+  @State selected: boolean = false
+
+  build() {
+    Row() {
+      Image($r('sys.media.ohos_ic_public_payment'))
+        .width(32).height(32).objectFit(ImageFit.Contain)
+      Column() {
+        Text(this.name).fontSize(16).fontWeight(FontWeight.Medium)
+        if (this.desc.length > 0) {
+          Text(this.desc).fontSize(12).fontColor('#999')
+        }
+      }.alignItems(HorizontalAlign.Start).margin({ left: 12 }).layoutWeight(1)
+      if (this.selected) {
+        Text('✓').fontSize(20).fontColor('{{primaryColor}}').fontWeight(FontWeight.Bold)
+      }
+    }
+    .width('100%').padding(16)
+    .backgroundColor(this.selected ? '{{primaryColor}}0d' : Color.White)
+    .borderRadius(12)
+    .border({ width: this.selected ? 1 : 0, color: '{{primaryColor}}' })
+    .margin({ bottom: 8 })
+  }
+}
+
+@Entry
+@Component
+struct PaymentPage {
+  @State totalAmount: number = 0
+  @State deliveryFee: number = 0
+  @State finalAmount: number = 0
+  @State orderItems: Array<{ id: string, name: string, price: number, quantity: number, imageUrl: string }> = []
+  @State selectedMethod: string = 'wechat'
+  @State paying: boolean = false
+  @State orderId: string = ''
+
+  aboutToAppear() {
+    this.loadOrder()
+  }
+
+  loadOrder() {
+    // TODO: Load from {{tableName}} or cart storage
+    this.orderItems = [
+      { id: '1', name: '示例商品', price: 49.00, quantity: 2, imageUrl: '' },
+    ]
+    this.totalAmount = 98.00
+    this.deliveryFee = 0
+    this.finalAmount = 98.00
+  }
+
+  build() {
+    Column() {
+      Scroll() {
+        Column() {
+          // Order summary
+          Column() {
+            Text('订单汇总').fontSize(17).fontWeight(FontWeight.Bold).width('100%')
+            Row() {
+              Text('商品金额').fontSize(15).fontColor('#666')
+              Blank()
+              Text(`¥${this.totalAmount}`).fontSize(15)
+            }.width('100%').margin({ top: 12 })
+            Row() {
+              Text('配送费').fontSize(15).fontColor('#666')
+              Blank()
+              Text(this.deliveryFee > 0 ? `¥${this.deliveryFee}` : '免运费').fontSize(15)
+            }.width('100%').margin({ top: 8 })
+            Row() {
+              Text('合计').fontSize(16).fontWeight(FontWeight.Bold)
+              Blank()
+              Text(`¥${this.finalAmount}`).fontSize(20).fontWeight(FontWeight.Bold).fontColor('{{primaryColor}}')
+            }.width('100%').margin({ top: 12 })
+          }
+          .padding(16)
+          .backgroundColor(Color.White)
+          .borderRadius(12)
+          .margin({ left: 16, right: 16, top: 16 })
+
+          // Payment methods
+          Text('支付方式').fontSize(17).fontWeight(FontWeight.Bold).width('100%').padding({ left: 16, top: 20 })
+          // Static payment methods for now
+          PaymentMethodCard({
+            name: '微信支付', desc: '推荐', selected: this.selectedMethod === 'wechat'
+          })
+
+          // Order items
+          Text('订单商品').fontSize(17).fontWeight(FontWeight.Bold).width('100%').padding({ left: 16, top: 20 })
+          ForEach(this.orderItems, (item: {
+            id: string, name: string, price: number, quantity: number, imageUrl: string
+          }) => {
+            Row() {
+              Image($r('sys.media.ohos_ic_public_list'))
+                .width(60).height(60).borderRadius(8).objectFit(ImageFit.Cover)
+              Column() {
+                Text(item.name).fontSize(15)
+                Text(`¥${item.price}`).fontSize(13).fontColor('#999').margin({ top: 4 })
+              }.alignItems(HorizontalAlign.Start).margin({ left: 12 }).layoutWeight(1)
+              Text(`x${item.quantity}`).fontSize(14).fontColor('#666')
+            }
+            .padding(12)
+            .backgroundColor(Color.White)
+            .borderRadius(8)
+            .margin({ left: 16, right: 16, bottom: 8 })
+          })
+        }
+      }.layoutWeight(1)
+
+      // Bottom action bar
+      Row() {
+        Text(`合计: ¥${this.finalAmount}`).fontSize(16).fontWeight(FontWeight.Bold)
+        Blank()
+        Button(this.paying ? '支付中...' : '立即支付')
+          .backgroundColor('{{primaryColor}}')
+          .fontColor(Color.White)
+          .borderRadius(24)
+          .height(48)
+          .width(140)
+          .onClick(() => {
+            this.paying = true
+            // TODO: Call payment API
+            setTimeout(() => {
+              this.paying = false
+              router.pushUrl({ url: 'pages/PaymentResult', params: { status: 'success' } })
+            }, 1500)
+          })
+      }
+      .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+      .backgroundColor(Color.White)
+      .shadow({ radius: 8, color: '#1a000000', offsetX: 0, offsetY: -2 })
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

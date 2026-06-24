@@ -1,0 +1,44 @@
+<!-- {{displayName}} — Food Delivery Restaurant List (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="location-bar">
+    <text class="location-icon">📍</text>
+    <text class="location-text">当前位置</text>
+    <text class="location-arrow">〉</text>
+  </view>
+
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索餐厅或菜品" bindinput="onSearchInput" />
+  </view>
+
+  <scroll-view class="category-scroll" scroll-x>
+    <view wx:for="{{categories}}" wx:key="id"
+      class="category-item {{item.active ? 'active' : ''}}"
+      bindtap="onCategoryTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="restaurant-list" scroll-y bindscrolltolower="onLoadMore">
+    <view wx:for="{{restaurants}}" wx:key="id" class="restaurant-card" bindtap="onRestaurantTap" data-id="{{item.id}}">
+      <image class="restaurant-logo" src="{{item.logoUrl || 'https://via.placeholder.com/80'}}" mode="aspectFill" />
+      <view class="restaurant-info">
+        <text class="restaurant-name">{{item.name}}</text>
+        <view class="restaurant-tags">
+          <text wx:for="{{item.cuisineTags || []}}" wx:key="*this" class="cuisine-tag">{{item}}</text>
+        </view>
+        <view class="restaurant-meta">
+          <text class="rating">⭐ {{item.rating || '-'}}</text>
+          <text class="delivery-time">{{item.deliveryTime || '30min'}}</text>
+          <text class="delivery-fee">{{item.deliveryFee || '免配送费'}}</text>
+        </view>
+        <text class="min-order" wx:if="{{item.minOrder}}">起送 ¥{{item.minOrder}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

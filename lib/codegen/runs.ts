@@ -1,22 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import type { CodegenTarget, CodegenRunStatus, CodegenRunRow } from "./types";
 
-export type CodegenTarget = "flutter" | "wechat" | "harmony";
-export type CodegenRunStatus = "queued" | "running" | "completed" | "failed";
-
-export type CodegenRunRow = {
-  id: string;
-  project_id: string;
-  target: CodegenTarget;
-  status: CodegenRunStatus;
-  artifact_path: string | null;
-  log: string | null;
-  spec_source: string | null;
-  metadata: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-};
+// Re-export types for backward compatibility
+export type { CodegenTarget, CodegenRunStatus, CodegenRunRow };
 
 export async function createCodegenRun(input: {
   projectId: string;

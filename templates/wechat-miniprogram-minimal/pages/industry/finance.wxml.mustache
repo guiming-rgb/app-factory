@@ -1,0 +1,56 @@
+<!-- {{displayName}} — Finance / Bookkeeping (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="dashboard-header">
+    <text class="month-label">{{currentMonth}}</text>
+    <view class="balance-summary">
+      <text class="income">收入 ¥{{monthlyIncome}}</text>
+      <text class="expense">支出 ¥{{monthlyExpense}}</text>
+    </view>
+    <view class="balance">
+      <text>结余</text>
+      <text class="balance-amount {{balance >= 0 ? 'positive' : 'negative'}}">¥{{balance}}</text>
+    </view>
+  </view>
+
+  <view class="quick-actions">
+    <view class="action-btn" bindtap="onAddIncome">
+      <text class="action-icon income-icon">+</text>
+      <text>记收入</text>
+    </view>
+    <view class="action-btn" bindtap="onAddExpense">
+      <text class="action-icon expense-icon">−</text>
+      <text>记支出</text>
+    </view>
+    <view class="action-btn" bindtap="onViewStats">
+      <text class="action-icon stats-icon">📊</text>
+      <text>统计</text>
+    </view>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">最近交易</text>
+    <text class="section-more" bindtap="onViewAll">查看全部 〉</text>
+  </view>
+
+  <scroll-view class="transaction-list" scroll-y bindscrolltolower="onLoadMore">
+    <view wx:for="{{transactions}}" wx:key="id" class="transaction-item" bindtap="onTransactionTap" data-id="{{item.id}}">
+      <view class="transaction-category {{item.isIncome ? 'income-bg' : 'expense-bg'}}">
+        <text>{{item.categoryIcon || item.category?.slice(0,1) || '💰'}}</text>
+      </view>
+      <view class="transaction-info">
+        <text class="transaction-title">{{item.title}}</text>
+        <text class="transaction-category-name">{{item.category || '其他'}}</text>
+        <text class="transaction-date">{{item.date}}</text>
+      </view>
+      <text class="transaction-amount {{item.isIncome ? 'income' : 'expense'}}">
+        {{item.isIncome ? '+' : '-'}}¥{{item.amount}}
+      </text>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

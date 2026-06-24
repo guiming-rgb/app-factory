@@ -4,23 +4,7 @@ import path from "path";
 
 import { hasFlutter } from "@/lib/utils/has-flutter";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
-
-export type DesktopBuildTarget = "macos" | "windows";
-
-export type DesktopBuildItem = {
-  target: DesktopBuildTarget;
-  status: "passed" | "failed" | "skipped";
-  reason?: string;
-  /** 供上传 Storage 的 zip 缓冲 */
-  zipBuffer?: Buffer;
-  zipFileName?: string;
-};
-
-export type DesktopBuildSummary = {
-  items: DesktopBuildItem[];
-  /** 写入工程内「双击运行」目录的说明 */
-  readmeLines: string[];
-};
+import type { DesktopBuildTarget, DesktopBuildItem, DesktopBuildSummary } from "@/lib/sandbox/desktop-types";
 
 function desktopBuildMode(): "off" | "on" | "auto" {
   const raw = process.env.CODEGEN_DESKTOP_BUILD?.trim().toLowerCase();

@@ -1,3 +1,4 @@
+import type { CodegenRunStatus } from "./types";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 /** queued 长时间未消费（与 CodegenPanel「排队超过 90 秒」提示一致） */
