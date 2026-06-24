@@ -1,12 +1,29 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { resolveEntityForScreen, entityTableName } from "@/lib/app-spec/entity-scaffold";
+import { detectIndustry } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
 
 /**
- * 微信小程序 Form 页面生成
+ * 微信小程序 Form 页面生成 — P2-2: 接入 industry service
  */
 
 function esc(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ");
+}
+
+/** 将 IndustryCategory 映射到微信 industry.js 中的 service 名 */
+function industryServiceName(industry: IndustryCategory): string {
+  if (industry === "generic") return "null";
+  const map: Record<string, string> = {
+    finance: "financeService", crm: "crmService", fitness: "fitnessService",
+    ecommerce: "ecommerceService", education: "educationService",
+    social: "socialService", food: "foodService", hotel: "hotelService",
+    recruitment: "recruitmentService", property: "propertyService",
+    video: "videoService", weather: "weatherService", sports: "sportsService",
+    photo: "photoService", dating: "datingService", medical: "medicalService",
+    blog: "blogService", game: "gameService", payment: "paymentService",
+  };
+  return map[industry] ?? "null";
 }
 
 export function emitWechatFormPage(
@@ -14,6 +31,10 @@ export function emitWechatFormPage(
   spec: AppSpec
 ): { wxml: string; js: string; wxss: string } {
   const entity = resolveEntityForScreen(spec, screen);
+  const industry = detectIndustry(spec as unknown as Record<string, unknown>);
+  const serviceName = industryServiceName(industry);
+  const hasService = serviceName !== "null";
+
   const fields = entity?.fields?.filter((f) => !f.primary || f.name !== "id") ?? [
     { name: "title", type: "string" },
     { name: "note", type: "string" }
@@ -22,7 +43,7 @@ export function emitWechatFormPage(
   const title = esc(screen.title);
   const table = entity ? esc(entityTableName(entity)) : "items";
 
-  // WXML: 动态表单
+  // WXML: 动态表单（不变）
   const inputs = fields.map((f) => {
     const t = f.type.toLowerCase();
     const name = esc(f.name);
@@ -82,8 +103,30 @@ ${inputs}
     return `      "${name}": d.${name}`;
   }).join(",\n");
 
-  const js = `const { request, isSupabaseConfigured } = require("../../utils/supabase");
+  // P2-2: 有行业 service 时通过 service 提交；否则 fallback 到原始 request
+  const serviceRequire = hasService
+    ? `const { ${serviceName} } = require("../../services/industry");`
+    : "";
+  const submitLogic = hasService
+    ? `      ${serviceName}.create(body)
+        .then(() => {
+          wx.showToast({ title: "提交成功", icon: "success" });
+          wx.navigateBack();
+        })
+        .catch((err) => {
+          this.setData({ error: err?.message || "提交失败", submitting: false });
+        });`
+    : `      request(this.data.table, { method: "POST", body })
+        .then(() => {
+          wx.showToast({ title: "提交成功", icon: "success" });
+          wx.navigateBack();
+        })
+        .catch((err) => {
+          this.setData({ error: err?.message || "提交失败", submitting: false });
+        });`;
 
+  const js = `const { request, isSupabaseConfigured } = require("../../utils/supabase");
+${serviceRequire}
 Page({
   data: {
     showPrivacy: false,
@@ -127,14 +170,7 @@ ${buildData}
       wx.navigateBack();
       return;
     }
-    request(this.data.table, { method: "POST", body })
-      .then(() => {
-        wx.showToast({ title: "提交成功", icon: "success" });
-        wx.navigateBack();
-      })
-      .catch((err) => {
-        this.setData({ error: err?.message || "提交失败", submitting: false });
-      });
+${submitLogic}
   }
 });
 `;
