@@ -1,0 +1,79 @@
+<!-- {{displayName}} — Photo Community Feed (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索标签" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <view class="challenge-banner" wx:if="{{challenge}}" bindtap="onChallengeTap">
+    <image class="challenge-bg" src="{{challenge.bannerUrl || 'https://via.placeholder.com/375x120'}}" mode="aspectFill" />
+    <view class="challenge-overlay">
+      <text class="challenge-title">{{challenge.title}}</text>
+      <text class="challenge-hint">参与挑战 〉</text>
+    </view>
+  </view>
+
+  <view class="tab-bar">
+    <view wx:for="{{tabs}}" wx:key="id"
+      class="tab-item {{item.active ? 'active' : ''}}"
+      bindtap="onTabTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+
+  <scroll-view class="photo-grid" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:if="{{!loading && photos.length === 0 && !error}}" class="empty-state">
+      <text class="empty-icon">📷</text>
+      <text>暂无照片</text>
+      <text class="empty-hint">发布第一张照片吧</text>
+    </view>
+
+    <view wx:if="{{error}}" class="error-tip">
+      <text>加载失败，点击重试</text>
+      <text class="retry-btn" bindtap="loadPhotos">重试</text>
+    </view>
+
+    <view class="waterfall">
+      <view class="waterfall-col">
+        <view wx:for="{{leftCol}}" wx:key="id" class="photo-card" bindtap="onPhotoTap" data-id="{{item.id}}">
+          <image class="photo-image" src="{{item.imageUrl || 'https://via.placeholder.com/200'}}" mode="widthFix" />
+          <view class="photo-overlay">
+            <text class="photo-likes">❤ {{item.likes || 0}}</text>
+            <text class="photo-comments">💬 {{item.comments || 0}}</text>
+          </view>
+          <view class="photo-footer">
+            <text class="photo-author">{{item.author || '匿名'}}</text>
+            <view class="photo-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+              <text wx:for="{{item.tags.slice(0, 3)}}" wx:key="*this" class="photo-tag">#{{item}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="waterfall-col">
+        <view wx:for="{{rightCol}}" wx:key="id" class="photo-card" bindtap="onPhotoTap" data-id="{{item.id}}">
+          <image class="photo-image" src="{{item.imageUrl || 'https://via.placeholder.com/200'}}" mode="widthFix" />
+          <view class="photo-overlay">
+            <text class="photo-likes">❤ {{item.likes || 0}}</text>
+            <text class="photo-comments">💬 {{item.comments || 0}}</text>
+          </view>
+          <view class="photo-footer">
+            <text class="photo-author">{{item.author || '匿名'}}</text>
+            <view class="photo-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+              <text wx:for="{{item.tags.slice(0, 3)}}" wx:key="*this" class="photo-tag">#{{item}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <view class="fab" bindtap="onUploadPhoto">
+    <text>+</text>
+  </view>
+</view>

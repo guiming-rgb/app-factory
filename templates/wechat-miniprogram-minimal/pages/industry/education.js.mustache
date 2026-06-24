@@ -1,0 +1,121 @@
+// {{displayName}} — Education Course Timetable Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { educationService } = require("../../services/industry");
+
+Page({
+  data: {
+    courses: [],
+    weekdays: [],
+    todayCourses: 0,
+    completedToday: 0,
+    pendingAssignments: 0,
+    loading: false,
+    refreshing: false,
+    error: false,
+    selectedWeekday: 0,
+  },
+
+  onLoad() {
+    this.buildWeekdays();
+    this.loadSchedule();
+    this.loadAssignments();
+  },
+
+  buildWeekdays() {
+    const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+    const today = new Date();
+    const currentDay = today.getDay();
+
+    const weekdays = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - currentDay + i);
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      weekdays.push({
+        id: i,
+        name: i === currentDay ? '今天' : `周${dayNames[i]}`,
+        date: dateStr,
+        active: i === currentDay,
+      });
+    }
+
+    this.setData({
+      weekdays,
+      selectedWeekday: currentDay,
+    });
+  },
+
+  async loadSchedule() {
+    this.setData({ loading: true, error: false });
+
+    try {
+      const dayOffset = this.data.selectedWeekday;
+      const d = new Date();
+      d.setDate(d.getDate() - new Date().getDay() + dayOffset);
+      const dateStr = d.toISOString().slice(0, 10);
+
+      const res = await educationService.getSchedule({ date: dateStr });
+
+      const list = (res.data || []).sort((a, b) => {
+        return (a.start_time || '00:00').localeCompare(b.start_time || '00:00');
+      }).map(item => ({
+        id: item.id,
+        name: item.name || item.course_name || '',
+        startTime: item.start_time || item.startTime || '',
+        endTime: item.end_time || item.endTime || '',
+        room: item.room || '',
+        teacher: item.teacher || '',
+        type: item.type || '必修',
+        credits: item.credits || 0,
+        status: item.status || 'pending',
+      }));
+
+      const completed = list.filter(c => c.status === 'completed').length;
+
+      this.setData({
+        courses: list,
+        todayCourses: list.length,
+        completedToday: completed,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadSchedule error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  async loadAssignments() {
+    try {
+      const res = await educationService.getAssignments({ status: 'pending' });
+      const count = (res.data || []).length;
+      this.setData({ pendingAssignments: count });
+    } catch (e) {
+      console.error('loadAssignments error:', e);
+    }
+  },
+
+  onPullRefresh() {
+    this.setData({ refreshing: true });
+    this.loadSchedule();
+    this.loadAssignments();
+  },
+
+  onWeekdayTap(e) {
+    const id = parseInt(e.currentTarget.dataset.id, 10);
+    const weekdays = this.data.weekdays.map(w => ({ ...w, active: w.id === id }));
+    this.setData({ weekdays, selectedWeekday: id });
+    this.loadSchedule();
+  },
+
+  onCourseTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/course_detail/course_detail?id=${id}` });
+  },
+
+  onViewGrades() {
+    wx.navigateTo({ url: '/pages/assignments/assignments' });
+  },
+});

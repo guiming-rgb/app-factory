@@ -1,0 +1,58 @@
+<!-- {{displayName}} — Fitness Workout List (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="stats-header">
+    <view class="stat-item">
+      <text class="stat-value">{{todayCalories || 0}}</text>
+      <text class="stat-label">今日消耗(kcal)</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{workoutDays || 0}}</text>
+      <text class="stat-label">本月锻炼(天)</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{bodyWeight || '--'}}</text>
+      <text class="stat-label">体重(kg)</text>
+    </view>
+  </view>
+
+  <scroll-view class="category-tabs" scroll-x>
+    <view wx:for="{{categories}}" wx:key="id"
+      class="category-tab {{item.active ? 'active' : ''}}"
+      bindtap="onCategoryTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>{{error}}</text>
+    <text class="retry-btn" bindtap="loadCourses">重试</text>
+  </view>
+
+  <scroll-view class="course-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:for="{{courses}}" wx:key="id" class="course-card" bindtap="onCourseTap" data-id="{{item.id}}">
+      <image class="course-image" src="{{item.imageUrl || 'https://via.placeholder.com/160x100'}}" mode="aspectFill" />
+      <view class="course-info">
+        <text class="course-name">{{item.name}}</text>
+        <view class="course-tags">
+          <text class="level-badge level-{{item.level || 'beginner'}}">{{levelLabels[item.level] || '入门'}}</text>
+          <text class="course-duration" wx:if="{{item.duration}}">{{item.duration}}min</text>
+        </view>
+        <view class="course-meta">
+          <text class="course-calories" wx:if="{{item.calories}}">🔥 {{item.calories}} kcal</text>
+          <text class="course-coach" wx:if="{{item.coach}}">教练: {{item.coach}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && courses.length === 0}}">
+    <text class="empty-icon">🏋️</text>
+    <text>暂无课程</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

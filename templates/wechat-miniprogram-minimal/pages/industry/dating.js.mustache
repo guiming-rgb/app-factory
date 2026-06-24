@@ -1,0 +1,210 @@
+// {{displayName}} — Dating Profile Discovery Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    profiles: [],
+    matches: [],
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 10,
+    genderFilter: 'all',
+    ageRangeText: '年龄',
+    ageMin: 0,
+    ageMax: 100,
+    distanceText: '距离',
+    distanceMax: 100,
+    interestFilter: '',
+    likedIds: [],
+    swipedIds: [],
+  },
+
+  onLoad() {
+    this.loadProfiles();
+    this.loadMatches();
+  },
+
+  onShow() {
+    if (this.data.profiles.length === 0 && !this.data.loading) {
+      this.loadProfiles();
+    }
+  },
+
+  onPullRefresh() {
+    this.setData({ profiles: [], page: 0, hasMore: true, refreshing: true });
+    this.loadProfiles();
+  },
+
+  async loadProfiles() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      const formatted = list.map(item => ({
+        id: item.id,
+        nickname: item.nickname || item.name || '',
+        name: item.name || '',
+        age: item.age || 0,
+        avatar: item.avatar || item.image_url || item.avatar_url,
+        imageUrl: item.image_url || item.imageUrl || item.avatar,
+        bio: item.bio || item.biography || '',
+        interests: item.interests || item.interest_tags || item.tags || [],
+        gender: item.gender || 'unknown',
+        distance: item.distance || Math.floor(Math.random() * 20) + 1,
+        occupation: item.occupation || '',
+        education: item.education || '',
+      }));
+
+      // Exclude already-swiped profiles
+      const swipedSet = new Set(this.data.swipedIds);
+      const filtered = formatted.filter(p => !swipedSet.has(p.id));
+
+      this.setData({
+        profiles: this.data.page === 0 ? filtered : [...this.data.profiles, ...filtered],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadProfiles error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  onLoadMore() {
+    this.loadProfiles();
+  },
+
+  loadMatches() {
+    const stored = wx.getStorageSync('dating_matches') || [];
+    this.setData({ matches: stored });
+  },
+
+  onLike(e) {
+    const id = e.currentTarget.dataset.id;
+    const profile = this.data.profiles.find(p => p.id === id);
+    if (!profile) return;
+
+    const swipedIds = [...this.data.swipedIds, id];
+    const likedIds = [...this.data.likedIds, id];
+    const profiles = this.data.profiles.filter(p => p.id !== id);
+
+    this.setData({ swipedIds, likedIds, profiles });
+
+    // Simulate match check (50% chance)
+    if (Math.random() > 0.5) {
+      const matches = [...this.data.matches, profile];
+      wx.setStorageSync('dating_matches', matches);
+      this.setData({ matches });
+      wx.showToast({ title: '配对成功！', icon: 'success', duration: 2000 });
+    }
+  },
+
+  onDislike(e) {
+    const id = e.currentTarget.dataset.id;
+    const swipedIds = [...this.data.swipedIds, id];
+    const profiles = this.data.profiles.filter(p => p.id !== id);
+    this.setData({ swipedIds, profiles });
+  },
+
+  onSuperlike(e) {
+    const id = e.currentTarget.dataset.id;
+    const profile = this.data.profiles.find(p => p.id === id);
+    if (!profile) return;
+
+    const swipedIds = [...this.data.swipedIds, id];
+    const likedIds = [...this.data.likedIds, id];
+    const profiles = this.data.profiles.filter(p => p.id !== id);
+
+    this.setData({ swipedIds, likedIds, profiles });
+
+    // Superlike always generates a match for demo
+    const matches = [...this.data.matches, profile];
+    wx.setStorageSync('dating_matches', matches);
+    this.setData({ matches });
+    wx.showToast({ title: '超级喜欢！配对成功', icon: 'success', duration: 2000 });
+  },
+
+  onProfileTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/profile_detail/profile_detail?id=${id}` });
+  },
+
+  onMatchTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/chat/chat?targetId=${id}` });
+  },
+
+  onFilterGender() {
+    const options = ['全部', '男', '女'];
+    wx.showActionSheet({
+      itemList: options,
+      success: (res) => {
+        const map = ['all', 'male', 'female'];
+        const genderFilter = map[res.tapIndex] || 'all';
+        this.setData({ genderFilter, profiles: [], page: 0, hasMore: true });
+        this.loadProfiles();
+      },
+    });
+  },
+
+  onFilterAge() {
+    const ages = ['不限', '18-22', '23-26', '27-30', '30+'];
+    wx.showActionSheet({
+      itemList: ages,
+      success: (res) => {
+        const ranges = [
+          { text: '不限', min: 0, max: 100 },
+          { text: '18-22', min: 18, max: 22 },
+          { text: '23-26', min: 23, max: 26 },
+          { text: '27-30', min: 27, max: 30 },
+          { text: '30+', min: 30, max: 100 },
+        ];
+        const range = ranges[res.tapIndex] || ranges[0];
+        this.setData({
+          ageRangeText: range.text,
+          ageMin: range.min,
+          ageMax: range.max,
+          profiles: [],
+          page: 0,
+          hasMore: true,
+        });
+        this.loadProfiles();
+      },
+    });
+  },
+
+  onFilterDistance() {
+    const distances = ['不限', '1km内', '5km内', '10km内', '20km内'];
+    wx.showActionSheet({
+      itemList: distances,
+      success: (res) => {
+        const ranges = [100, 1, 5, 10, 20];
+        const d = ranges[res.tapIndex] || 100;
+        this.setData({
+          distanceText: distances[res.tapIndex] || '不限',
+          distanceMax: d,
+          profiles: [],
+          page: 0,
+          hasMore: true,
+        });
+        this.loadProfiles();
+      },
+    });
+  },
+});

@@ -1,0 +1,192 @@
+// {{displayName}} — Medical / Healthcare (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct DepartmentGridItem {
+  @State name: string = ''
+  @State icon: string = ''
+  @State color: string = ''
+  deptId: string = ''
+
+  build() {
+    Column() {
+      Text(this.icon || '🏥').fontSize(28)
+      Text(this.name).fontSize(12).fontColor('#333').margin({ top: 6 })
+    }
+    .width('100%').aspectRatio(1).justifyContent(FlexAlign.Center)
+    .backgroundColor('#f8f9fa').borderRadius(12)
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/DepartmentDetail', params: { id: this.deptId } })
+    })
+  }
+}
+
+@Component
+export struct DoctorCard {
+  @State name: string = ''
+  @State avatarUrl: string = ''
+  @State title: string = ''
+  @State hospital: string = ''
+  @State rating: number = 0
+  @State fee: number = 0
+  doctorId: string = ''
+
+  build() {
+    Row() {
+      Image(this.avatarUrl || 'https://via.placeholder.com/72')
+        .width(72).height(72).borderRadius(36).objectFit(ImageFit.Cover)
+      Column() {
+        Row() {
+          Text(this.name).fontSize(16).fontWeight(FontWeight.Medium)
+          Text(this.title).fontSize(12).fontColor('#999').margin({ left: 8 })
+        }
+        Text(this.hospital).fontSize(12).fontColor('#666').margin({ top: 4 })
+        Row() {
+          Text('⭐').fontSize(12)
+          Text(`${this.rating}`).fontSize(13).fontColor('#FF9500').margin({ left: 2 })
+          Blank()
+          Text(`¥${this.fee}`).fontSize(16).fontWeight(FontWeight.Bold).fontColor('{{primaryColor}}')
+          Text('/次').fontSize(11).fontColor('#999')
+        }.width('100%').margin({ top: 6 })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+      .margin({ left: 12 })
+    }
+    .width('100%').padding(12).backgroundColor(Color.White).borderRadius(12)
+    .margin({ bottom: 10 })
+    .shadow({ radius: 3, color: '#1a000000', offsetX: 0, offsetY: 1 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/DoctorDetail', params: { id: this.doctorId } })
+    })
+  }
+}
+
+@Entry
+@Component
+struct MedicalPage {
+  @State departments: Array<{ id: string, name: string, icon: string, color: string }> = [
+    { id: '1', name: '内科', icon: '🫁', color: '' },
+    { id: '2', name: '外科', icon: '🔪', color: '' },
+    { id: '3', name: '儿科', icon: '👶', color: '' },
+    { id: '4', name: '妇产科', icon: '👩', color: '' },
+    { id: '5', name: '眼科', icon: '👁️', color: '' },
+    { id: '6', name: '口腔科', icon: '🦷', color: '' },
+    { id: '7', name: '皮肤科', icon: '🧴', color: '' },
+    { id: '8', name: '中医科', icon: '🌿', color: '' },
+  ]
+  @State doctors: Array<{
+    id: string, name: string, avatarUrl: string,
+    title: string, hospital: string, rating: number, fee: number
+  }> = []
+  @State appointmentSlots: Array<{ id: string, time: string, available: boolean }> = []
+  @State selectedSlot: string = ''
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadData()
+  }
+
+  async loadData() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").limit(10)
+    this.doctors = [
+      { id: '1', name: '李医生', avatarUrl: '', title: '主任医师', hospital: '示例三甲医院', rating: 4.8, fee: 50 },
+      { id: '2', name: '王医生', avatarUrl: '', title: '副主任医师', hospital: '示例人民医院', rating: 4.5, fee: 30 },
+      { id: '3', name: '张医生', avatarUrl: '', title: '主治医师', hospital: '示例中医院', rating: 4.3, fee: 20 },
+    ]
+    this.appointmentSlots = [
+      { id: '1', time: '09:00-09:30', available: true },
+      { id: '2', time: '09:30-10:00', available: true },
+      { id: '3', time: '10:00-10:30', available: false },
+      { id: '4', time: '10:30-11:00', available: true },
+      { id: '5', time: '11:00-11:30', available: false },
+      { id: '6', time: '14:00-14:30', available: true },
+    ]
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // Department grid
+            Text('选择科室').fontSize(18).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 16, bottom: 12 })
+
+            Grid() {
+              ForEach(this.departments, (dept: { id: string, name: string, icon: string, color: string }) => {
+                GridItem() {
+                  DepartmentGridItem({ name: dept.name, icon: dept.icon, color: dept.color, deptId: dept.id })
+                }
+              })
+            }
+            .columnsTemplate('1fr 1fr 1fr 1fr')
+            .rowsTemplate('auto')
+            .columnsGap(10).rowsGap(10)
+            .padding({ left: 16, right: 16 })
+
+            // Doctor list
+            Text('推荐医生').fontSize(18).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 20, bottom: 12 })
+
+            if (this.doctors.length === 0) {
+              Text('暂无医生信息').fontSize(14).fontColor('#999').padding({ left: 16, bottom: 16 })
+            } else {
+              List() {
+                ForEach(this.doctors, (doc: {
+                  id: string, name: string, avatarUrl: string,
+                  title: string, hospital: string, rating: number, fee: number
+                }) => {
+                  ListItem() {
+                    DoctorCard({ ...doc, doctorId: doc.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16 })
+            }
+
+            // Appointment slots
+            Text('预约时段（今日）').fontSize(18).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 16, bottom: 12 })
+
+            Scroll() {
+              Row() {
+                ForEach(this.appointmentSlots, (slot: { id: string, time: string, available: boolean }) => {
+                  Column() {
+                    Text(slot.time).fontSize(13)
+                      .fontColor(slot.available ? (this.selectedSlot === slot.id ? Color.White : '#333') : '#ccc')
+                    Text(slot.available ? '可预约' : '已满').fontSize(10)
+                      .fontColor(slot.available ? (this.selectedSlot === slot.id ? '#ffffffb3' : '#4caf50') : '#ccc')
+                      .margin({ top: 2 })
+                  }
+                  .padding({ left: 14, right: 14, top: 10, bottom: 10 })
+                  .backgroundColor(
+                    this.selectedSlot === slot.id ? '{{primaryColor}}' :
+                    slot.available ? '#f0faf0' : '#f5f5f5'
+                  )
+                  .borderRadius(10)
+                  .border({ width: this.selectedSlot === slot.id ? 0 : 1, color: slot.available ? '#4caf50' : '#e0e0e0' })
+                  .margin({ right: 8 })
+                  .onClick(() => {
+                    if (slot.available) {
+                      this.selectedSlot = slot.id
+                    }
+                  })
+                })
+              }.padding({ left: 16, right: 16, bottom: 24 })
+            }.height(64).scrollable(ScrollDirection.Horizontal)
+          }
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

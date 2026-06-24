@@ -1,0 +1,67 @@
+<!-- {{displayName}} — Education Course Timetable (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="weekday-tabs">
+    <scroll-view scroll-x class="weekday-scroll">
+      <view wx:for="{{weekdays}}" wx:key="id"
+        class="weekday-item {{item.active ? 'active' : ''}}"
+        bindtap="onWeekdayTap" data-id="{{item.id}}">
+        <text class="weekday-name">{{item.name}}</text>
+        <text class="weekday-date">{{item.date}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="stats-bar">
+    <view class="stats-item">
+      <text class="stats-num">{{todayCourses || 0}}</text>
+      <text>今日课程</text>
+    </view>
+    <view class="stats-item">
+      <text class="stats-num">{{completedToday || 0}}</text>
+      <text>已完成</text>
+    </view>
+    <view class="stats-item" bindtap="onViewGrades">
+      <text class="stats-num">{{pendingAssignments || 0}}</text>
+      <text>待提交</text>
+    </view>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>课表加载失败</text>
+    <text class="retry-btn" bindtap="loadSchedule">重试</text>
+  </view>
+
+  <scroll-view class="schedule-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh">
+    <view wx:for="{{courses}}" wx:key="id" class="course-cell" bindtap="onCourseTap" data-id="{{item.id}}">
+      <view class="time-block">
+        <text class="course-time-start">{{item.startTime || '--:--'}}</text>
+        <text class="course-time-end">{{item.endTime || '--:--'}}</text>
+      </view>
+      <view class="time-line">
+        <view class="time-dot {{item.status === 'completed' ? 'done' : item.status === 'in_progress' ? 'current' : ''}}"></view>
+      </view>
+      <view class="course-body">
+        <text class="course-name">{{item.name}}</text>
+        <view class="course-details">
+          <text class="course-room" wx:if="{{item.room}}">📍 {{item.room}}</text>
+          <text class="course-teacher" wx:if="{{item.teacher}}">👨‍🏫 {{item.teacher}}</text>
+        </view>
+        <view class="course-badges">
+          <text class="badge-type">{{item.type || '必修'}}</text>
+          <text class="badge-credits" wx:if="{{item.credits}}">{{item.credits}}学分</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && courses.length === 0}}">
+    <text class="empty-icon">📚</text>
+    <text>当天没有课程</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

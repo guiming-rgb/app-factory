@@ -1,0 +1,74 @@
+<!-- {{displayName}} — Recruitment Job List (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索职位/公司" value="{{keyword}}" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <view class="filter-row">
+    <view class="filter-select" bindtap="onFilterCity">
+      <text>{{cityLabel || '城市'}}</text>
+      <text class="filter-arrow">▼</text>
+    </view>
+    <view class="filter-select" bindtap="onFilterSalary">
+      <text>{{salaryLabel || '薪资'}}</text>
+      <text class="filter-arrow">▼</text>
+    </view>
+    <view class="filter-select" bindtap="onFilterExperience">
+      <text>{{expLabel || '经验'}}</text>
+      <text class="filter-arrow">▼</text>
+    </view>
+    <view class="filter-select" bindtap="onFilterType">
+      <text>{{typeLabel || '类型'}}</text>
+      <text class="filter-arrow">▼</text>
+    </view>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>加载失败</text>
+    <text class="retry-btn" bindtap="loadJobs">重试</text>
+  </view>
+
+  <scroll-view class="job-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:for="{{jobs}}" wx:key="id" class="job-card" bindtap="onJobTap" data-id="{{item.id}}">
+      <view class="job-header">
+        <view class="job-title-area">
+          <text class="job-title">{{item.title}}</text>
+          <text class="job-salary">{{item.salaryRange || '面议'}}</text>
+        </view>
+        <image class="company-logo" src="{{item.companyLogo || 'https://via.placeholder.com/48'}}" mode="aspectFill" />
+      </view>
+
+      <view class="job-company">
+        <text>{{item.companyName || ''}}</text>
+      </view>
+
+      <view class="job-tags">
+        <text wx:for="{{item.tags || []}}" wx:key="*this" class="job-tag">{{item}}</text>
+      </view>
+
+      <view class="job-footer">
+        <view class="job-meta">
+          <text class="job-location" wx:if="{{item.city}}">📍 {{item.city}}</text>
+          <text class="job-experience" wx:if="{{item.experience}}">{{item.experience}}</text>
+          <text class="job-education" wx:if="{{item.education}}">{{item.education}}</text>
+        </view>
+        <view class="job-status">
+          <text class="status-badge {{item.isUrgent ? 'urgent' : ''}}">{{item.isUrgent ? '急招' : item.type || '全职'}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && jobs.length === 0}}">
+    <text class="empty-icon">💼</text>
+    <text>暂无匹配职位</text>
+    <text class="empty-hint">试试调整筛选条件</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

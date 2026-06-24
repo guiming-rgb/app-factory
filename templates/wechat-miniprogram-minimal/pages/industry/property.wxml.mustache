@@ -1,0 +1,93 @@
+<!-- {{displayName}} — Smart Property Dashboard (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="dashboard-grid">
+    <view class="dash-card" bindtap="onNavigateRepair">
+      <text class="dash-icon">🔧</text>
+      <view class="dash-info">
+        <text class="dash-num">{{pendingRepairs || 0}}</text>
+        <text class="dash-label">待处理报修</text>
+      </view>
+    </view>
+    <view class="dash-card" bindtap="onNavigatePayment">
+      <text class="dash-icon">💰</text>
+      <view class="dash-info">
+        <text class="dash-num">{{unpaidBills || 0}}</text>
+        <text class="dash-label">待缴费</text>
+      </view>
+    </view>
+    <view class="dash-card" bindtap="onNavigateNotice">
+      <text class="dash-icon">📢</text>
+      <view class="dash-info">
+        <text class="dash-num">{{unreadNotices || 0}}</text>
+        <text class="dash-label">未读公告</text>
+      </view>
+    </view>
+    <view class="dash-card" bindtap="onNavigateParking">
+      <text class="dash-icon">🚗</text>
+      <view class="dash-info">
+        <text class="dash-num">{{parkingAvailable || 0}}</text>
+        <text class="dash-label">空闲车位</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">近期报修</text>
+    <text class="section-more" bindtap="onViewAllRepairs">全部 〉</text>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>加载失败</text>
+    <text class="retry-btn" bindtap="loadData">重试</text>
+  </view>
+
+  <scroll-view class="repair-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh">
+    <view wx:for="{{repairs}}" wx:key="id" class="repair-card" bindtap="onRepairTap" data-id="{{item.id}}">
+      <view class="repair-header">
+        <text class="repair-title">{{item.title}}</text>
+        <text class="repair-status status-{{item.status || 'pending'}}">{{statusLabels[item.status] || '待处理'}}</text>
+      </view>
+      <view class="repair-meta">
+        <text class="repair-room" wx:if="{{item.room}}">{{item.room}}</text>
+        <text class="repair-time">{{item.createdAt || ''}}</text>
+      </view>
+      <view class="repair-assign" wx:if="{{item.worker}}">
+        <text>维修人: {{item.worker}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="section-header">
+    <text class="section-title">最近缴费</text>
+    <text class="section-more" bindtap="onViewAllBills">全部 〉</text>
+  </view>
+
+  <view class="bill-list">
+    <view wx:for="{{bills}}" wx:key="id" class="bill-card" bindtap="onBillTap" data-id="{{item.id}}">
+      <view class="bill-type">
+        <text class="bill-icon">{{item.type === 'property' ? '🏠' : item.type === 'water' ? '💧' : item.type === 'electricity' ? '⚡' : item.type === 'gas' ? '🔥' : '📄'}}</text>
+      </view>
+      <view class="bill-info">
+        <text class="bill-name">{{billTypeLabels[item.type] || '物业费'}}</text>
+        <text class="bill-period">{{item.period || ''}}</text>
+      </view>
+      <view class="bill-right">
+        <text class="bill-amount">¥{{item.amount || 0}}</text>
+        <text class="bill-status {{item.status === 'paid' ? 'paid' : 'unpaid'}}">
+          {{item.status === 'paid' ? '已缴' : '待缴'}}
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && repairs.length === 0 && bills.length === 0}}">
+    <text class="empty-icon">🏢</text>
+    <text>暂无数据</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

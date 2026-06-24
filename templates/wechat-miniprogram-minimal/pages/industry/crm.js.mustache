@@ -1,0 +1,144 @@
+// {{displayName}} — CRM Client Management Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { crmService } = require("../../services/industry");
+
+Page({
+  data: {
+    clients: [],
+    stages: [
+      { id: 'all', name: '全部', active: true, count: 0 },
+      { id: 'lead', name: '线索', count: 0 },
+      { id: 'contacted', name: '接触', count: 0 },
+      { id: 'qualified', name: '需求', count: 0 },
+      { id: 'proposal', name: '报价', count: 0 },
+      { id: 'negotiation', name: '谈判', count: 0 },
+      { id: 'closed', name: '成交', count: 0 },
+    ],
+    stageLabels: {
+      lead: '线索', contacted: '接触', qualified: '需求',
+      proposal: '报价', negotiation: '谈判', closed: '成交',
+    },
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    keyword: '',
+    activeStage: 'all',
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadClients();
+  },
+
+  onShow() {
+    if (this.data.clients.length === 0) {
+      this.loadClients();
+    }
+  },
+
+  async loadClients() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const params = {
+        page: this.data.page,
+        pageSize: this.data.PAGE_SIZE,
+        stage: this.data.activeStage === 'all' ? '' : this.data.activeStage,
+        keyword: this.data.keyword,
+        orderBy: 'updated_at',
+        orderDir: 'desc',
+      };
+
+      const res = await crmService.getClients(params);
+
+      const list = (res.data || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        company: item.company || '',
+        phone: item.phone || '',
+        stage: item.stage || 'lead',
+        expectedValue: item.expected_value || item.expectedValue || 0,
+        owner: item.owner || '',
+        updatedAt: item.updated_at || item.created_at?.slice(0, 10) || '',
+      }));
+
+      this.setData({
+        clients: this.data.page === 0 ? list : [...this.data.clients, ...list],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+
+      this.updateStageCounts(res.counts || list);
+    } catch (e) {
+      console.error('loadClients error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  updateStageCounts(list) {
+    const counts = { all: list.length };
+    list.forEach(item => {
+      const s = item.stage || 'lead';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const stages = this.data.stages.map(s => ({
+      ...s,
+      count: counts[s.id === 'all' ? 'all' : s.id] || 0,
+    }));
+    this.setData({ stages });
+  },
+
+  onLoadMore() {
+    this.loadClients();
+  },
+
+  onPullRefresh() {
+    this.setData({ clients: [], page: 0, hasMore: true, refreshing: true });
+    this.loadClients();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  onSearch() {
+    this.setData({ clients: [], page: 0, hasMore: true });
+    this.loadClients();
+  },
+
+  onStageTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const stages = this.data.stages.map(s => ({ ...s, active: s.id === id }));
+    this.setData({ stages, activeStage: id, clients: [], page: 0, hasMore: true });
+    this.loadClients();
+  },
+
+  onClientTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/crm_detail/crm_detail?id=${id}` });
+  },
+
+  onCallClient(e) {
+    const id = e.currentTarget.dataset.id;
+    const client = this.data.clients.find(c => c.id === id);
+    if (client && client.phone) {
+      wx.makePhoneCall({ phoneNumber: client.phone });
+    }
+  },
+
+  onMessageClient(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/crm_chat/crm_chat?clientId=${id}` });
+  },
+
+  onAddClient() {
+    wx.navigateTo({ url: '/pages/crm_form/crm_form' });
+  },
+});

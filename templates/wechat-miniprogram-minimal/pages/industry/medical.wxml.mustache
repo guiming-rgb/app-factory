@@ -1,0 +1,90 @@
+<!-- {{displayName}} — Online Medical Consultation (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索医生或科室" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">科室列表</text>
+  </view>
+
+  <view class="department-grid">
+    <view wx:for="{{departments}}" wx:key="id" class="dept-item" bindtap="onDepartmentTap" data-id="{{item.id}}">
+      <view class="dept-icon" style="background: {{item.color || '#E8F5E9'}}">
+        <text>{{item.icon}}</text>
+      </view>
+      <text class="dept-name">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view class="section-header">
+    <text class="section-title">推荐医生</text>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>加载失败，点击重试</text>
+    <text class="retry-btn" bindtap="loadDoctors">重试</text>
+  </view>
+
+  <scroll-view class="doctor-list" scroll-y bindscrolltolower="onLoadMore">
+    <view wx:if="{{!loading && doctors.length === 0 && !error}}" class="empty-state">
+      <text class="empty-icon">🏥</text>
+      <text>暂无医生信息</text>
+      <text class="empty-hint">请选择其他科室</text>
+    </view>
+
+    <view wx:for="{{doctors}}" wx:key="id" class="doctor-card" bindtap="onDoctorTap" data-id="{{item.id}}">
+      <image class="doctor-avatar" src="{{item.avatarUrl || 'https://via.placeholder.com/64'}}" mode="aspectFill" />
+      <view class="doctor-info">
+        <view class="doctor-name-row">
+          <text class="doctor-name">{{item.name}}</text>
+          <text class="doctor-title">{{item.title || '主治医师'}}</text>
+        </view>
+        <text class="doctor-hospital" wx:if="{{item.hospital}}">{{item.hospital}}</text>
+        <text class="doctor-dept" wx:if="{{item.department}}">{{item.department}}</text>
+        <view class="doctor-meta">
+          <text class="doctor-rating" wx:if="{{item.rating}}">⭐ {{item.rating}}分</text>
+          <text class="doctor-experience" wx:if="{{item.experience}}">{{item.experience}}年经验</text>
+        </view>
+        <text class="doctor-fee">咨询费 ¥{{item.consultationFee || item.fee || 0}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="appointment-panel" wx:if="{{showAppointment && selectedDoctor}}">
+    <view class="panel-mask" bindtap="onCloseAppointment"></view>
+    <view class="panel-content">
+      <view class="panel-header">
+        <text class="panel-title">预约 {{selectedDoctor.name}}</text>
+        <text class="panel-close" bindtap="onCloseAppointment">✕</text>
+      </view>
+      <view class="panel-body">
+        <text class="panel-label">选择日期</text>
+        <scroll-view class="date-slots" scroll-x>
+          <view wx:for="{{dateSlots}}" wx:key="id"
+            class="date-slot {{item.selected ? 'selected' : ''}}"
+            bindtap="onSelectDate" data-id="{{item.id}}">
+            <text class="date-weekday">{{item.weekday}}</text>
+            <text class="date-day">{{item.day}}</text>
+          </view>
+        </scroll-view>
+        <text class="panel-label">选择时段</text>
+        <view class="time-slots">
+          <view wx:for="{{timeSlots}}" wx:key="id"
+            class="time-slot {{item.selected ? 'selected' : ''}} {{item.available ? '' : 'disabled'}}"
+            bindtap="onSelectTime" data-id="{{item.id}}">
+            <text>{{item.time}}</text>
+          </view>
+        </view>
+      </view>
+      <button class="confirm-btn" bindtap="onConfirmAppointment" loading="{{submitting}}">确认预约</button>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

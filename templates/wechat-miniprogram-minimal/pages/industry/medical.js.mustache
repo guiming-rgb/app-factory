@@ -1,0 +1,212 @@
+// {{displayName}} — Online Medical Consultation Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    doctors: [],
+    departments: [
+      { id: 'internal', name: '内科', icon: '🫁', color: '#E3F2FD' },
+      { id: 'surgery', name: '外科', icon: '🔪', color: '#FFF3E0' },
+      { id: 'pediatrics', name: '儿科', icon: '👶', color: '#FCE4EC' },
+      { id: 'gynecology', name: '妇科', icon: '👩', color: '#F3E5F5' },
+      { id: 'dermatology', name: '皮肤科', icon: '🧴', color: '#E8F5E9' },
+      { id: 'ent', name: '耳鼻喉科', icon: '👂', color: '#FFF8E1' },
+      { id: 'ophthalmology', name: '眼科', icon: '👁', color: '#E0F7FA' },
+      { id: 'dentistry', name: '口腔科', icon: '🦷', color: '#FBE9E7' },
+    ],
+    activeDepartment: '',
+    keyword: '',
+    loading: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 20,
+    selectedDoctor: null,
+    showAppointment: false,
+    submitting: false,
+    dateSlots: [],
+    timeSlots: [],
+    selectedDate: '',
+    selectedTime: '',
+  },
+
+  onLoad() {
+    this.loadDoctors();
+    this.initDateSlots();
+  },
+
+  initDateSlots() {
+    const slots = [];
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      slots.push({
+        id: i,
+        weekday: i === 0 ? '今天' : i === 1 ? '明天' : weekdays[d.getDay()],
+        day: `${d.getMonth() + 1}/${d.getDate()}`,
+        selected: i === 0,
+        fullDate: d.toISOString().slice(0, 10),
+      });
+    }
+    this.setData({
+      dateSlots: slots,
+      selectedDate: slots[0].fullDate,
+    });
+    this.initTimeSlots();
+  },
+
+  initTimeSlots() {
+    const times = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+    const slots = times.map((t, i) => ({
+      id: i,
+      time: t,
+      available: Math.random() > 0.3,
+      selected: false,
+    }));
+    this.setData({ timeSlots: slots });
+  },
+
+  async loadDoctors() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const params = [
+        `select=*`,
+        `limit=${this.data.PAGE_SIZE}`,
+        `offset=${from}`,
+        `order=created_at.desc`,
+      ];
+      if (this.data.activeDepartment) {
+        params.push(`department=eq.${this.data.activeDepartment}`);
+      }
+
+      const { data, error } = await request(`{{tableName}}?${params.join('&')}`);
+
+      if (error) throw error;
+
+      const list = data || [];
+      const formatted = list.map(item => ({
+        id: item.id,
+        name: item.name || '',
+        title: item.title || '主治医师',
+        avatarUrl: item.avatar_url || item.avatarUrl || item.image_url,
+        hospital: item.hospital || '',
+        department: item.department || '',
+        rating: item.rating || 0,
+        experience: item.experience || item.years_of_exp || 0,
+        consultationFee: item.consultation_fee || item.fee || item.consultationFee || 0,
+        specialty: item.specialty || item.specialties || '',
+      }));
+
+      this.setData({
+        doctors: this.data.page === 0 ? formatted : [...this.data.doctors, ...formatted],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+      });
+    } catch (e) {
+      console.error('loadDoctors error:', e);
+      this.setData({ loading: false, error: true });
+    }
+  },
+
+  onLoadMore() {
+    this.loadDoctors();
+  },
+
+  onDepartmentTap(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({
+      activeDepartment: this.data.activeDepartment === id ? '' : id,
+      doctors: [],
+      page: 0,
+      hasMore: true,
+    });
+    this.loadDoctors();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  async onSearch() {
+    this.setData({ doctors: [], page: 0, hasMore: true });
+    await this.loadDoctors();
+  },
+
+  onDoctorTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const doctor = this.data.doctors.find(d => d.id === id);
+    if (doctor) {
+      wx.navigateTo({ url: `/pages/doctor_detail/doctor_detail?id=${id}` });
+    }
+  },
+
+  onMakeAppointment(e) {
+    const id = e.currentTarget.dataset.id;
+    const doctor = this.data.doctors.find(d => d.id === id);
+    if (doctor) {
+      this.setData({ selectedDoctor: doctor, showAppointment: true, selectedTime: '' });
+    }
+  },
+
+  onCloseAppointment() {
+    this.setData({ showAppointment: false, selectedDoctor: null, selectedTime: '' });
+  },
+
+  onSelectDate(e) {
+    const id = parseInt(e.currentTarget.dataset.id);
+    const slots = this.data.dateSlots.map((s, i) => ({ ...s, selected: i === id }));
+    this.setData({ dateSlots: slots, selectedDate: slots[id].fullDate, selectedTime: '' });
+    this.initTimeSlots();
+  },
+
+  onSelectTime(e) {
+    const id = parseInt(e.currentTarget.dataset.id);
+    const slot = this.data.timeSlots[id];
+    if (!slot.available) return;
+    const slots = this.data.timeSlots.map((s, i) => ({ ...s, selected: i === id }));
+    this.setData({ timeSlots: slots, selectedTime: slot.time });
+  },
+
+  async onConfirmAppointment() {
+    if (!this.data.selectedTime) {
+      wx.showToast({ title: '请选择预约时段', icon: 'none' });
+      return;
+    }
+    this.setData({ submitting: true });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const { error } = await request('{{tableName}}', {
+        method: 'POST',
+        body: JSON.stringify({
+          doctor_id: this.data.selectedDoctor.id,
+          appointment_date: this.data.selectedDate,
+          appointment_time: this.data.selectedTime,
+          status: 'confirmed',
+          created_at: new Date().toISOString(),
+        }),
+      });
+
+      if (error) throw error;
+
+      wx.showToast({ title: '预约成功', icon: 'success' });
+      this.setData({ showAppointment: false, selectedDoctor: null, submitting: false });
+    } catch (e) {
+      console.error('onConfirmAppointment error:', e);
+      wx.showToast({ title: '预约失败，请重试', icon: 'error' });
+      this.setData({ submitting: false });
+    }
+  },
+
+  onViewRecords() {
+    wx.navigateTo({ url: '/pages/medical_records/medical_records' });
+  },
+});

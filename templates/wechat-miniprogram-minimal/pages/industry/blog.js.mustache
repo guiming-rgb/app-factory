@@ -1,0 +1,205 @@
+// {{displayName}} — Blog / Article Reading Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    articles: [],
+    categories: [
+      { id: 'all', name: '推荐', active: true },
+      { id: 'tech', name: '科技', active: false },
+      { id: 'life', name: '生活', active: false },
+      { id: 'travel', name: '旅行', active: false },
+      { id: 'food', name: '美食', active: false },
+      { id: 'finance', name: '财经', active: false },
+    ],
+    activeCategory: 'all',
+    keyword: '',
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 20,
+    bookmarkedIds: [],
+    readingHistory: [],
+  },
+
+  onLoad() {
+    this.loadBookmarks();
+    this.loadReadingHistory();
+    this.loadArticles();
+  },
+
+  onShow() {
+    if (this.data.articles.length === 0 && !this.data.loading) {
+      this.loadArticles();
+    }
+    // Refresh bookmarks on show
+    this.loadBookmarks();
+  },
+
+  onPullRefresh() {
+    this.setData({ articles: [], page: 0, hasMore: true, refreshing: true });
+    this.loadArticles();
+  },
+
+  loadBookmarks() {
+    try {
+      const ids = wx.getStorageSync('blog_bookmarks') || [];
+      this.setData({ bookmarkedIds: ids });
+    } catch (e) {
+      console.error('loadBookmarks error:', e);
+    }
+  },
+
+  loadReadingHistory() {
+    try {
+      const history = wx.getStorageSync('blog_history') || [];
+      this.setData({ readingHistory: history });
+    } catch (e) {
+      console.error('loadReadingHistory error:', e);
+    }
+  },
+
+  async loadArticles() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const params = [
+        `select=*`,
+        `limit=${this.data.PAGE_SIZE}`,
+        `offset=${from}`,
+        `order=created_at.desc`,
+      ];
+      if (this.data.activeCategory !== 'all') {
+        params.push(`category=eq.${this.data.activeCategory}`);
+      }
+
+      const { data, error } = await request(`{{tableName}}?${params.join('&')}`);
+
+      if (error) throw error;
+
+      const list = data || [];
+      const bookmarkedSet = new Set(this.data.bookmarkedIds);
+      const historySet = new Set(this.data.readingHistory.map(h => h.id));
+
+      const formatted = list.map(item => ({
+        id: item.id,
+        title: item.title || '',
+        summary: item.summary || item.description || item.excerpt || '',
+        coverUrl: item.cover_url || item.coverUrl || item.image_url,
+        author: item.author || item.author_name || '匿名',
+        authorAvatar: item.author_avatar || item.authorAvatar,
+        category: item.category || 'tech',
+        readTime: item.read_time || item.readTime || Math.ceil((item.content_length || 500) / 500),
+        date: item.published_at || item.created_at?.slice(0, 10) || '',
+        tags: item.tags || item.tag_list || [],
+        isBookmarked: bookmarkedSet.has(item.id),
+        isRead: historySet.has(item.id),
+        views: item.views || item.view_count || 0,
+        likes: item.likes || item.like_count || 0,
+      }));
+
+      this.setData({
+        articles: this.data.page === 0 ? formatted : [...this.data.articles, ...formatted],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadArticles error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  onLoadMore() {
+    this.loadArticles();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  async onSearch() {
+    this.setData({ articles: [], page: 0, hasMore: true });
+    await this.loadArticles();
+  },
+
+  onCategoryTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const cats = this.data.categories.map(c => ({ ...c, active: c.id === id }));
+    this.setData({ categories: cats, activeCategory: id, articles: [], page: 0, hasMore: true });
+    this.loadArticles();
+  },
+
+  onArticleTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const article = this.data.articles.find(a => a.id === id);
+    if (article) {
+      // Save reading history
+      try {
+        const history = wx.getStorageSync('blog_history') || [];
+        const entry = {
+          id: article.id,
+          title: article.title,
+          date: new Date().toISOString().slice(0, 10),
+        };
+        // Remove existing entry and add to front
+        const filtered = history.filter(h => h.id !== article.id);
+        filtered.unshift(entry);
+        // Keep only last 50
+        const trimmed = filtered.slice(0, 50);
+        wx.setStorageSync('blog_history', trimmed);
+        this.setData({ readingHistory: trimmed });
+      } catch (e) {
+        console.error('saveHistory error:', e);
+      }
+    }
+    wx.navigateTo({ url: `/pages/article_detail/article_detail?id=${id}` });
+  },
+
+  onBookmarkToggle(e) {
+    const id = e.currentTarget.dataset.id;
+
+    try {
+      let ids = wx.getStorageSync('blog_bookmarks') || [];
+      const idx = ids.indexOf(id);
+
+      if (idx > -1) {
+        ids.splice(idx, 1);
+        wx.showToast({ title: '已取消收藏', icon: 'none' });
+      } else {
+        ids.push(id);
+        wx.showToast({ title: '已收藏', icon: 'success' });
+      }
+
+      wx.setStorageSync('blog_bookmarks', ids);
+
+      // Update local article state
+      const articles = this.data.articles.map(a => {
+        if (a.id === id) {
+          return { ...a, isBookmarked: idx === -1 };
+        }
+        return a;
+      });
+
+      this.setData({ bookmarkedIds: ids, articles });
+    } catch (e) {
+      console.error('onBookmarkToggle error:', e);
+    }
+  },
+
+  onViewBookmarks() {
+    wx.navigateTo({ url: '/pages/bookmarks/bookmarks' });
+  },
+
+  onViewHistory() {
+    wx.navigateTo({ url: '/pages/reading_history/reading_history' });
+  },
+});

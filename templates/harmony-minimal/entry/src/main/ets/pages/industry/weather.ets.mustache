@@ -1,0 +1,187 @@
+// {{displayName}} — Weather Forecast (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct HourlyForecastItem {
+  @State time: string = ''
+  @State icon: string = ''
+  @State temp: string = ''
+
+  build() {
+    Column() {
+      Text(this.time).fontSize(13).fontColor('#666')
+      Text(this.icon || '☀️').fontSize(24).margin({ top: 8, bottom: 8 })
+      Text(this.temp).fontSize(15).fontWeight(FontWeight.Medium)
+    }.width(64).padding({ top: 8, bottom: 8 })
+  }
+}
+
+@Component
+export struct DailyForecastItem {
+  @State day: string = ''
+  @State icon: string = ''
+  @State highTemp: string = ''
+  @State lowTemp: string = ''
+
+  build() {
+    Row() {
+      Text(this.day).fontSize(15).fontColor('#333').width(60)
+      Text(this.icon || '☀️').fontSize(20).margin({ left: 8 })
+      Blank()
+      Text(this.lowTemp).fontSize(14).fontColor('#999').margin({ right: 12 })
+      Text(this.highTemp).fontSize(14).fontWeight(FontWeight.Medium).fontColor('#333')
+    }
+    .width('100%').padding({ left: 16, right: 16, top: 12, bottom: 12 })
+    .backgroundColor(Color.White).borderRadius(8).margin({ bottom: 6 })
+  }
+}
+
+@Entry
+@Component
+struct WeatherPage {
+  @State cityName: string = ''
+  @State currentTemp: string = ''
+  @State currentCondition: string = ''
+  @State currentIcon: string = ''
+  @State highTemp: string = ''
+  @State lowTemp: string = ''
+  @State hourlyForecast: Array<{ time: string, icon: string, temp: string }> = []
+  @State dailyForecast: Array<{ day: string, icon: string, highTemp: string, lowTemp: string }> = []
+  @State aqi: number = 0
+  @State aqiLevel: string = ''
+  @State lifeIndices: Array<{ name: string, level: string, desc: string }> = []
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadWeather()
+  }
+
+  async loadWeather() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").single()
+    this.cityName = '示例城市'
+    this.currentTemp = '26°'
+    this.currentCondition = '晴间多云'
+    this.currentIcon = '⛅'
+    this.highTemp = '30°'
+    this.lowTemp = '20°'
+    this.hourlyForecast = [
+      { time: '现在', icon: '⛅', temp: '26°' },
+      { time: '14点', icon: '☀️', temp: '28°' },
+      { time: '15点', icon: '☀️', temp: '29°' },
+      { time: '16点', icon: '⛅', temp: '29°' },
+      { time: '17点', icon: '⛅', temp: '27°' },
+      { time: '18点', icon: '☁️', temp: '25°' },
+    ]
+    this.dailyForecast = [
+      { day: '今天', icon: '⛅', highTemp: '30°', lowTemp: '20°' },
+      { day: '明天', icon: '☀️', highTemp: '32°', lowTemp: '22°' },
+      { day: '周三', icon: '☁️', highTemp: '28°', lowTemp: '19°' },
+      { day: '周四', icon: '🌧️', highTemp: '24°', lowTemp: '18°' },
+      { day: '周五', icon: '☁️', highTemp: '26°', lowTemp: '19°' },
+      { day: '周六', icon: '☀️', highTemp: '31°', lowTemp: '21°' },
+      { day: '周日', icon: '☀️', highTemp: '33°', lowTemp: '23°' },
+    ]
+    this.aqi = 65
+    this.aqiLevel = '良'
+    this.lifeIndices = [
+      { name: '穿衣', level: '舒适', desc: '建议穿薄外套' },
+      { name: '紫外线', level: '中等', desc: '注意防晒' },
+      { name: '感冒', level: '低发', desc: '不易感冒' },
+      { name: '运动', level: '适宜', desc: '适合户外运动' },
+    ]
+    this.loading = false
+  }
+
+  aqiColor(): string {
+    if (this.aqi <= 50) return '#4caf50'
+    if (this.aqi <= 100) return '#ff9800'
+    if (this.aqi <= 150) return '#f44336'
+    return '#9c27b0'
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // Current weather hero
+            Column() {
+              Text(this.cityName).fontSize(16).fontColor('#ffffffb3')
+              Text(this.currentTemp).fontSize(64).fontWeight(FontWeight.Bold).fontColor(Color.White)
+              Row() {
+                Text(this.currentIcon).fontSize(28)
+                Text(this.currentCondition).fontSize(18).fontColor(Color.White).margin({ left: 8 })
+              }.margin({ top: 4 })
+              Text(`H ${this.highTemp}  L ${this.lowTemp}`).fontSize(14).fontColor('#ffffffb3').margin({ top: 8 })
+            }
+            .width('100%').padding({ top: 32, bottom: 32 })
+            .backgroundColor('{{primaryColor}}')
+
+            // Hourly forecast
+            Column() {
+              Text('小时预报').fontSize(16).fontWeight(FontWeight.Bold).margin({ bottom: 8 })
+              Scroll() {
+                Row() {
+                  ForEach(this.hourlyForecast, (item: { time: string, icon: string, temp: string }) => {
+                    HourlyForecastItem({ time: item.time, icon: item.icon, temp: item.temp })
+                  })
+                }
+              }.scrollable(ScrollDirection.Horizontal).width('100%')
+            }
+            .padding(16).backgroundColor(Color.White).borderRadius(12)
+            .margin({ left: 16, right: 16, top: 16 })
+
+            // 7-day forecast
+            Text('7日预报').fontSize(16).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 20, bottom: 8 })
+            List() {
+              ForEach(this.dailyForecast, (day: { day: string, icon: string, highTemp: string, lowTemp: string }) => {
+                ListItem() {
+                  DailyForecastItem({ ...day })
+                }
+              })
+            }
+            .padding({ left: 16, right: 16 })
+
+            // AQI card
+            Row() {
+              Column() {
+                Text('空气质量').fontSize(14).fontColor('#666')
+                Text(`${this.aqi}`).fontSize(32).fontWeight(FontWeight.Bold).fontColor(this.aqiColor())
+                Text(this.aqiLevel).fontSize(14).fontColor(this.aqiColor()).margin({ top: 2 })
+              }.alignItems(HorizontalAlign.Center)
+            }
+            .width('100%').padding(16).backgroundColor(Color.White).borderRadius(12)
+            .margin({ left: 16, right: 16, top: 16 })
+
+            // Life indices
+            Text('生活指数').fontSize(16).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 20, bottom: 8 })
+            Grid() {
+              ForEach(this.lifeIndices, (item: { name: string, level: string, desc: string }) => {
+                GridItem() {
+                  Column() {
+                    Text(item.name).fontSize(13).fontColor('#666')
+                    Text(item.level).fontSize(16).fontWeight(FontWeight.Medium).fontColor('{{primaryColor}}').margin({ top: 4 })
+                    Text(item.desc).fontSize(11).fontColor('#999').margin({ top: 2 })
+                  }.padding(12).backgroundColor(Color.White).borderRadius(10)
+                }
+              })
+            }
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(10).rowsGap(10)
+            .padding({ left: 16, right: 16, bottom: 24 })
+          }
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

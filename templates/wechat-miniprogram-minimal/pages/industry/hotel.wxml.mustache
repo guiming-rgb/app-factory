@@ -1,0 +1,85 @@
+<!-- {{displayName}} — Hotel Search & Booking (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-form">
+    <view class="form-row">
+      <text class="form-label">城市</text>
+      <input class="form-input" placeholder="搜索城市或目的地" value="{{city}}" bindinput="onCityInput" />
+    </view>
+    <view class="form-row">
+      <view class="date-group">
+        <text class="form-label">入住</text>
+        <text class="date-value" bindtap="onSelectCheckIn">{{checkIn || '选择日期'}}</text>
+      </view>
+      <text class="date-sep">→</text>
+      <view class="date-group">
+        <text class="form-label">离店</text>
+        <text class="date-value" bindtap="onSelectCheckOut">{{checkOut || '选择日期'}}</text>
+      </view>
+    </view>
+    <view class="form-row">
+      <text class="form-label">住客</text>
+      <view class="guest-selector" bindtap="onSelectGuests">
+        <text>{{rooms || 1}}间 · {{guests || 1}}人</text>
+        <text class="selector-arrow">〉</text>
+      </view>
+    </view>
+    <button class="search-btn" bindtap="onSearchHotels">搜索酒店</button>
+  </view>
+
+  <view class="filter-bar" wx:if="{{hasSearched}}">
+    <view class="filter-item {{priceFilter === '' ? 'active' : ''}}" bindtap="onPriceFilter" data-value="">
+      <text>不限</text>
+    </view>
+    <view wx:for="{{priceRanges}}" wx:key="id"
+      class="filter-item {{priceFilter === item.id ? 'active' : ''}}"
+      bindtap="onPriceFilter" data-value="{{item.id}}">
+      <text>{{item.label}}</text>
+    </view>
+    <view class="filter-item {{sortBy === 'rating' ? 'active' : ''}}" bindtap="onSortByRating">
+      <text>评分</text>
+    </view>
+    <view class="filter-item {{sortBy === 'price' ? 'active' : ''}}" bindtap="onSortByPrice">
+      <text>价格↓</text>
+    </view>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>{{error}}</text>
+    <text class="retry-btn" bindtap="searchHotels">重试</text>
+  </view>
+
+  <scroll-view class="hotel-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore" wx:if="{{hasSearched}}">
+    <view wx:for="{{hotels}}" wx:key="id" class="hotel-card" bindtap="onHotelTap" data-id="{{item.id}}">
+      <image class="hotel-image" src="{{item.imageUrl || 'https://via.placeholder.com/320x180'}}" mode="aspectFill" />
+      <view class="hotel-info">
+        <view class="hotel-header">
+          <text class="hotel-name">{{item.name}}</text>
+          <text class="hotel-stars">{{'⭐'.repeat(item.stars || 3)}}</text>
+        </view>
+        <view class="hotel-meta">
+          <text class="hotel-rating" wx:if="{{item.rating}}">评分 {{item.rating}}</text>
+          <text class="hotel-address" wx:if="{{item.address}}">{{item.address}}</text>
+        </view>
+        <view class="hotel-tags">
+          <text wx:for="{{item.tags || []}}" wx:key="*this" class="hotel-tag">{{item}}</text>
+        </view>
+        <view class="hotel-footer">
+          <text class="hotel-price">¥{{item.price || 0}}<text class="price-unit">/晚</text></text>
+          <text class="hotel-remark" wx:if="{{item.remark}}">{{item.remark}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{hasSearched && !loading && !error && hotels.length === 0}}">
+    <text class="empty-icon">🏨</text>
+    <text>未找到相关酒店</text>
+    <text class="empty-hint">试试修改搜索条件</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

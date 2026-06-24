@@ -1,0 +1,107 @@
+<!-- {{displayName}} — Sports Scores & News (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <scroll-view class="league-tabs" scroll-x>
+    <view wx:for="{{leagues}}" wx:key="id"
+      class="league-tab {{item.active ? 'active' : ''}}"
+      bindtap="onLeagueTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>{{error}}</text>
+    <text class="retry-btn" bindtap="loadSportsData">重试</text>
+  </view>
+
+  <scroll-view class="sports-content" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+
+    <view class="section-header" wx:if="{{liveMatches && liveMatches.length > 0}}">
+      <text class="section-title">⚽ 实时比赛</text>
+    </view>
+
+    <view class="live-matches" wx:if="{{liveMatches && liveMatches.length > 0}}">
+      <view wx:for="{{liveMatches}}" wx:key="id" class="match-card" bindtap="onMatchTap" data-id="{{item.id}}">
+        <view class="match-header">
+          <text class="match-league">{{item.leagueName || item.league || ''}}</text>
+          <view class="match-status">
+            <view class="live-dot"></view>
+            <text class="match-time">{{item.status || '进行中'}}</text>
+          </view>
+        </view>
+        <view class="match-teams">
+          <view class="team-info home-team">
+            <text class="team-name">{{item.homeTeam || item.home_team || ''}}</text>
+            <image class="team-logo" src="{{item.homeLogo || item.home_logo || 'https://via.placeholder.com/24'}}" mode="aspectFit" />
+          </view>
+          <view class="match-score">
+            <text class="score-text">{{item.homeScore ?? item.home_score ?? 0}} : {{item.awayScore ?? item.away_score ?? 0}}</text>
+          </view>
+          <view class="team-info away-team">
+            <image class="team-logo" src="{{item.awayLogo || item.away_logo || 'https://via.placeholder.com/24'}}" mode="aspectFit" />
+            <text class="team-name">{{item.awayTeam || item.away_team || ''}}</text>
+          </view>
+        </view>
+        <view class="match-meta" wx:if="{{item.matchTime || item.venue}}">
+          <text class="match-venue" wx:if="{{item.venue}}">📍 {{item.venue}}</text>
+          <text class="match-time-label" wx:if="{{item.matchTime}}">{{item.matchTime}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-header" wx:if="{{standings && standings.length > 0}}">
+      <text class="section-title">🏆 积分榜</text>
+    </view>
+
+    <view class="standings-table" wx:if="{{standings && standings.length > 0}}">
+      <view class="standings-header">
+        <text class="col-rank">#</text>
+        <text class="col-team">球队</text>
+        <text class="col-stat">赛</text>
+        <text class="col-stat">胜</text>
+        <text class="col-stat">平</text>
+        <text class="col-stat">负</text>
+        <text class="col-pts">积分</text>
+      </view>
+      <view wx:for="{{standings}}" wx:key="id" class="standings-row" bindtap="onTeamTap" data-id="{{item.teamId || item.id}}">
+        <text class="col-rank {{item.rank <= 3 ? 'top-rank' : ''}}">{{item.rank}}</text>
+        <view class="col-team">
+          <image class="team-logo-sm" src="{{item.logo || 'https://via.placeholder.com/16'}}" mode="aspectFit" />
+          <text class="team-name-sm">{{item.teamName || item.team || item.name || ''}}</text>
+        </view>
+        <text class="col-stat">{{item.played || item.P || 0}}</text>
+        <text class="col-stat">{{item.wins || item.W || 0}}</text>
+        <text class="col-stat">{{item.draws || item.D || 0}}</text>
+        <text class="col-stat">{{item.losses || item.L || 0}}</text>
+        <text class="col-pts bold">{{item.points || item.pts || item.Pts || 0}}</text>
+      </view>
+    </view>
+
+    <view class="section-header" wx:if="{{news && news.length > 0}}">
+      <text class="section-title">📰 新闻资讯</text>
+    </view>
+
+    <view class="news-list" wx:if="{{news && news.length > 0}}">
+      <view wx:for="{{news}}" wx:key="id" class="news-card" bindtap="onNewsTap" data-id="{{item.id}}">
+        <image class="news-image" src="{{item.imageUrl || item.coverUrl || 'https://via.placeholder.com/120x80'}}" mode="aspectFill" />
+        <view class="news-info">
+          <text class="news-title">{{item.title || ''}}</text>
+          <view class="news-meta">
+            <text class="news-source" wx:if="{{item.source}}">{{item.source}}</text>
+            <text class="news-date">{{item.date || item.created_at?.slice(0,10) || ''}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{!loading && !error && liveMatches.length === 0 && standings.length === 0 && news.length === 0}}">
+      <text class="empty-icon">⚽</text>
+      <text>暂无体育数据</text>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

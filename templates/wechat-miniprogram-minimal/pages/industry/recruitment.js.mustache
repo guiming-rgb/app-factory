@@ -1,0 +1,175 @@
+// {{displayName}} — Recruitment Job List Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { recruitmentService } = require("../../services/industry");
+
+Page({
+  data: {
+    jobs: [],
+    keyword: '',
+    city: '',
+    cityLabel: '城市',
+    salary: '',
+    salaryLabel: '薪资',
+    experience: '',
+    expLabel: '经验',
+    jobType: '',
+    typeLabel: '类型',
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadJobs();
+  },
+
+  async loadJobs() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const params = {
+        page: this.data.page,
+        pageSize: this.data.PAGE_SIZE,
+        keyword: this.data.keyword,
+        city: this.data.city,
+        salary: this.data.salary,
+        experience: this.data.experience,
+        type: this.data.jobType,
+        orderBy: 'created_at',
+        orderDir: 'desc',
+      };
+
+      const res = await recruitmentService.searchJobs(params);
+
+      const list = (res.data || []).map(item => ({
+        id: item.id,
+        title: item.title || item.name || '',
+        companyName: item.company_name || item.companyName || '',
+        companyLogo: item.company_logo || item.companyLogo,
+        salaryRange: item.salary_range || item.salaryRange || '面议',
+        city: item.city || '',
+        experience: item.experience || '',
+        education: item.education || '',
+        type: item.type || '全职',
+        tags: item.tags || [],
+        isUrgent: item.is_urgent || item.isUrgent || false,
+      }));
+
+      this.setData({
+        jobs: this.data.page === 0 ? list : [...this.data.jobs, ...list],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadJobs error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  onLoadMore() {
+    this.loadJobs();
+  },
+
+  onPullRefresh() {
+    this.setData({ jobs: [], page: 0, hasMore: true, refreshing: true });
+    this.loadJobs();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  onSearch() {
+    this.setData({ jobs: [], page: 0, hasMore: true });
+    this.loadJobs();
+  },
+
+  onFilterCity() {
+    const cities = ['不限', '北京', '上海', '广州', '深圳', '杭州', '成都', '武汉', '南京'];
+    wx.showActionSheet({
+      itemList: cities,
+      success: (res) => {
+        const label = cities[res.tapIndex];
+        this.setData({
+          city: label === '不限' ? '' : label,
+          cityLabel: label,
+          jobs: [], page: 0, hasMore: true,
+        });
+        this.loadJobs();
+      },
+    });
+  },
+
+  onFilterSalary() {
+    const ranges = [
+      { label: '不限', value: '' },
+      { label: '3K以下', value: '0-3000' },
+      { label: '3K-8K', value: '3000-8000' },
+      { label: '8K-15K', value: '8000-15000' },
+      { label: '15K-25K', value: '15000-25000' },
+      { label: '25K以上', value: '25000-999999' },
+    ];
+    wx.showActionSheet({
+      itemList: ranges.map(r => r.label),
+      success: (res) => {
+        this.setData({
+          salary: ranges[res.tapIndex].value,
+          salaryLabel: ranges[res.tapIndex].label,
+          jobs: [], page: 0, hasMore: true,
+        });
+        this.loadJobs();
+      },
+    });
+  },
+
+  onFilterExperience() {
+    const options = [
+      { label: '不限', value: '' },
+      { label: '在校/应届', value: '应届' },
+      { label: '1-3年', value: '1-3年' },
+      { label: '3-5年', value: '3-5年' },
+      { label: '5-10年', value: '5-10年' },
+      { label: '10年以上', value: '10年以上' },
+    ];
+    wx.showActionSheet({
+      itemList: options.map(o => o.label),
+      success: (res) => {
+        this.setData({
+          experience: options[res.tapIndex].value,
+          expLabel: options[res.tapIndex].label,
+          jobs: [], page: 0, hasMore: true,
+        });
+        this.loadJobs();
+      },
+    });
+  },
+
+  onFilterType() {
+    const types = ['不限', '全职', '兼职', '实习', '远程'];
+    wx.showActionSheet({
+      itemList: types,
+      success: (res) => {
+        const label = types[res.tapIndex];
+        this.setData({
+          jobType: label === '不限' ? '' : label,
+          typeLabel: label,
+          jobs: [], page: 0, hasMore: true,
+        });
+        this.loadJobs();
+      },
+    });
+  },
+
+  onJobTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/job_detail/job_detail?id=${id}` });
+  },
+});

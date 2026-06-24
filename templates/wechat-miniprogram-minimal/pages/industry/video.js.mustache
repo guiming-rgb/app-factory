@@ -1,0 +1,202 @@
+// {{displayName}} — Video Browsing Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    videos: [],
+    categories: [
+      { id: 'all', name: '全部', active: true },
+      { id: 'entertainment', name: '娱乐' },
+      { id: 'music', name: '音乐' },
+      { id: 'education', name: '教育' },
+      { id: 'sports', name: '体育' },
+      { id: 'news', name: '新闻' },
+      { id: 'tech', name: '科技' },
+    ],
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    keyword: '',
+    activeCategory: 'all',
+    favorites: [],
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadFavorites();
+    this.loadVideos();
+  },
+
+  onShow() {
+    this.loadWatchHistory();
+  },
+
+  async loadVideos() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      let url = `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`;
+
+      if (this.data.activeCategory !== 'all') {
+        url += `&category=eq.${this.data.activeCategory}`;
+      }
+      if (this.data.keyword) {
+        url += `&title=ilike.*${encodeURIComponent(this.data.keyword)}*`;
+      }
+
+      const { data, error } = await request(url);
+      if (error) throw error;
+
+      const list = data || [];
+      const favorites = this.data.favorites;
+      const result = list.map(item => ({
+        id: item.id,
+        title: item.title || item.name || '',
+        thumbnailUrl: item.thumbnail_url || item.thumbnailUrl || item.cover_url || item.image_url,
+        duration: item.duration || '',
+        viewCount: item.view_count || item.viewCount || 0,
+        rating: item.rating || 0,
+        authorName: item.author_name || item.authorName || item.author || '',
+        category: item.category || '',
+        isFavorite: favorites.some(f => f.id === item.id),
+      }));
+
+      this.setData({
+        videos: this.data.page === 0 ? result : [...this.data.videos, ...result],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadVideos error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  loadFavorites() {
+    try {
+      const favs = wx.getStorageSync('video_favorites') || [];
+      this.setData({ favorites: favs });
+    } catch (e) {
+      console.error('loadFavorites error:', e);
+    }
+  },
+
+  loadWatchHistory() {
+    try {
+      const history = wx.getStorageSync('video_history') || [];
+      this.setData({ watchHistory: history });
+    } catch (e) {
+      console.error('loadWatchHistory error:', e);
+    }
+  },
+
+  saveWatchHistory(video) {
+    try {
+      let history = wx.getStorageSync('video_history') || [];
+      history = history.filter(h => h.id !== video.id);
+      history.unshift({
+        id: video.id,
+        title: video.title,
+        thumbnailUrl: video.thumbnailUrl,
+        duration: video.duration,
+        watchedAt: new Date().toISOString(),
+      });
+      if (history.length > 100) history = history.slice(0, 100);
+      wx.setStorageSync('video_history', history);
+    } catch (e) {
+      console.error('saveWatchHistory error:', e);
+    }
+  },
+
+  onLoadMore() {
+    this.loadVideos();
+  },
+
+  onPullRefresh() {
+    this.setData({ videos: [], page: 0, hasMore: true, refreshing: true });
+    this.loadVideos();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+    if (this.data.searchTimer) clearTimeout(this.data.searchTimer);
+    const timer = setTimeout(() => {
+      this.setData({ videos: [], page: 0, hasMore: true });
+      this.loadVideos();
+    }, 500);
+    this.setData({ searchTimer: timer });
+  },
+
+  onSearch() {
+    this.setData({ videos: [], page: 0, hasMore: true });
+    this.loadVideos();
+  },
+
+  onCategoryTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const cats = this.data.categories.map(c => ({ ...c, active: c.id === id }));
+    this.setData({ categories: cats, activeCategory: id, videos: [], page: 0, hasMore: true });
+    this.loadVideos();
+  },
+
+  onVideoTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const video = this.data.videos.find(v => v.id === id);
+    if (video) {
+      this.saveWatchHistory(video);
+    }
+    wx.navigateTo({ url: `/pages/video_detail/video_detail?id=${id}` });
+  },
+
+  onToggleFavorite(e) {
+    const id = e.currentTarget.dataset.id;
+    const video = this.data.videos.find(v => v.id === id);
+    if (!video) return;
+
+    try {
+      let favorites = wx.getStorageSync('video_favorites') || [];
+      const idx = favorites.findIndex(f => f.id === id);
+      if (idx >= 0) {
+        favorites.splice(idx, 1);
+        wx.showToast({ title: '已取消收藏', icon: 'none' });
+      } else {
+        favorites.push({
+          id: video.id,
+          title: video.title,
+          thumbnailUrl: video.thumbnailUrl,
+          duration: video.duration,
+          viewCount: video.viewCount,
+        });
+        wx.showToast({ title: '已收藏', icon: 'success' });
+      }
+      wx.setStorageSync('video_favorites', favorites);
+      this.setData({ favorites });
+      const videos = this.data.videos.map(v => ({
+        ...v,
+        isFavorite: favorites.some(f => f.id === v.id),
+      }));
+      this.setData({ videos });
+    } catch (e) {
+      console.error('onToggleFavorite error:', e);
+    }
+  },
+
+  onViewHistory() {
+    const history = wx.getStorageSync('video_history') || [];
+    if (history.length === 0) {
+      wx.showToast({ title: '暂无观看记录', icon: 'none' });
+      return;
+    }
+    const titles = history.slice(0, 5).map(h => h.title).join('、');
+    wx.showToast({ title: `最近观看: ${titles}`, icon: 'none' });
+  },
+});

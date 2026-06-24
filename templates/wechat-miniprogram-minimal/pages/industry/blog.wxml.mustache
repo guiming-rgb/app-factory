@@ -1,0 +1,62 @@
+<!-- {{displayName}} — Blog / Article Reading (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索文章" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <view class="category-tabs">
+    <scroll-view scroll-x>
+      <view wx:for="{{categories}}" wx:key="id"
+        class="category-item {{item.active ? 'active' : ''}}"
+        bindtap="onCategoryTap" data-id="{{item.id}}">
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="article-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:if="{{loading && articles.length === 0}}" class="loading-state">
+      <text>加载中...</text>
+    </view>
+
+    <view wx:if="{{!loading && articles.length === 0 && !error}}" class="empty-state">
+      <text class="empty-icon">📖</text>
+      <text>暂无文章</text>
+      <text class="empty-hint">稍后再来看看吧</text>
+    </view>
+
+    <view wx:if="{{error}}" class="error-tip">
+      <text>加载失败，点击重试</text>
+      <text class="retry-btn" bindtap="loadArticles">重试</text>
+    </view>
+
+    <view wx:for="{{articles}}" wx:key="id" class="article-card" bindtap="onArticleTap" data-id="{{item.id}}">
+      <image class="article-cover" wx:if="{{item.coverUrl}}" src="{{item.coverUrl}}" mode="aspectFill" />
+      <view class="article-content">
+        <view class="article-header">
+          <text class="article-title">{{item.title}}</text>
+          <text class="bookmark-btn {{item.isBookmarked ? 'bookmarked' : ''}}" bindtap="onBookmarkToggle" catchtap data-id="{{item.id}}">
+            {{item.isBookmarked ? '★' : '☆'}}
+          </text>
+        </view>
+        <text class="article-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
+        <view class="article-meta">
+          <image class="article-author-avatar" wx:if="{{item.authorAvatar}}" src="{{item.authorAvatar}}" mode="aspectFill" />
+          <text class="article-author">{{item.author || '匿名'}}</text>
+          <text class="article-read-time" wx:if="{{item.readTime}}">{{item.readTime}}分钟</text>
+          <text class="article-date">{{item.date || item.createdAt || ''}}</text>
+        </view>
+        <view class="article-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <text wx:for="{{item.tags.slice(0, 3)}}" wx:key="*this" class="article-tag">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading && articles.length > 0}}">
+    <text>加载中...</text>
+  </view>
+</view>

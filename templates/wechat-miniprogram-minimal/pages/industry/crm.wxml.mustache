@@ -1,0 +1,64 @@
+<!-- {{displayName}} — CRM Client Management (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索客户姓名/公司" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <scroll-view class="stage-tabs" scroll-x>
+    <view wx:for="{{stages}}" wx:key="id"
+      class="stage-tab {{item.active ? 'active' : ''}}"
+      bindtap="onStageTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+      <text class="stage-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>加载失败，点击重试</text>
+    <text class="retry-btn" bindtap="loadClients">重试</text>
+  </view>
+
+  <scroll-view class="client-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:for="{{clients}}" wx:key="id" class="client-card" bindtap="onClientTap" data-id="{{item.id}}">
+      <view class="client-header">
+        <view class="client-avatar">{{item.name?.slice(0,1) || '客'}}</view>
+        <view class="client-info">
+          <text class="client-name">{{item.name}}</text>
+          <text class="client-company" wx:if="{{item.company}}">{{item.company}}</text>
+        </view>
+        <view class="stage-badge stage-{{item.stage || 'lead'}}">
+          <text>{{stageLabels[item.stage] || '线索'}}</text>
+        </view>
+      </view>
+      <view class="client-meta">
+        <text class="client-value" wx:if="{{item.expectedValue}}">预估 ¥{{item.expectedValue}}</text>
+        <text class="client-phone" wx:if="{{item.phone}}">{{item.phone}}</text>
+        <text class="client-owner" wx:if="{{item.owner}}">负责人: {{item.owner}}</text>
+      </view>
+      <view class="client-footer">
+        <text class="client-date">{{item.updatedAt || item.created_at?.slice(0,10) || ''}}</text>
+        <view class="client-actions">
+          <text class="action-call" bindtap="onCallClient" catchtap data-id="{{item.id}}">📞</text>
+          <text class="action-msg" bindtap="onMessageClient" catchtap data-id="{{item.id}}">💬</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && clients.length === 0}}">
+    <text class="empty-icon">📋</text>
+    <text>暂无客户数据</text>
+    <text class="empty-hint">点击右下角按钮添加客户</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <view class="fab" bindtap="onAddClient">
+    <text>+</text>
+  </view>
+</view>

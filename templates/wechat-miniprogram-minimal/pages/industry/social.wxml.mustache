@@ -1,0 +1,71 @@
+<!-- {{displayName}} — Social Feed (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="topics-bar">
+    <scroll-view scroll-x class="topics-scroll">
+      <view wx:for="{{topics}}" wx:key="id"
+        class="topic-tag {{item.active ? 'active' : ''}}"
+        bindtap="onTopicTap" data-id="{{item.id}}">
+        <text>{{item.icon || '#'}} {{item.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>加载失败</text>
+    <text class="retry-btn" bindtap="loadFeed">重试</text>
+  </view>
+
+  <scroll-view class="feed-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:for="{{posts}}" wx:key="id" class="post-card">
+      <view class="post-header">
+        <image class="poster-avatar" src="{{item.avatar || 'https://via.placeholder.com/40'}}" mode="aspectFill" />
+        <view class="poster-info">
+          <text class="poster-name">{{item.authorName || '匿名用户'}}</text>
+          <text class="post-time">{{item.createdAt || ''}}</text>
+        </view>
+        <view class="post-more" bindtap="onPostMore" data-id="{{item.id}}">···</view>
+      </view>
+
+      <view class="post-content" bindtap="onPostTap" data-id="{{item.id}}">
+        <text class="post-title" wx:if="{{item.title}}">{{item.title}}</text>
+        <text class="post-text">{{item.content}}</text>
+      </view>
+
+      <view class="post-images" wx:if="{{item.images && item.images.length > 0}}">
+        <image wx:for="{{item.images}}" wx:key="*this"
+          class="post-image post-image-{{item.images.length <= 3 ? item.images.length : 4}}"
+          src="{{item}}" mode="aspectFill" bindtap="onImagePreview" data-url="{{item}}" />
+      </view>
+
+      <view class="post-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+        <text wx:for="{{item.tags}}" wx:key="*this" class="post-tag">#{{item}}</text>
+      </view>
+
+      <view class="post-actions">
+        <view class="action-item {{item.isLiked ? 'liked' : ''}}" bindtap="onLikePost" data-id="{{item.id}}">
+          <text>{{item.isLiked ? '❤️' : '🤍'}}</text>
+          <text>{{item.likeCount || 0}}</text>
+        </view>
+        <view class="action-item" bindtap="onCommentPost" data-id="{{item.id}}">
+          <text>💬</text>
+          <text>{{item.commentCount || 0}}</text>
+        </view>
+        <view class="action-item" bindtap="onSharePost" data-id="{{item.id}}">
+          <text>↗️</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && posts.length === 0}}">
+    <text class="empty-icon">📱</text>
+    <text>暂无内容</text>
+    <text class="empty-hint">关注更多话题获取推荐</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

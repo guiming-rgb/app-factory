@@ -1,0 +1,164 @@
+// {{displayName}} — Social Feed Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { socialService } = require("../../services/industry");
+
+Page({
+  data: {
+    posts: [],
+    topics: [
+      { id: 'recommend', name: '推荐', icon: '🔥', active: true },
+      { id: 'tech', name: '科技', icon: '💻' },
+      { id: 'life', name: '生活', icon: '☕' },
+      { id: 'sports', name: '运动', icon: '⚽' },
+      { id: 'music', name: '音乐', icon: '🎵' },
+      { id: 'art', name: '艺术', icon: '🎨' },
+      { id: 'food', name: '美食', icon: '🍜' },
+    ],
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    activeTopic: 'recommend',
+    PAGE_SIZE: 10,
+  },
+
+  onLoad() {
+    this.loadFeed();
+    this.loadTopics();
+  },
+
+  async loadFeed() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const params = {
+        page: this.data.page,
+        pageSize: this.data.PAGE_SIZE,
+        topic: this.data.activeTopic === 'recommend' ? '' : this.data.activeTopic,
+        orderBy: 'created_at',
+        orderDir: 'desc',
+      };
+
+      const res = await socialService.getFeed(params);
+
+      const list = (res.data || []).map(item => ({
+        id: item.id,
+        title: item.title || '',
+        content: item.content || '',
+        authorName: item.author_name || item.authorName || '匿名用户',
+        avatar: item.avatar || item.author_avatar,
+        images: item.images || item.image_urls || [],
+        tags: item.tags || [],
+        likeCount: item.like_count || item.likeCount || 0,
+        commentCount: item.comment_count || item.commentCount || 0,
+        isLiked: item.is_liked || item.isLiked || false,
+        createdAt: item.created_at ? item.created_at.slice(0, 16).replace('T', ' ') : '',
+      }));
+
+      this.setData({
+        posts: this.data.page === 0 ? list : [...this.data.posts, ...list],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadFeed error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  async loadTopics() {
+    try {
+      const res = await socialService.getTopics();
+      if (res && res.data && res.data.length > 0) {
+        const topics = res.data.map(t => ({
+          id: t.id || t.slug,
+          name: t.name || '',
+          icon: t.icon || '#',
+        }));
+        topics.unshift({ id: 'recommend', name: '推荐', icon: '🔥', active: true });
+        this.setData({ topics });
+      }
+    } catch (e) {
+      console.error('loadTopics error:', e);
+    }
+  },
+
+  onLoadMore() {
+    this.loadFeed();
+  },
+
+  onPullRefresh() {
+    this.setData({ posts: [], page: 0, hasMore: true, refreshing: true });
+    this.loadFeed();
+  },
+
+  onTopicTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const topics = this.data.topics.map(t => ({ ...t, active: t.id === id }));
+    this.setData({ topics, activeTopic: id, posts: [], page: 0, hasMore: true });
+    this.loadFeed();
+  },
+
+  async onLikePost(e) {
+    const id = e.currentTarget.dataset.id;
+    const posts = this.data.posts.map(p => {
+      if (p.id === id) {
+        const wasLiked = p.isLiked;
+        return {
+          ...p,
+          isLiked: !wasLiked,
+          likeCount: wasLiked ? p.likeCount - 1 : p.likeCount + 1,
+        };
+      }
+      return p;
+    });
+    this.setData({ posts });
+
+    try {
+      await socialService.toggleLike(id);
+    } catch (e) {
+      console.error('toggleLike error:', e);
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
+  },
+
+  onPostTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/post_detail/post_detail?id=${id}` });
+  },
+
+  onCommentPost(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/post_detail/post_detail?id=${id}&focus=comment` });
+  },
+
+  onSharePost(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showActionSheet({
+      itemList: ['分享给好友', '生成海报', '举报'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.shareAppMessage({ title: '分享帖子' });
+        }
+      },
+    });
+  },
+
+  onPostMore(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showActionSheet({
+      itemList: ['不感兴趣', '收藏', '举报'],
+    });
+  },
+
+  onImagePreview(e) {
+    const url = e.currentTarget.dataset.url;
+    wx.previewImage({ urls: [url], current: url });
+  },
+});

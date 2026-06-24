@@ -1,0 +1,101 @@
+<!-- {{displayName}} — Weather Forecast (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="city-bar">
+    <text class="city-name" bindtap="onChangeCity">{{cityName || '定位中...'}}</text>
+    <text class="refresh-btn" bindtap="onRefresh">🔄</text>
+  </view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>{{error}}</text>
+    <text class="retry-btn" bindtap="loadWeatherData">重试</text>
+  </view>
+
+  <scroll-view class="weather-content" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh">
+    <view class="current-weather" wx:if="{{current}}">
+      <text class="weather-temp">{{current.temp || '--'}}°</text>
+      <view class="weather-condition-row">
+        <text class="weather-icon">{{current.icon || '☀️'}}</text>
+        <text class="weather-desc">{{current.condition || current.description || '--'}}</text>
+      </view>
+      <view class="weather-details">
+        <text class="detail-item">体感 {{current.feelsLike || current.feels_like || '--'}}°</text>
+        <text class="detail-item">湿度 {{current.humidity || '--'}}%</text>
+        <text class="detail-item">风速 {{current.windSpeed || current.wind_speed || '--'}} km/h</text>
+      </view>
+    </view>
+
+    <view class="section-header">
+      <text class="section-title">逐小时预报</text>
+    </view>
+
+    <scroll-view class="hourly-scroll" scroll-x wx:if="{{hourly && hourly.length > 0}}">
+      <view wx:for="{{hourly}}" wx:key="id" class="hourly-item">
+        <text class="hourly-time">{{item.time || item.hour || '--'}}</text>
+        <text class="hourly-icon">{{item.icon || '☀️'}}</text>
+        <text class="hourly-temp">{{item.temp || '--'}}°</text>
+        <text class="hourly-precip" wx:if="{{item.precipChance !== undefined}}">{{item.precipChance}}%</text>
+      </view>
+    </scroll-view>
+
+    <view class="section-header">
+      <text class="section-title">7日预报</text>
+    </view>
+
+    <view class="daily-forecast" wx:if="{{daily && daily.length > 0}}">
+      <view wx:for="{{daily}}" wx:key="id" class="daily-row">
+        <text class="daily-day">{{item.day || item.date || '--'}}</text>
+        <view class="daily-condition">
+          <text class="daily-icon">{{item.icon || '☀️'}}</text>
+          <text class="daily-desc">{{item.condition || item.description || ''}}</text>
+        </view>
+        <view class="daily-temps">
+          <text class="daily-high">{{item.high || '--'}}°</text>
+          <text class="daily-low">{{item.low || '--'}}°</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-header" wx:if="{{aqi}}">
+      <text class="section-title">空气质量</text>
+    </view>
+
+    <view class="aqi-card" wx:if="{{aqi}}" bindtap="onAqiDetail">
+      <view class="aqi-value {{aqi.level || 'good'}}">
+        <text class="aqi-num">{{aqi.value || aqi.aqi || '--'}}</text>
+        <text class="aqi-label">{{aqi.label || '优'}}</text>
+      </view>
+      <view class="aqi-details">
+        <text class="aqi-detail-item" wx:if="{{aqi.pm25 !== undefined}}">PM2.5 {{aqi.pm25}}</text>
+        <text class="aqi-detail-item" wx:if="{{aqi.pm10 !== undefined}}">PM10 {{aqi.pm10}}</text>
+        <text class="aqi-detail-item" wx:if="{{aqi.o3 !== undefined}}">O3 {{aqi.o3}}</text>
+        <text class="aqi-detail-item" wx:if="{{aqi.no2 !== undefined}}">NO2 {{aqi.no2}}</text>
+      </view>
+    </view>
+
+    <view class="life-indices" wx:if="{{lifeIndices && lifeIndices.length > 0}}">
+      <view class="section-header">
+        <text class="section-title">生活指数</text>
+      </view>
+      <view class="indices-grid">
+        <view wx:for="{{lifeIndices}}" wx:key="id" class="index-card">
+          <text class="index-icon">{{item.icon || '📋'}}</text>
+          <text class="index-name">{{item.name}}</text>
+          <text class="index-value">{{item.value || item.level || ''}}</text>
+          <text class="index-desc">{{item.description || ''}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{!loading && !error && !current}}">
+      <text class="empty-icon">🌤️</text>
+      <text>暂无天气数据</text>
+      <text class="empty-hint">下拉刷新获取最新数据</text>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

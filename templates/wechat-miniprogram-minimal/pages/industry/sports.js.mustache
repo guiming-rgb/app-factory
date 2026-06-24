@@ -1,0 +1,190 @@
+// {{displayName}} — Sports Scores & News Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    leagues: [
+      { id: 'all', name: '全部', active: true },
+      { id: 'football', name: '足球' },
+      { id: 'basketball', name: '篮球' },
+      { id: 'tennis', name: '网球' },
+      { id: 'esports', name: '电竞' },
+    ],
+    liveMatches: [],
+    standings: [],
+    news: [],
+    loading: false,
+    refreshing: false,
+    error: '',
+    hasMore: true,
+    page: 0,
+    activeLeague: 'all',
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadSportsData();
+  },
+
+  onShow() {
+    if (this.data.liveMatches.length === 0 && this.data.standings.length === 0) {
+      this.loadSportsData();
+    }
+  },
+
+  async loadSportsData() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: '' });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      let query = `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`;
+
+      if (this.data.activeLeague !== 'all') {
+        query += `&league=eq.${this.data.activeLeague}`;
+      }
+
+      const { data, error } = await request(query);
+      if (error) throw error;
+
+      const records = data || [];
+      this.processRecords(records);
+    } catch (e) {
+      console.error('loadSportsData error:', e);
+      this.setData({
+        loading: false,
+        refreshing: false,
+        error: e.message || '体育数据加载失败',
+      });
+    }
+  },
+
+  processRecords(records) {
+    const liveMatches = [];
+    const standings = [];
+    const news = [];
+
+    records.forEach(item => {
+      const type = item.type || item.category || '';
+      if (type === 'match' || type === 'live' || item.homeTeam || item.home_team) {
+        liveMatches.push({
+          id: item.id,
+          league: item.league || '',
+          leagueName: item.league_name || item.leagueName || item.league || '',
+          homeTeam: item.home_team || item.homeTeam || '',
+          awayTeam: item.away_team || item.awayTeam || '',
+          homeScore: item.home_score ?? item.homeScore,
+          awayScore: item.away_score ?? item.awayScore,
+          homeLogo: item.home_logo || item.homeLogo,
+          awayLogo: item.away_logo || item.awayLogo,
+          status: item.status || '进行中',
+          matchTime: item.match_time || item.matchTime || item.date || '',
+          venue: item.venue || '',
+        });
+      } else if (type === 'standings' || type === 'standing' || item.rank !== undefined) {
+        standings.push({
+          id: item.id,
+          teamId: item.team_id || item.teamId || item.id,
+          rank: item.rank || standings.length + 1,
+          team: item.team || item.name || '',
+          teamName: item.team_name || item.teamName || item.team || item.name || '',
+          logo: item.logo || item.team_logo || item.teamLogo,
+          played: item.played || item.P || item.matches_played || 0,
+          wins: item.wins || item.W || 0,
+          draws: item.draws || item.D || 0,
+          losses: item.losses || item.L || 0,
+          points: item.points || item.pts || item.Pts || 0,
+        });
+      } else {
+        news.push({
+          id: item.id,
+          title: item.title || item.name || '',
+          imageUrl: item.image_url || item.imageUrl || item.cover_url,
+          source: item.source || item.author || '',
+          date: item.date || item.created_at?.slice(0, 10) || '',
+          summary: item.summary || item.description || '',
+        });
+      }
+    });
+
+    standings.sort((a, b) => (a.rank || 999) - (b.rank || 999));
+
+    this.setData({
+      liveMatches: this.data.page === 0 ? liveMatches : [...this.data.liveMatches, ...liveMatches],
+      standings: this.data.page === 0 ? standings : [...this.data.standings, ...standings],
+      news: this.data.page === 0 ? news : [...this.data.news, ...news],
+      page: this.data.page + 1,
+      hasMore: records.length >= this.data.PAGE_SIZE,
+      loading: false,
+      refreshing: false,
+    });
+  },
+
+  onLoadMore() {
+    this.loadSportsData();
+  },
+
+  onPullRefresh() {
+    this.setData({
+      liveMatches: [],
+      standings: [],
+      news: [],
+      page: 0,
+      hasMore: true,
+      refreshing: true,
+    });
+    this.loadSportsData();
+  },
+
+  onLeagueTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const leagues = this.data.leagues.map(l => ({ ...l, active: l.id === id }));
+    this.setData({
+      leagues,
+      activeLeague: id,
+      liveMatches: [],
+      standings: [],
+      news: [],
+      page: 0,
+      hasMore: true,
+    });
+    this.loadSportsData();
+  },
+
+  onMatchTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/match_detail/match_detail?id=${id}` });
+  },
+
+  onTeamTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/team_detail/team_detail?id=${id}` });
+  },
+
+  onNewsTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.news.find(n => n.id === id);
+    if (item && item.url) {
+      wx.setClipboardData({
+        data: item.url,
+        success: () => wx.showToast({ title: '链接已复制', icon: 'none' }),
+      });
+    } else {
+      wx.navigateTo({ url: `/pages/news_detail/news_detail?id=${id}` });
+    }
+  },
+
+  onRefreshScores() {
+    this.setData({
+      liveMatches: [],
+      page: 0,
+      hasMore: true,
+      refreshing: true,
+    });
+    this.loadSportsData();
+    wx.showToast({ title: '已刷新', icon: 'success' });
+  },
+});

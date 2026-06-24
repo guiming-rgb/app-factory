@@ -1,0 +1,319 @@
+// {{displayName}} — Weather Forecast Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    current: null,
+    hourly: [],
+    daily: [],
+    aqi: null,
+    lifeIndices: [],
+    cityName: '',
+    cityId: '',
+    loading: false,
+    refreshing: false,
+    error: '',
+  },
+
+  onLoad() {
+    this.loadSavedCity();
+    this.loadWeatherData();
+  },
+
+  loadSavedCity() {
+    try {
+      const saved = wx.getStorageSync('weather_city');
+      if (saved) {
+        this.setData({ cityName: saved.name || saved.cityName || '', cityId: saved.id || saved.cityId || '' });
+      }
+    } catch (e) {
+      console.error('loadSavedCity error:', e);
+    }
+  },
+
+  saveCity(city) {
+    try {
+      wx.setStorageSync('weather_city', city);
+    } catch (e) {
+      console.error('saveCity error:', e);
+    }
+  },
+
+  async getLocationCity() {
+    try {
+      const res = await wx.getLocation({ type: 'wgs84' });
+      const { latitude, longitude } = res;
+      const { request } = require('../../utils/supabase');
+      const { data, error } = await request(
+        `{{tableName}}?select=*&latitude=gte.${latitude - 0.5}&latitude=lte.${latitude + 0.5}&longitude=gte.${longitude - 0.5}&longitude=lte.${longitude + 0.5}&limit=1`
+      );
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const city = data[0];
+        const cityInfo = { id: city.id, name: city.name || city.city_name || '当前位置' };
+        this.setData({ cityName: cityInfo.name, cityId: cityInfo.id });
+        this.saveCity(cityInfo);
+      } else {
+        this.setData({ cityName: '当前位置' });
+      }
+    } catch (e) {
+      console.error('getLocationCity error:', e);
+      if (!this.data.cityName) {
+        this.setData({ cityName: '未知位置' });
+      }
+    }
+  },
+
+  async loadWeatherData() {
+    this.setData({ loading: true, error: '' });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      let query = `{{tableName}}?select=*&order=created_at.desc&limit=10`;
+
+      if (this.data.cityId) {
+        query += `&city_id=eq.${this.data.cityId}`;
+      }
+
+      const { data, error } = await request(query);
+      if (error) throw error;
+
+      const records = data || [];
+      if (records.length === 0) {
+        this.setData({
+          loading: false,
+          refreshing: false,
+          error: '暂无天气数据',
+        });
+        return;
+      }
+
+      const record = records[0];
+      const current = {
+        temp: record.temp || record.temperature || 0,
+        feelsLike: record.feels_like || record.feelsLike || record.temp,
+        humidity: record.humidity || 0,
+        windSpeed: record.wind_speed || record.windSpeed || 0,
+        condition: record.condition || record.description || '晴',
+        icon: this.getWeatherIcon(record.condition || record.description),
+        description: record.description || record.condition || '',
+      };
+
+      const hourly = this.buildHourlyForecast(record);
+      const daily = this.buildDailyForecast(records);
+      const aqi = record.aqi ? {
+        value: record.aqi,
+        label: this.getAqiLabel(record.aqi),
+        level: this.getAqiLevel(record.aqi),
+        pm25: record.pm25 || record.pm_25,
+        pm10: record.pm10 || record.pm_10,
+        o3: record.o3,
+        no2: record.no2,
+      } : null;
+
+      const lifeIndices = this.buildLifeIndices(record);
+
+      if (!this.data.cityName || !this.data.cityId) {
+        await this.getLocationCity();
+      }
+
+      this.setData({
+        current,
+        hourly,
+        daily,
+        aqi,
+        lifeIndices,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadWeatherData error:', e);
+      this.setData({
+        loading: false,
+        refreshing: false,
+        error: e.message || '天气数据加载失败',
+      });
+      if (!this.data.cityName) {
+        this.getLocationCity();
+      }
+    }
+  },
+
+  buildHourlyForecast(record) {
+    try {
+      const raw = record.hourly || record.hourly_forecast || [];
+      if (raw.length > 0) {
+        return raw.slice(0, 24).map((h, i) => ({
+          id: i,
+          time: h.time || `${i + 1}:00`,
+          temp: h.temp || h.temperature || '--',
+          icon: this.getWeatherIcon(h.condition || h.description),
+          precipChance: h.precip_chance || h.precipChance || h.pop,
+        }));
+      }
+    } catch (e) {
+      console.error('buildHourlyForecast error:', e);
+    }
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const h = new Date(now);
+      h.setHours(now.getHours() + i);
+      return {
+        id: i,
+        time: `${h.getHours()}:00`,
+        temp: record.temp || record.temperature || '--',
+        icon: '☀️',
+        precipChance: 0,
+      };
+    });
+  },
+
+  buildDailyForecast(records) {
+    try {
+      const raw = records[0]?.daily || records[0]?.daily_forecast || [];
+      if (raw.length > 0) {
+        return raw.slice(0, 7).map((d, i) => {
+          const date = d.date ? new Date(d.date) : new Date(Date.now() + i * 86400000);
+          const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          return {
+            id: i,
+            day: i === 0 ? '今天' : (i === 1 ? '明天' : dayNames[date.getDay()]),
+            date: d.date || '',
+            high: d.high || d.max_temp || '--',
+            low: d.low || d.min_temp || '--',
+            icon: this.getWeatherIcon(d.condition || d.description),
+            condition: d.condition || d.description || '',
+          };
+        });
+      }
+    } catch (e) {
+      console.error('buildDailyForecast error:', e);
+    }
+    const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(Date.now() + i * 86400000);
+      return {
+        id: i,
+        day: i === 0 ? '今天' : (i === 1 ? '明天' : dayNames[d.getDay()]),
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        high: '--',
+        low: '--',
+        icon: '☀️',
+        condition: '--',
+      };
+    });
+  },
+
+  buildLifeIndices(record) {
+    try {
+      const raw = record.life_indices || record.lifeIndices || record.indices;
+      if (raw && raw.length > 0) {
+        return raw.map((idx, i) => ({
+          id: i,
+          name: idx.name || idx.type || '',
+          value: idx.value || idx.level || '',
+          description: idx.description || idx.desc || '',
+          icon: this.getLifeIndexIcon(idx.name || idx.type),
+        }));
+      }
+    } catch (e) {
+      console.error('buildLifeIndices error:', e);
+    }
+    return [
+      { id: 1, name: '穿衣', icon: '👔', value: '--', description: '' },
+      { id: 2, name: '紫外线', icon: '☀️', value: '--', description: '' },
+      { id: 3, name: '洗车', icon: '🚗', value: '--', description: '' },
+      { id: 4, name: '运动', icon: '🏃', value: '--', description: '' },
+      { id: 5, name: '感冒', icon: '🤧', value: '--', description: '' },
+      { id: 6, name: '晾晒', icon: '👕', value: '--', description: '' },
+    ];
+  },
+
+  getWeatherIcon(condition) {
+    const map = {
+      '晴': '☀️', 'sunny': '☀️', 'clear': '☀️',
+      '多云': '⛅', 'cloudy': '☁️', 'overcast': '☁️',
+      '阴': '☁️',
+      '小雨': '🌦️', 'rain': '🌧️', 'light rain': '🌦️',
+      '中雨': '🌧️', '大雨': '🌧️',
+      '雷阵雨': '⛈️', 'thunderstorm': '⛈️',
+      '雪': '❄️', 'snow': '❄️', '小雪': '🌨️',
+      '雾': '🌫️', 'fog': '🌫️', '霾': '🌫️',
+      '风': '💨', 'windy': '💨',
+    };
+    if (!condition) return '☀️';
+    const key = Object.keys(map).find(k => condition.toLowerCase().includes(k.toLowerCase()));
+    return key ? map[key] : '☀️';
+  },
+
+  getAqiLabel(value) {
+    if (value <= 50) return '优';
+    if (value <= 100) return '良';
+    if (value <= 150) return '轻度污染';
+    if (value <= 200) return '中度污染';
+    if (value <= 300) return '重度污染';
+    return '严重污染';
+  },
+
+  getAqiLevel(value) {
+    if (value <= 50) return 'good';
+    if (value <= 100) return 'moderate';
+    if (value <= 150) return 'sensitive';
+    if (value <= 200) return 'unhealthy';
+    return 'hazardous';
+  },
+
+  getLifeIndexIcon(name) {
+    const map = {
+      '穿衣': '👔', 'dressing': '👔',
+      '紫外线': '☀️', 'uv': '☀️',
+      '洗车': '🚗', 'car_wash': '🚗', 'carwash': '🚗',
+      '运动': '🏃', 'sport': '🏃',
+      '感冒': '🤧', 'flu': '🤧', 'cold': '🤧',
+      '晾晒': '👕', 'drying': '👕',
+      '旅游': '✈️', 'travel': '✈️',
+      '舒适度': '😊', 'comfort': '😊',
+    };
+    if (!name) return '📋';
+    const key = Object.keys(map).find(k => name.toLowerCase().includes(k.toLowerCase()));
+    return key ? map[key] : '📋';
+  },
+
+  onPullRefresh() {
+    this.setData({ refreshing: true });
+    this.loadWeatherData();
+  },
+
+  onRefresh() {
+    this.setData({ refreshing: true });
+    this.loadWeatherData();
+  },
+
+  onChangeCity() {
+    wx.showModal({
+      title: '切换城市',
+      content: '输入城市名称',
+      editable: true,
+      placeholderText: '如: 北京',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          this.setData({ cityName: res.content, cityId: '', current: null, hourly: [], daily: [] });
+          this.saveCity({ name: res.content, id: '' });
+          this.loadWeatherData();
+        }
+      },
+    });
+  },
+
+  onAqiDetail() {
+    if (this.data.aqi) {
+      wx.showToast({
+        title: `AQI ${this.data.aqi.value} — ${this.data.aqi.label}`,
+        icon: 'none',
+        duration: 2000,
+      });
+    }
+  },
+});

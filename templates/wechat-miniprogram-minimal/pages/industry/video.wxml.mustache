@@ -1,0 +1,54 @@
+<!-- {{displayName}} — Video Browsing (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="search-bar">
+    <input class="search-input" placeholder="搜索视频" bindinput="onSearchInput" />
+    <text class="search-btn" bindtap="onSearch">搜索</text>
+  </view>
+
+  <scroll-view class="category-scroll" scroll-x>
+    <view wx:for="{{categories}}" wx:key="id"
+      class="category-item {{item.active ? 'active' : ''}}"
+      bindtap="onCategoryTap" data-id="{{item.id}}">
+      <text>{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="error-tip" wx:if="{{error}}">
+    <text>视频加载失败</text>
+    <text class="retry-btn" bindtap="loadVideos">重试</text>
+  </view>
+
+  <scroll-view class="video-list" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:for="{{videos}}" wx:key="id" class="video-card" bindtap="onVideoTap" data-id="{{item.id}}">
+      <view class="video-thumbnail-wrapper">
+        <image class="video-thumbnail" src="{{item.thumbnailUrl || item.coverUrl || 'https://via.placeholder.com/320x180'}}" mode="aspectFill" />
+        <view class="video-duration-badge" wx:if="{{item.duration}}">
+          <text>{{item.duration}}</text>
+        </view>
+        <view class="video-play-icon">▶</view>
+      </view>
+      <view class="video-info">
+        <text class="video-title">{{item.title || item.name || ''}}</text>
+        <view class="video-meta">
+          <text class="video-views" wx:if="{{item.viewCount !== undefined}}">{{item.viewCount}} 次播放</text>
+          <text class="video-rating" wx:if="{{item.rating}}">⭐ {{item.rating}}</text>
+        </view>
+        <view class="video-author" wx:if="{{item.authorName}}">
+          <text>{{item.authorName}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="empty-state" wx:if="{{!loading && !error && videos.length === 0}}">
+    <text class="empty-icon">🎬</text>
+    <text>暂无视频</text>
+    <text class="empty-hint">切换分类或搜索其他内容</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

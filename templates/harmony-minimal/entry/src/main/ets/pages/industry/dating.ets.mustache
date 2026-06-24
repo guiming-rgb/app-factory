@@ -1,0 +1,185 @@
+// {{displayName}} — Dating / Social Discovery (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct ProfileCard {
+  @State name: string = ''
+  @State age: number = 0
+  @State avatarUrl: string = ''
+  @State distance: string = ''
+  @State bio: string = ''
+  @State interests: string[] = []
+
+  build() {
+    Column() {
+      Stack() {
+        Image(this.avatarUrl || 'https://via.placeholder.com/360x480')
+          .width('100%').aspectRatio(0.75).objectFit(ImageFit.Cover).borderRadius(16)
+        Column() {
+          Text(`${this.name}, ${this.age}`)
+            .fontSize(24).fontWeight(FontWeight.Bold).fontColor(Color.White)
+          Text(`📍 ${this.distance}`).fontSize(14).fontColor('#ffffffb3').margin({ top: 4 })
+          if (this.bio.length > 0) {
+            Text(this.bio).fontSize(13).fontColor('#ffffffcc').maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis }).margin({ top: 8 })
+          }
+          Row() {
+            ForEach(this.interests, (tag: string) => {
+              Text(tag)
+                .fontSize(11).fontColor(Color.White)
+                .backgroundColor('#ffffff33').borderRadius(12)
+                .padding({ left: 10, right: 10, top: 4, bottom: 4 }).margin({ right: 6 })
+            })
+          }.margin({ top: 10 }).flexWrap(FlexWrap.Wrap)
+        }
+        .position({ bottom: 0, left: 0, right: 0 })
+        .padding(16)
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [['#00000000', 0], ['#dd000000', 1]]
+        })
+        .borderRadius({ bottomLeft: 16, bottomRight: 16 })
+      }.width('100%').borderRadius(16)
+    }
+    .width('100%').shadow({ radius: 8, color: '#1a000000', offsetX: 0, offsetY: 4 })
+  }
+}
+
+@Component
+export struct UserMatchItem {
+  @State name: string = ''
+  @State avatarUrl: string = ''
+  @State age: number = 0
+  @State mutualLikes: boolean = false
+  userId: string = ''
+
+  build() {
+    Row() {
+      Image(this.avatarUrl || 'https://via.placeholder.com/48')
+        .width(48).height(48).borderRadius(24).objectFit(ImageFit.Cover)
+      Column() {
+        Row() {
+          Text(this.name).fontSize(15).fontWeight(FontWeight.Medium)
+          Text(`${this.age}`).fontSize(13).fontColor('#999').margin({ left: 6 })
+        }
+        if (this.mutualLikes) {
+          Text('互相喜欢 ❤️').fontSize(12).fontColor('#ff4081').margin({ top: 2 })
+        }
+      }.alignItems(HorizontalAlign.Start).margin({ left: 12 }).layoutWeight(1)
+      Text('聊天').fontSize(13).fontColor('{{primaryColor}}')
+        .backgroundColor('{{primaryColor}}1a').borderRadius(12)
+        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+        .onClick(() => {
+          router.pushUrl({ url: 'pages/Chat', params: { id: this.userId } })
+        })
+    }
+    .width('100%').padding(12).backgroundColor(Color.White).borderRadius(10)
+    .margin({ bottom: 6 })
+  }
+}
+
+@Entry
+@Component
+struct DatingPage {
+  @State currentProfile: {
+    id: string, name: string, age: number,
+    avatarUrl: string, distance: string, bio: string, interests: string[]
+  } | null = null
+  @State matches: Array<{
+    id: string, name: string, avatarUrl: string,
+    age: number, mutualLikes: boolean
+  }> = []
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadProfiles()
+  }
+
+  async loadProfiles() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").limit(10)
+    this.currentProfile = {
+      id: '1', name: '示例用户', age: 25,
+      avatarUrl: '', distance: '距你 3.5km',
+      bio: '喜欢旅行、摄影和美食，周末常去探索城市角落',
+      interests: ['摄影', '美食', '旅行', '音乐']
+    }
+    this.matches = [
+      { id: '2', name: '喜欢TA', avatarUrl: '', age: 24, mutualLikes: true },
+      { id: '3', name: '新匹配', avatarUrl: '', age: 26, mutualLikes: false },
+    ]
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // Profile card
+            if (this.currentProfile !== null) {
+              ProfileCard({ ...this.currentProfile })
+            }
+
+            // Action buttons
+            Row() {
+              // Dislike
+              Column() {
+                Text('✕').fontSize(28).fontColor('#e0e0e0')
+              }
+              .width(60).height(60).backgroundColor('#f5f5f5').borderRadius(30)
+              .alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center)
+              .onClick(() => { this.loadProfiles() })
+
+              // Super like
+              Column() {
+                Text('⭐').fontSize(28)
+              }
+              .width(52).height(52).backgroundColor('{{primaryColor}}').borderRadius(26)
+              .margin({ left: 24, right: 24 })
+              .alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center)
+              .onClick(() => { this.loadProfiles() })
+
+              // Like
+              Column() {
+                Text('♥').fontSize(28).fontColor('#ff4081')
+              }
+              .width(60).height(60).backgroundColor('#ffeef4').borderRadius(30)
+              .alignItems(HorizontalAlign.Center).justifyContent(FlexAlign.Center)
+              .onClick(() => { this.loadProfiles() })
+            }
+            .width('100%').justifyContent(FlexAlign.Center)
+            .padding({ top: 20, bottom: 24 })
+
+            // Match list
+            Text('匹配').fontSize(18).fontWeight(FontWeight.Bold).width('100%').padding({ left: 16, bottom: 8 })
+
+            if (this.matches.length === 0) {
+              Text('暂无匹配').fontSize(14).fontColor('#999').padding({ left: 16, bottom: 24 })
+            } else {
+              List() {
+                ForEach(this.matches, (match: {
+                  id: string, name: string, avatarUrl: string,
+                  age: number, mutualLikes: boolean
+                }) => {
+                  ListItem() {
+                    UserMatchItem({ ...match, userId: match.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16, bottom: 24 })
+            }
+          }
+          .padding({ left: 16, right: 16, top: 16 })
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

@@ -1,0 +1,237 @@
+// {{displayName}} — Sports Center (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct LiveMatchCard {
+  @State homeTeam: string = ''
+  @State awayTeam: string = ''
+  @State homeScore: number = 0
+  @State awayScore: number = 0
+  @State matchTime: string = ''
+  @State isLive: boolean = false
+  matchId: string = ''
+
+  build() {
+    Column() {
+      if (this.isLive) {
+        Row() {
+          Text('●').fontSize(10).fontColor('#f44336')
+          Text(' 直播中').fontSize(12).fontColor('#f44336').margin({ left: 2 })
+        }.margin({ bottom: 8 })
+      }
+      Row() {
+        Column() {
+          Text(this.homeTeam).fontSize(15).fontWeight(FontWeight.Medium)
+          Text('主').fontSize(11).fontColor('#999').margin({ top: 2 })
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+        Column() {
+          Text(`${this.homeScore} - ${this.awayScore}`)
+            .fontSize(28).fontWeight(FontWeight.Bold).fontColor('{{primaryColor}}')
+          Text(this.matchTime).fontSize(12).fontColor('#999').margin({ top: 4 })
+        }.alignItems(HorizontalAlign.Center)
+        Column() {
+          Text(this.awayTeam).fontSize(15).fontWeight(FontWeight.Medium)
+          Text('客').fontSize(11).fontColor('#999').margin({ top: 2 })
+        }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+      }
+    }
+    .width('100%').padding(16).backgroundColor(Color.White).borderRadius(12)
+    .margin({ bottom: 10 })
+    .shadow({ radius: 3, color: '#1a000000', offsetX: 0, offsetY: 1 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/MatchDetail', params: { id: this.matchId } })
+    })
+  }
+}
+
+@Component
+export struct StandingsRow {
+  @State rank: number = 0
+  @State teamName: string = ''
+  @State gamesPlayed: number = 0
+  @State wins: number = 0
+  @State draws: number = 0
+  @State losses: number = 0
+  @State points: number = 0
+
+  build() {
+    Row() {
+      Text(`${this.rank}`)
+        .fontSize(15).fontWeight(FontWeight.Bold)
+        .fontColor(this.rank <= 3 ? '{{primaryColor}}' : '#999').width(28).textAlign(TextAlign.Center)
+      Text(this.teamName).fontSize(14).layoutWeight(1).margin({ left: 8 })
+      Text(`${this.gamesPlayed}`).fontSize(13).fontColor('#666').width(28).textAlign(TextAlign.Center)
+      Text(`${this.wins}`).fontSize(13).fontColor('#666').width(24).textAlign(TextAlign.Center)
+      Text(`${this.draws}`).fontSize(13).fontColor('#666').width(24).textAlign(TextAlign.Center)
+      Text(`${this.losses}`).fontSize(13).fontColor('#666').width(24).textAlign(TextAlign.Center)
+      Text(`${this.points}`).fontSize(15).fontWeight(FontWeight.Bold).fontColor('{{primaryColor}}').width(32).textAlign(TextAlign.Center)
+    }
+    .width('100%').padding({ left: 12, right: 12, top: 10, bottom: 10 })
+    .backgroundColor(this.rank === 1 ? '#f0f8ff' : Color.White).borderRadius(6)
+    .margin({ bottom: 4 })
+  }
+}
+
+@Component
+export struct NewsItem {
+  @State title: string = ''
+  @State summary: string = ''
+
+  build() {
+    Column() {
+      Text(this.title).fontSize(15).fontWeight(FontWeight.Medium).maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Text(this.summary).fontSize(12).fontColor('#999').maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis }).margin({ top: 4 })
+    }
+    .width('100%').padding(12).backgroundColor(Color.White).borderRadius(8)
+    .margin({ bottom: 6 })
+  }
+}
+
+@Entry
+@Component
+struct SportsPage {
+  @State leagues: Array<{ id: string, name: string, active: boolean }> = [
+    { id: 'all', name: '热门', active: true },
+    { id: 'football', name: '足球', active: false },
+    { id: 'basketball', name: '篮球', active: false },
+    { id: 'tennis', name: '网球', active: false },
+  ]
+  @State activeLeague: string = 'all'
+  @State liveMatches: Array<{
+    id: string, homeTeam: string, awayTeam: string,
+    homeScore: number, awayScore: number, matchTime: string, isLive: boolean
+  }> = []
+  @State standings: Array<{
+    id: string, rank: number, teamName: string,
+    gamesPlayed: number, wins: number, draws: number, losses: number, points: number
+  }> = []
+  @State news: Array<{ id: string, title: string, summary: string }> = []
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadData()
+  }
+
+  async loadData() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
+    this.liveMatches = [
+      { id: '1', homeTeam: '主队A', awayTeam: '客队B', homeScore: 2, awayScore: 1, matchTime: '65\'', isLive: true },
+      { id: '2', homeTeam: '主队C', awayTeam: '客队D', homeScore: 0, awayScore: 0, matchTime: '23\'', isLive: true },
+      { id: '3', homeTeam: '主队E', awayTeam: '客队F', homeScore: 3, awayScore: 0, matchTime: '已结束', isLive: false },
+    ]
+    this.standings = [
+      { id: '1', rank: 1, teamName: '示例球队A', gamesPlayed: 10, wins: 8, draws: 1, losses: 1, points: 25 },
+      { id: '2', rank: 2, teamName: '示例球队B', gamesPlayed: 10, wins: 6, draws: 2, losses: 2, points: 20 },
+      { id: '3', rank: 3, teamName: '示例球队C', gamesPlayed: 10, wins: 5, draws: 3, losses: 2, points: 18 },
+      { id: '4', rank: 4, teamName: '示例球队D', gamesPlayed: 10, wins: 4, draws: 1, losses: 5, points: 13 },
+    ]
+    this.news = [
+      { id: '1', title: '重磅转会：明星球员加盟示例队', summary: '多方消息确认，转会费创纪录...' },
+      { id: '2', title: '季后赛赛程公布', summary: '第一轮对阵情况已经确定...' },
+    ]
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // League tabs
+            Scroll() {
+              Row() {
+                ForEach(this.leagues, (league: { id: string, name: string, active: boolean }) => {
+                  Text(league.name)
+                    .fontSize(14)
+                    .fontColor(league.active ? Color.White : '#333')
+                    .backgroundColor(league.active ? '{{primaryColor}}' : '#f0f0f0')
+                    .borderRadius(16)
+                    .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+                    .margin({ right: 8 })
+                    .onClick(() => {
+                      this.activeLeague = league.id
+                      this.leagues = this.leagues.map(l => ({
+                        ...l, active: l.id === league.id
+                      }))
+                      this.loadData()
+                    })
+                })
+              }.padding(16)
+            }.height(48).scrollable(ScrollDirection.Horizontal)
+
+            // Live matches
+            Text('实时比赛').fontSize(18).fontWeight(FontWeight.Bold).width('100%').padding({ left: 16 })
+
+            if (this.liveMatches.length === 0) {
+              Text('暂无比赛').fontSize(14).fontColor('#999').padding({ left: 16, top: 16 })
+            } else {
+              List() {
+                ForEach(this.liveMatches, (match: {
+                  id: string, homeTeam: string, awayTeam: string,
+                  homeScore: number, awayScore: number, matchTime: string, isLive: boolean
+                }) => {
+                  ListItem() {
+                    LiveMatchCard({ ...match, matchId: match.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16 })
+              .height(this.liveMatches.length * 120)
+            }
+
+            // Standings
+            Text('积分榜').fontSize(18).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 16 })
+
+            // Headers
+            Row() {
+              Text('').width(28)
+              Text('球队').fontSize(12).fontColor('#999').layoutWeight(1).margin({ left: 8 })
+              Text('赛').fontSize(12).fontColor('#999').width(28).textAlign(TextAlign.Center)
+              Text('胜').fontSize(12).fontColor('#999').width(24).textAlign(TextAlign.Center)
+              Text('平').fontSize(12).fontColor('#999').width(24).textAlign(TextAlign.Center)
+              Text('负').fontSize(12).fontColor('#999').width(24).textAlign(TextAlign.Center)
+              Text('分').fontSize(12).fontColor('#999').width(32).textAlign(TextAlign.Center)
+            }
+            .width('100%').padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .backgroundColor('#fafafa')
+
+            List() {
+              ForEach(this.standings, (team: {
+                id: string, rank: number, teamName: string,
+                gamesPlayed: number, wins: number, draws: number, losses: number, points: number
+              }) => {
+                ListItem() {
+                  StandingsRow({ ...team })
+                }
+              })
+            }
+            .padding({ left: 16, right: 16 })
+
+            // News
+            Text('新闻资讯').fontSize(18).fontWeight(FontWeight.Bold)
+              .width('100%').padding({ left: 16, top: 16, bottom: 8 })
+            List() {
+              ForEach(this.news, (article: { id: string, title: string, summary: string }) => {
+                ListItem() {
+                  NewsItem({ title: article.title, summary: article.summary })
+                }
+              })
+            }
+            .padding({ left: 16, right: 16, bottom: 24 })
+          }
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

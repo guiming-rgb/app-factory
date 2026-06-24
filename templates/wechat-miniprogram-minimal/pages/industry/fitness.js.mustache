@@ -1,0 +1,113 @@
+// {{displayName}} — Fitness Workout List Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { fitnessService } = require("../../services/industry");
+
+Page({
+  data: {
+    courses: [],
+    categories: [
+      { id: 'all', name: '全部', active: true },
+      { id: 'strength', name: '力量' },
+      { id: 'cardio', name: '有氧' },
+      { id: 'yoga', name: '瑜伽' },
+      { id: 'hiit', name: 'HIIT' },
+      { id: 'pilates', name: '普拉提' },
+    ],
+    levelLabels: {
+      beginner: '入门', intermediate: '进阶', advanced: '高级',
+    },
+    todayCalories: 0,
+    workoutDays: 0,
+    bodyWeight: 0,
+    loading: false,
+    refreshing: false,
+    error: '',
+    hasMore: true,
+    page: 0,
+    activeCategory: 'all',
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadCourses();
+    this.loadBodyStats();
+  },
+
+  async loadCourses() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: '' });
+
+    try {
+      const params = {
+        page: this.data.page,
+        pageSize: this.data.PAGE_SIZE,
+        category: this.data.activeCategory === 'all' ? '' : this.data.activeCategory,
+        orderBy: 'created_at',
+        orderDir: 'desc',
+      };
+
+      const res = await fitnessService.getCourses(params);
+
+      const list = (res.data || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        imageUrl: item.image_url || item.imageUrl || item.cover_url,
+        duration: item.duration || 0,
+        calories: item.calories || 0,
+        level: item.level || 'beginner',
+        coach: item.coach || '',
+        category: item.category || '',
+      }));
+
+      this.setData({
+        courses: this.data.page === 0 ? list : [...this.data.courses, ...list],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadCourses error:', e);
+      this.setData({ loading: false, refreshing: false, error: e.message || '加载失败' });
+    }
+  },
+
+  async loadBodyStats() {
+    try {
+      const res = await fitnessService.getBodyStats();
+      if (res) {
+        this.setData({
+          todayCalories: res.today_calories || res.todayCalories || 0,
+          workoutDays: res.workout_days || res.workoutDays || 0,
+          bodyWeight: res.weight || res.bodyWeight || 0,
+        });
+      }
+    } catch (e) {
+      console.error('loadBodyStats error:', e);
+    }
+  },
+
+  onLoadMore() {
+    this.loadCourses();
+  },
+
+  onPullRefresh() {
+    this.setData({ courses: [], page: 0, hasMore: true, refreshing: true });
+    this.loadCourses();
+    this.loadBodyStats();
+  },
+
+  onCategoryTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const cats = this.data.categories.map(c => ({ ...c, active: c.id === id }));
+    this.setData({ categories: cats, activeCategory: id, courses: [], page: 0, hasMore: true });
+    this.loadCourses();
+  },
+
+  onCourseTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/workout_detail/workout_detail?id=${id}` });
+  },
+});

@@ -1,0 +1,79 @@
+<!-- {{displayName}} — Dating Profile Discovery (Mustache template) -->
+<!-- Variables: displayName, primaryColor, tableName -->
+
+<view class="page" style="--primary: {{primaryColor}};">
+  <view class="filter-bar">
+    <view class="filter-item" bindtap="onFilterGender">
+      <text>{{genderFilter === 'all' ? '全部' : genderFilter === 'male' ? '男' : '女'}}</text>
+      <text class="arrow">▼</text>
+    </view>
+    <view class="filter-item" bindtap="onFilterAge">
+      <text>{{ageRangeText || '年龄'}}</text>
+      <text class="arrow">▼</text>
+    </view>
+    <view class="filter-item" bindtap="onFilterDistance">
+      <text>{{distanceText || '距离'}}</text>
+      <text class="arrow">▼</text>
+    </view>
+  </view>
+
+  <scroll-view class="discover-area" scroll-y refresher-enabled refresher-triggered="{{refreshing}}" bindrefresherrefresh="onPullRefresh" bindscrolltolower="onLoadMore">
+    <view wx:if="{{loading && profiles.length === 0}}" class="loading-state">
+      <text>正在寻找附近的人...</text>
+    </view>
+
+    <view wx:if="{{!loading && profiles.length === 0 && !error}}" class="empty-state">
+      <text class="empty-icon">💔</text>
+      <text>暂无推荐</text>
+      <text class="empty-hint">稍后再来看看吧</text>
+    </view>
+
+    <view wx:if="{{error}}" class="error-tip">
+      <text>加载失败，点击重试</text>
+      <text class="retry-btn" bindtap="loadProfiles">重试</text>
+    </view>
+
+    <view wx:for="{{profiles}}" wx:key="id" class="profile-card" bindtap="onProfileTap" data-id="{{item.id}}">
+      <image class="profile-bg" src="{{item.imageUrl || item.avatar || 'https://via.placeholder.com/375x450'}}" mode="aspectFill" />
+      <view class="profile-gradient"></view>
+      <view class="profile-info">
+        <view class="profile-name-row">
+          <text class="profile-name">{{item.nickname || item.name || '匿名'}}</text>
+          <text class="profile-age">{{item.age || '?'}}岁</text>
+          <text class="profile-distance" wx:if="{{item.distance !== undefined}}">{{item.distance}}km</text>
+        </view>
+        <text class="profile-bio" wx:if="{{item.bio}}">{{item.bio}}</text>
+        <view class="profile-interests" wx:if="{{item.interests && item.interests.length > 0}}">
+          <text wx:for="{{item.interests.slice(0, 4)}}" wx:key="*this" class="interest-tag">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="swipe-actions" wx:if="{{profiles.length > 0}}">
+      <view class="swipe-btn dislike-btn" bindtap="onDislike" data-id="{{profiles[0].id}}">
+        <text>✕</text>
+      </view>
+      <view class="swipe-btn superlike-btn" bindtap="onSuperlike" data-id="{{profiles[0].id}}">
+        <text>⭐</text>
+      </view>
+      <view class="swipe-btn like-btn" bindtap="onLike" data-id="{{profiles[0].id}}">
+        <text>♥</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="section-header">
+    <text class="section-title">我的匹配</text>
+  </view>
+
+  <scroll-view class="match-list" scroll-x wx:if="{{matches.length > 0}}">
+    <view wx:for="{{matches}}" wx:key="id" class="match-avatar" bindtap="onMatchTap" data-id="{{item.id}}">
+      <image src="{{item.avatar || item.imageUrl || 'https://via.placeholder.com/56'}}" mode="aspectFill" />
+      <text class="match-name">{{item.nickname || item.name || ''}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

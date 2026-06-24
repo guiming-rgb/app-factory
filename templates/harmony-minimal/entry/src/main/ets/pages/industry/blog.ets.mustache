@@ -1,0 +1,179 @@
+// {{displayName}} — Blog / Articles (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct ArticleCard {
+  @State title: string = ''
+  @State coverUrl: string = ''
+  @State summary: string = ''
+  @State author: string = ''
+  @State readTime: string = ''
+  @State bookmarked: boolean = false
+  articleId: string = ''
+
+  build() {
+    Column() {
+      Row() {
+        Image(this.coverUrl || 'https://via.placeholder.com/120x80')
+          .width(120).height(80).borderRadius(8).objectFit(ImageFit.Cover)
+        Column() {
+          Text(this.title).fontSize(15).fontWeight(FontWeight.Medium).maxLines(2)
+            .lineHeight(20).textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(this.summary).fontSize(12).fontColor('#999').maxLines(2)
+            .lineHeight(16).textOverflow({ overflow: TextOverflow.Ellipsis }).margin({ top: 4 })
+          Row() {
+            Text(this.author).fontSize(11).fontColor('#bbb')
+            Text(` · ${this.readTime}`).fontSize(11).fontColor('#bbb').margin({ left: 4 })
+            Blank()
+            Text(this.bookmarked ? '🔖' : '🔖')
+              .fontSize(16)
+              .fontColor(this.bookmarked ? '{{primaryColor}}' : '#ccc')
+              .onClick(() => { this.bookmarked = !this.bookmarked })
+          }.width('100%').margin({ top: 4 })
+        }
+        .alignItems(HorizontalAlign.Start).layoutWeight(1).margin({ left: 12 })
+      }
+    }
+    .width('100%').padding(12).backgroundColor(Color.White).borderRadius(10)
+    .margin({ bottom: 8 })
+    .shadow({ radius: 2, color: '#1a000000', offsetX: 0, offsetY: 1 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/ArticleDetail', params: { id: this.articleId } })
+    })
+  }
+}
+
+@Entry
+@Component
+struct BlogPage {
+  @State articles: Array<{
+    id: string, title: string, coverUrl: string,
+    summary: string, author: string, readTime: string, bookmarked: boolean
+  }> = []
+  @State categories: Array<{ id: string, name: string, active: boolean }> = [
+    { id: 'all', name: '推荐', active: true },
+    { id: 'tech', name: '科技', active: false },
+    { id: 'life', name: '生活', active: false },
+    { id: 'design', name: '设计', active: false },
+    { id: 'dev', name: '开发', active: false },
+  ]
+  @State activeCategory: string = 'all'
+  @State searchKeyword: string = ''
+  @State loading: boolean = false
+  @State showBookmarked: boolean = false
+  private searchController: TextInputController = new TextInputController()
+
+  aboutToAppear() {
+    this.loadArticles()
+  }
+
+  async loadArticles() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").order("created_at", { ascending: false }).limit(20)
+    this.articles = [
+      { id: '1', title: '示例文章标题 — ArkTS 开发入门', coverUrl: '', summary: '了解鸿蒙系统上的应用开发基础，从环境搭建到第一个Hello World', author: '开发者A', readTime: '5分钟', bookmarked: false },
+      { id: '2', title: '深入理解声明式UI编程范式', coverUrl: '', summary: '本文深入探讨声明式UI的核心概念和与传统命令式UI的对比', author: '设计师B', readTime: '8分钟', bookmarked: true },
+      { id: '3', title: '设计模式在移动端架构中的应用', coverUrl: '', summary: '从MVC到MVVM再到MVI，梳理移动端架构模式的演进之路', author: '架构师C', readTime: '12分钟', bookmarked: false },
+      { id: '4', title: '性能优化实战指南', coverUrl: '', summary: '涵盖渲染优化、内存管理、网络请求等方面的实用技巧', author: '工程师D', readTime: '10分钟', bookmarked: false },
+    ]
+    this.loading = false
+  }
+
+  get filteredArticles(): Array<{
+    id: string, title: string, coverUrl: string,
+    summary: string, author: string, readTime: string, bookmarked: boolean
+  }> {
+    let result = this.articles
+    if (this.searchKeyword.length > 0) {
+      result = result.filter(a =>
+        a.title.includes(this.searchKeyword) || a.summary.includes(this.searchKeyword)
+      )
+    }
+    if (this.showBookmarked) {
+      result = result.filter(a => a.bookmarked)
+    }
+    return result
+  }
+
+  build() {
+    Column() {
+      // Header
+      Text('{{displayName}}').fontSize(20).fontWeight(FontWeight.Bold)
+        .width('100%').padding({ left: 16, top: 16 })
+
+      // Search bar
+      Row() {
+        TextInput({ placeholder: '搜索文章...', controller: this.searchController })
+          .layoutWeight(1).height(40).backgroundColor('#f5f5f5').borderRadius(20)
+          .padding({ left: 16, right: 16 })
+          .onChange((v: string) => { this.searchKeyword = v })
+        if (this.searchKeyword.length > 0) {
+          Button('取消').fontSize(14).fontColor('#999').backgroundColor(Color.Transparent)
+            .margin({ left: 8 }).onClick(() => {
+              this.searchKeyword = ''
+              this.searchController.caretPosition(0)
+            })
+        }
+      }.padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+      // Category tabs + bookmark filter
+      Row() {
+        Scroll() {
+          Row() {
+            ForEach(this.categories, (cat: { id: string, name: string, active: boolean }) => {
+              Text(cat.name)
+                .fontSize(14)
+                .fontColor(cat.active ? Color.White : '#333')
+                .backgroundColor(cat.active ? '{{primaryColor}}' : '#f0f0f0')
+                .borderRadius(16)
+                .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+                .margin({ right: 8 })
+                .onClick(() => {
+                  this.activeCategory = cat.id
+                  this.categories = this.categories.map(c => ({
+                    ...c, active: c.id === cat.id
+                  }))
+                })
+            })
+          }.padding({ left: 16, right: 16 })
+        }.scrollable(ScrollDirection.Horizontal).layoutWeight(1)
+
+        Text(this.showBookmarked ? '🔖 已收藏' : '🔖')
+          .fontSize(14).fontColor(this.showBookmarked ? '{{primaryColor}}' : '#999')
+          .margin({ right: 16 }).onClick(() => { this.showBookmarked = !this.showBookmarked })
+      }.height(48)
+
+      // Article list
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 40 })
+      } else if (this.filteredArticles.length === 0) {
+        Column() {
+          Text(this.showBookmarked ? '暂无收藏文章' : '暂无文章').fontSize(16).fontColor('#999')
+        }.width('100%').margin({ top: 60 })
+      } else {
+        List() {
+          ForEach(this.filteredArticles, (item: {
+            id: string, title: string, coverUrl: string,
+            summary: string, author: string, readTime: string, bookmarked: boolean
+          }) => {
+            ListItem() {
+              ArticleCard({
+                title: item.title, coverUrl: item.coverUrl,
+                summary: item.summary, author: item.author,
+                readTime: item.readTime, bookmarked: item.bookmarked,
+                articleId: item.id
+              })
+            }
+          })
+        }
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16, top: 8, bottom: 16 })
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

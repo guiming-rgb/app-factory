@@ -1,0 +1,193 @@
+// {{displayName}} — Photo Community Feed Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+
+Page({
+  data: {
+    photos: [],
+    leftCol: [],
+    rightCol: [],
+    tabs: [
+      { id: 'discover', name: '发现', active: true },
+      { id: 'following', name: '关注', active: false },
+      { id: 'trending', name: '热门', active: false },
+    ],
+    activeTab: 'discover',
+    keyword: '',
+    challenge: null,
+    likedIds: [],
+    savedIds: [],
+    loading: false,
+    refreshing: false,
+    error: false,
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 20,
+  },
+
+  onLoad() {
+    this.loadChallenge();
+    this.loadPhotos();
+  },
+
+  onShow() {
+    if (this.data.photos.length === 0 && !this.data.loading) {
+      this.loadPhotos();
+    }
+  },
+
+  onPullRefresh() {
+    this.setData({ photos: [], leftCol: [], rightCol: [], page: 0, hasMore: true, refreshing: true });
+    this.loadPhotos();
+  },
+
+  loadChallenge() {
+    this.setData({
+      challenge: {
+        id: 'challenge_1',
+        title: '夏日摄影大赛 · 用镜头记录美好',
+        bannerUrl: 'https://via.placeholder.com/375x120/{{primaryColor}}/fff?text=夏日摄影大赛',
+      },
+    });
+  },
+
+  async loadPhotos() {
+    if (this.data.loading || !this.data.hasMore) return;
+    this.setData({ loading: true, error: false });
+
+    try {
+      const { request } = require('../../utils/supabase');
+      const from = this.data.page * this.data.PAGE_SIZE;
+      const { data, error } = await request(
+        `{{tableName}}?select=*&limit=${this.data.PAGE_SIZE}&offset=${from}&order=created_at.desc`
+      );
+
+      if (error) throw error;
+
+      const list = data || [];
+      const formatted = list.map(item => ({
+        id: item.id,
+        imageUrl: item.image_url || item.imageUrl,
+        title: item.title || '',
+        author: item.author || item.user_name || '匿名',
+        likes: item.likes || item.like_count || 0,
+        comments: item.comments || item.comment_count || 0,
+        tags: item.tags || item.tag_list || [],
+        isLiked: item.is_liked || false,
+        isSaved: item.is_saved || false,
+        createdAt: item.created_at || '',
+      }));
+
+      // Distribute into waterfall columns
+      const allItems = [...this.data.photos, ...formatted];
+      const left = [];
+      const right = [];
+      allItems.forEach((item, i) => {
+        if (i % 2 === 0) {
+          left.push(item);
+        } else {
+          right.push(item);
+        }
+      });
+
+      this.setData({
+        photos: allItems,
+        leftCol: left,
+        rightCol: right,
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('loadPhotos error:', e);
+      this.setData({ loading: false, refreshing: false, error: true });
+    }
+  },
+
+  onLoadMore() {
+    this.loadPhotos();
+  },
+
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value });
+  },
+
+  async onSearch() {
+    this.setData({ photos: [], leftCol: [], rightCol: [], page: 0, hasMore: true });
+    await this.loadPhotos();
+  },
+
+  onTabTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const tabs = this.data.tabs.map(t => ({ ...t, active: t.id === id }));
+    this.setData({ tabs, activeTab: id, photos: [], leftCol: [], rightCol: [], page: 0, hasMore: true });
+    this.loadPhotos();
+  },
+
+  onPhotoTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/photo_detail/photo_detail?id=${id}` });
+  },
+
+  onLikeToggle(e) {
+    const id = e.currentTarget.dataset.id;
+    const likedIds = [...this.data.likedIds];
+    const idx = likedIds.indexOf(id);
+    if (idx > -1) {
+      likedIds.splice(idx, 1);
+    } else {
+      likedIds.push(id);
+    }
+
+    // Update local photo state
+    const photos = this.data.photos.map(p => {
+      if (p.id === id) {
+        return { ...p, likes: p.isLiked ? p.likes - 1 : p.likes + 1, isLiked: !p.isLiked };
+      }
+      return p;
+    });
+    const leftCol = this.redistributeCol(photos, 0);
+    const rightCol = this.redistributeCol(photos, 1);
+    this.setData({ likedIds, photos, leftCol, rightCol });
+  },
+
+  onSaveToggle(e) {
+    const id = e.currentTarget.dataset.id;
+    const savedIds = [...this.data.savedIds];
+    const idx = savedIds.indexOf(id);
+    if (idx > -1) {
+      savedIds.splice(idx, 1);
+      wx.showToast({ title: '已取消收藏', icon: 'none' });
+    } else {
+      savedIds.push(id);
+      wx.showToast({ title: '已收藏', icon: 'success' });
+    }
+    this.setData({ savedIds });
+    wx.setStorageSync('saved_photos', savedIds);
+  },
+
+  redistributeCol(items, colIndex) {
+    return items.filter((_, i) => i % 2 === colIndex);
+  },
+
+  onChallengeTap() {
+    const id = this.data.challenge?.id;
+    if (id) {
+      wx.navigateTo({ url: `/pages/challenge_detail/challenge_detail?id=${id}` });
+    }
+  },
+
+  onUploadPhoto() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const tempPath = res.tempFilePaths[0];
+        wx.navigateTo({ url: `/pages/photo_upload/photo_upload?imagePath=${encodeURIComponent(tempPath)}` });
+      },
+    });
+  },
+});

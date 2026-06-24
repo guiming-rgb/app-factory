@@ -1,0 +1,147 @@
+// {{displayName}} — Hotel Search & Booking Page (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+const app = getApp();
+const { hotelService } = require("../../services/industry");
+
+Page({
+  data: {
+    hotels: [],
+    city: '',
+    checkIn: '',
+    checkOut: '',
+    rooms: 1,
+    guests: 1,
+    priceRanges: [
+      { id: '0-200', label: '¥200以下' },
+      { id: '200-500', label: '¥200-500' },
+      { id: '500-1000', label: '¥500-1000' },
+      { id: '1000+', label: '¥1000以上' },
+    ],
+    priceFilter: '',
+    sortBy: 'default',
+    hasSearched: false,
+    loading: false,
+    refreshing: false,
+    error: '',
+    hasMore: true,
+    page: 0,
+    PAGE_SIZE: 10,
+  },
+
+  onLoad(options) {
+    if (options.city) {
+      this.setData({ city: options.city });
+      this.onSearchHotels();
+    }
+  },
+
+  async searchHotels() {
+    if (this.data.loading) return;
+    this.setData({ loading: true, error: '', hasSearched: true });
+
+    try {
+      const params = {
+        city: this.data.city,
+        checkIn: this.data.checkIn,
+        checkOut: this.data.checkOut,
+        rooms: this.data.rooms,
+        guests: this.data.guests,
+        page: this.data.page,
+        pageSize: this.data.PAGE_SIZE,
+        priceFilter: this.data.priceFilter,
+        sortBy: this.data.sortBy,
+        orderDir: this.data.sortBy === 'price' ? 'asc' : 'desc',
+      };
+
+      const res = await hotelService.searchHotels(params);
+
+      const list = (res.data || []).map(item => ({
+        id: item.id,
+        name: item.name || '',
+        imageUrl: item.image_url || item.imageUrl || item.cover_url,
+        stars: item.stars || 3,
+        rating: item.rating || 0,
+        price: item.price || 0,
+        address: item.address || '',
+        tags: item.tags || item.features || [],
+        remark: item.remark || '',
+      }));
+
+      this.setData({
+        hotels: this.data.page === 0 ? list : [...this.data.hotels, ...list],
+        page: this.data.page + 1,
+        hasMore: list.length >= this.data.PAGE_SIZE,
+        loading: false,
+        refreshing: false,
+      });
+    } catch (e) {
+      console.error('searchHotels error:', e);
+      this.setData({ loading: false, refreshing: false, error: e.message || '搜索失败' });
+    }
+  },
+
+  onSearchHotels() {
+    this.setData({ hotels: [], page: 0, hasMore: true });
+    this.searchHotels();
+  },
+
+  onLoadMore() {
+    this.searchHotels();
+  },
+
+  onPullRefresh() {
+    this.setData({ hotels: [], page: 0, hasMore: true, refreshing: true });
+    this.searchHotels();
+  },
+
+  onCityInput(e) {
+    this.setData({ city: e.detail.value });
+  },
+
+  onSelectCheckIn() {
+    wx.showToast({ title: '请集成日期选择组件', icon: 'none' });
+  },
+
+  onSelectCheckOut() {
+    wx.showToast({ title: '请集成日期选择组件', icon: 'none' });
+  },
+
+  onSelectGuests() {
+    wx.showActionSheet({
+      itemList: ['1间1人', '1间2人', '2间2人', '2间4人', '自定义'],
+      success: (res) => {
+        const configs = [
+          { rooms: 1, guests: 1 },
+          { rooms: 1, guests: 2 },
+          { rooms: 2, guests: 2 },
+          { rooms: 2, guests: 4 },
+        ];
+        if (res.tapIndex < configs.length) {
+          this.setData(configs[res.tapIndex]);
+        }
+      },
+    });
+  },
+
+  onPriceFilter(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ priceFilter: value, hotels: [], page: 0, hasMore: true });
+    this.searchHotels();
+  },
+
+  onSortByRating() {
+    this.setData({ sortBy: 'rating', hotels: [], page: 0, hasMore: true });
+    this.searchHotels();
+  },
+
+  onSortByPrice() {
+    this.setData({ sortBy: 'price', hotels: [], page: 0, hasMore: true });
+    this.searchHotels();
+  },
+
+  onHotelTap(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({ url: `/pages/hotel_detail/hotel_detail?id=${id}&checkIn=${this.data.checkIn}&checkOut=${this.data.checkOut}` });
+  },
+});
