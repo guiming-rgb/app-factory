@@ -162,7 +162,7 @@ class PostCard extends StatelessWidget {
     Color? color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return Semantics(label: '$label', child: InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
       child: Padding(
@@ -176,7 +176,7 @@ class PostCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   String _formatCount(int count) {
@@ -204,7 +204,7 @@ class TopicChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
+    return Semantics(label: 'Topic: $name, $postCount posts', child: Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
@@ -220,6 +220,7 @@ class TopicChip extends StatelessWidget {
                 child: Image.network(
                   coverUrl,
                   fit: BoxFit.cover,
+                  semanticLabel: 'Cover for $name',
                   errorBuilder: (_, __, ___) => Container(
                     color: Colors.grey[300],
                     child: const Center(child: Icon(Icons.image_outlined, size: 32)),
@@ -256,6 +257,6 @@ class TopicChip extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

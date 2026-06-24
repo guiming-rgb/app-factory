@@ -35,26 +35,29 @@ class JobCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: Image.network(
-                        logoUrl,
-                        fit: BoxFit.cover,
+    return Semantics(
+      label: 'Job: $title, $companyName, $salaryMin-$salaryMax K, $location',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Image.network(
+                          logoUrl,
+                          semanticLabel: 'Logo of $companyName',
+                          fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: Colors.grey[200],
                           child: Icon(Icons.business_outlined, color: primaryColor),
@@ -129,8 +132,9 @@ class JobCard extends StatelessWidget {
                     );
                   }).toList(),
                 ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -175,14 +179,16 @@ class CompanyCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Semantics(
+      label: 'Company: $name, $industry, $companySize',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -249,10 +255,11 @@ class CompanyCard extends StatelessWidget {
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -272,19 +279,22 @@ class ApplicationStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color bgColor, Color textColor, String label) = status.displayData;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: bgColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: textColor,
+    return Semantics(
+      label: 'Application status: $label',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: bgColor.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: bgColor.withOpacity(0.3)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
         ),
       ),
     );
