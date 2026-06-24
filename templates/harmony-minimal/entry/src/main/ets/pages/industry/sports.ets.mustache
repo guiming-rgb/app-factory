@@ -118,24 +118,17 @@ struct SportsPage {
 
   async loadData() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
-    this.liveMatches = [
-      { id: '1', homeTeam: '主队A', awayTeam: '客队B', homeScore: 2, awayScore: 1, matchTime: '65\'', isLive: true },
-      { id: '2', homeTeam: '主队C', awayTeam: '客队D', homeScore: 0, awayScore: 0, matchTime: '23\'', isLive: true },
-      { id: '3', homeTeam: '主队E', awayTeam: '客队F', homeScore: 3, awayScore: 0, matchTime: '已结束', isLive: false },
-    ]
-    this.standings = [
-      { id: '1', rank: 1, teamName: '示例球队A', gamesPlayed: 10, wins: 8, draws: 1, losses: 1, points: 25 },
-      { id: '2', rank: 2, teamName: '示例球队B', gamesPlayed: 10, wins: 6, draws: 2, losses: 2, points: 20 },
-      { id: '3', rank: 3, teamName: '示例球队C', gamesPlayed: 10, wins: 5, draws: 3, losses: 2, points: 18 },
-      { id: '4', rank: 4, teamName: '示例球队D', gamesPlayed: 10, wins: 4, draws: 1, losses: 5, points: 13 },
-    ]
-    this.news = [
-      { id: '1', title: '重磅转会：明星球员加盟示例队', summary: '多方消息确认，转会费创纪录...' },
-      { id: '2', title: '季后赛赛程公布', summary: '第一轮对阵情况已经确定...' },
-    ]
-    this.loading = false
+    try {
+      const result = await sportsService.list();
+      if (result && result.length > 0) {
+        this.liveMatches = result;
+        // standings and news may be part of the result
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

@@ -60,18 +60,18 @@ struct FinancePage {
 
   async loadTransactions() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("created_at", { ascending: false }).limit(50)
-    const sampleData = [
-      { id: '1', title: '工资收入', amount: 15000, isIncome: true, category: '工资', date: '2026-06-01' },
-      { id: '2', title: '午餐', amount: 35, isIncome: false, category: '餐饮', date: '2026-06-02' },
-      { id: '3', title: '交通卡充值', amount: 100, isIncome: false, category: '交通', date: '2026-06-03' },
-      { id: '4', title: '理财收益', amount: 256, isIncome: true, category: '投资', date: '2026-06-05' },
-    ]
-    this.transactions = sampleData
-    this.monthlyIncome = sampleData.filter(t => t.isIncome).reduce((s, t) => s + t.amount, 0)
-    this.monthlyExpense = sampleData.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0)
-    this.loading = false
+    try {
+      const result = await financeService.list();
+      if (result && result.length > 0) {
+        this.transactions = result;
+        this.monthlyIncome = result.filter(t => t.isIncome).reduce((s, t) => s + t.amount, 0);
+        this.monthlyExpense = result.filter(t => !t.isIncome).reduce((s, t) => s + t.amount, 0);
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

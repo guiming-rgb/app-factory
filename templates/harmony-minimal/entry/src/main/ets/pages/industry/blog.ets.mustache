@@ -71,15 +71,16 @@ struct BlogPage {
 
   async loadArticles() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("created_at", { ascending: false }).limit(20)
-    this.articles = [
-      { id: '1', title: '示例文章标题 — ArkTS 开发入门', coverUrl: '', summary: '了解鸿蒙系统上的应用开发基础，从环境搭建到第一个Hello World', author: '开发者A', readTime: '5分钟', bookmarked: false },
-      { id: '2', title: '深入理解声明式UI编程范式', coverUrl: '', summary: '本文深入探讨声明式UI的核心概念和与传统命令式UI的对比', author: '设计师B', readTime: '8分钟', bookmarked: true },
-      { id: '3', title: '设计模式在移动端架构中的应用', coverUrl: '', summary: '从MVC到MVVM再到MVI，梳理移动端架构模式的演进之路', author: '架构师C', readTime: '12分钟', bookmarked: false },
-      { id: '4', title: '性能优化实战指南', coverUrl: '', summary: '涵盖渲染优化、内存管理、网络请求等方面的实用技巧', author: '工程师D', readTime: '10分钟', bookmarked: false },
-    ]
-    this.loading = false
+    try {
+      const result = await blogService.getFeed();
+      if (result && result.length > 0) {
+        this.articles = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   get filteredArticles(): Array<{

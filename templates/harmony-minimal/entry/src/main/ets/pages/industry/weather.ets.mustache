@@ -60,40 +60,30 @@ struct WeatherPage {
 
   async loadWeather() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").single()
-    this.cityName = '示例城市'
-    this.currentTemp = '26°'
-    this.currentCondition = '晴间多云'
-    this.currentIcon = '⛅'
-    this.highTemp = '30°'
-    this.lowTemp = '20°'
-    this.hourlyForecast = [
-      { time: '现在', icon: '⛅', temp: '26°' },
-      { time: '14点', icon: '☀️', temp: '28°' },
-      { time: '15点', icon: '☀️', temp: '29°' },
-      { time: '16点', icon: '⛅', temp: '29°' },
-      { time: '17点', icon: '⛅', temp: '27°' },
-      { time: '18点', icon: '☁️', temp: '25°' },
-    ]
-    this.dailyForecast = [
-      { day: '今天', icon: '⛅', highTemp: '30°', lowTemp: '20°' },
-      { day: '明天', icon: '☀️', highTemp: '32°', lowTemp: '22°' },
-      { day: '周三', icon: '☁️', highTemp: '28°', lowTemp: '19°' },
-      { day: '周四', icon: '🌧️', highTemp: '24°', lowTemp: '18°' },
-      { day: '周五', icon: '☁️', highTemp: '26°', lowTemp: '19°' },
-      { day: '周六', icon: '☀️', highTemp: '31°', lowTemp: '21°' },
-      { day: '周日', icon: '☀️', highTemp: '33°', lowTemp: '23°' },
-    ]
-    this.aqi = 65
-    this.aqiLevel = '良'
-    this.lifeIndices = [
-      { name: '穿衣', level: '舒适', desc: '建议穿薄外套' },
-      { name: '紫外线', level: '中等', desc: '注意防晒' },
-      { name: '感冒', level: '低发', desc: '不易感冒' },
-      { name: '运动', level: '适宜', desc: '适合户外运动' },
-    ]
-    this.loading = false
+    try {
+      const cityResult = await weatherService.getCurrentCity();
+      if (cityResult) {
+        this.cityName = cityResult.name || '示例城市';
+        this.currentTemp = cityResult.temp || '26°';
+        this.currentCondition = cityResult.condition || '晴间多云';
+        this.currentIcon = cityResult.icon || '⛅';
+        this.highTemp = cityResult.highTemp || '30°';
+        this.lowTemp = cityResult.lowTemp || '20°';
+        this.aqi = cityResult.aqi || 65;
+        this.aqiLevel = cityResult.aqiLevel || '良';
+        this.hourlyForecast = cityResult.hourly || [];
+        this.lifeIndices = cityResult.indices || [];
+
+        const dailyResult = await weatherService.getDaily(cityResult.id);
+        if (dailyResult && dailyResult.length > 0) {
+          this.dailyForecast = dailyResult;
+        }
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   aqiColor(): string {

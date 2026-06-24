@@ -47,14 +47,18 @@ struct PaymentPage {
     this.loadOrder()
   }
 
-  loadOrder() {
-    // TODO: Load from {{tableName}} or cart storage
-    this.orderItems = [
-      { id: '1', name: '示例商品', price: 49.00, quantity: 2, imageUrl: '' },
-    ]
-    this.totalAmount = 98.00
-    this.deliveryFee = 0
-    this.finalAmount = 98.00
+  async loadOrder() {
+    try {
+      const result = await paymentService.list();
+      if (result && result.length > 0) {
+        this.orderItems = result;
+        this.totalAmount = result.reduce((s, item) => s + item.price * item.quantity, 0);
+        this.deliveryFee = 0;
+        this.finalAmount = this.totalAmount + this.deliveryFee;
+      }
+    } catch (e) {
+      // 加载失败
+    }
   }
 
   build() {
@@ -126,11 +130,12 @@ struct PaymentPage {
           .width(140)
           .onClick(() => {
             this.paying = true
-            // TODO: Call payment API
-            setTimeout(() => {
+            paymentService.create({amount: this.finalAmount, currency: 'cny', method: this.selectedMethod, status: 'pending'}).then(() => {
               this.paying = false
               router.pushUrl({ url: 'pages/PaymentResult', params: { status: 'success' } })
-            }, 1500)
+            }).catch(() => {
+              this.paying = false
+            })
           })
       }
       .padding({ left: 16, right: 16, top: 8, bottom: 8 })

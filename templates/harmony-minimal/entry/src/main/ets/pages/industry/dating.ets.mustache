@@ -99,19 +99,17 @@ struct DatingPage {
 
   async loadProfiles() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(10)
-    this.currentProfile = {
-      id: '1', name: '示例用户', age: 25,
-      avatarUrl: '', distance: '距你 3.5km',
-      bio: '喜欢旅行、摄影和美食，周末常去探索城市角落',
-      interests: ['摄影', '美食', '旅行', '音乐']
+    try {
+      const result = await datingService.discoverProfiles({});
+      if (result) {
+        this.currentProfile = result.currentProfile || null;
+        this.matches = result.matches || [];
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
     }
-    this.matches = [
-      { id: '2', name: '喜欢TA', avatarUrl: '', age: 24, mutualLikes: true },
-      { id: '3', name: '新匹配', avatarUrl: '', age: 26, mutualLikes: false },
-    ]
-    this.loading = false
   }
 
   build() {

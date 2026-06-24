@@ -71,17 +71,16 @@ struct PhotoPage {
 
   async loadPhotos() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(30).order("likes", { ascending: false })
-    this.photos = [
-      { id: '1', imageUrl: '', likes: 256, comments: 18, tags: ['自然', '风景'] },
-      { id: '2', imageUrl: '', likes: 189, comments: 12, tags: ['城市', '建筑'] },
-      { id: '3', imageUrl: '', likes: 342, comments: 24, tags: ['美食', '摄影'] },
-      { id: '4', imageUrl: '', likes: 98, comments: 5, tags: ['人像'] },
-      { id: '5', imageUrl: '', likes: 512, comments: 36, tags: ['旅行', '自然'] },
-      { id: '6', imageUrl: '', likes: 156, comments: 9, tags: ['黑白', '艺术'] },
-    ]
-    this.loading = false
+    try {
+      const result = await photoService.getDiscover();
+      if (result && result.length > 0) {
+        this.photos = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

@@ -69,20 +69,16 @@ struct FoodDeliveryPage {
 
   async loadRestaurants() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    this.restaurants = [
-      {
-        id: '1', name: '示例餐厅 1', logoUrl: '', rating: 4.6,
-        deliveryTime: '30min', deliveryFee: '免配送费',
-        cuisineTags: ['中餐', '川菜']
-      },
-      {
-        id: '2', name: '示例餐厅 2', logoUrl: '', rating: 4.3,
-        deliveryTime: '25min', deliveryFee: '配送费¥5',
-        cuisineTags: ['西餐', '简餐']
-      },
-    ]
-    this.loading = false
+    try {
+      const result = await foodService.list();
+      if (result && result.length > 0) {
+        this.restaurants = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

@@ -84,16 +84,14 @@ struct GameCenterPage {
   }
 
   async loadData() {
-    // TODO: Supabase query via {{tableName}}
-    this.games = [
-      { id: '1', name: '示例游戏 1', coverUrl: '', genre: '休闲', rating: 4.5, playerCount: 1234 },
-      { id: '2', name: '示例游戏 2', coverUrl: '', genre: '动作', rating: 4.7, playerCount: 856 },
-    ]
-    this.leaderboard = [
-      { id: '1', rank: 1, playerName: '玩家一', score: 9999, avatar: '' },
-      { id: '2', rank: 2, playerName: '玩家二', score: 8888, avatar: '' },
-      { id: '3', rank: 3, playerName: '玩家三', score: 7777, avatar: '' },
-    ]
+    try {
+      const result = await gameService.list();
+      if (result && result.length > 0) {
+        this.games = result;
+      }
+    } catch (e) {
+      // 加载失败
+    }
   }
 
   build() {

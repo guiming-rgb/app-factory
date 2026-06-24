@@ -91,22 +91,20 @@ struct MedicalPage {
 
   async loadData() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(10)
-    this.doctors = [
-      { id: '1', name: '李医生', avatarUrl: '', title: '主任医师', hospital: '示例三甲医院', rating: 4.8, fee: 50 },
-      { id: '2', name: '王医生', avatarUrl: '', title: '副主任医师', hospital: '示例人民医院', rating: 4.5, fee: 30 },
-      { id: '3', name: '张医生', avatarUrl: '', title: '主治医师', hospital: '示例中医院', rating: 4.3, fee: 20 },
-    ]
-    this.appointmentSlots = [
-      { id: '1', time: '09:00-09:30', available: true },
-      { id: '2', time: '09:30-10:00', available: true },
-      { id: '3', time: '10:00-10:30', available: false },
-      { id: '4', time: '10:30-11:00', available: true },
-      { id: '5', time: '11:00-11:30', available: false },
-      { id: '6', time: '14:00-14:30', available: true },
-    ]
-    this.loading = false
+    try {
+      const deptResult = await medicalService.getDepartments();
+      if (deptResult && deptResult.length > 0) {
+        this.departments = deptResult;
+      }
+      const doctorResult = await medicalService.getDoctorsByDept();
+      if (doctorResult && doctorResult.length > 0) {
+        this.doctors = doctorResult;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

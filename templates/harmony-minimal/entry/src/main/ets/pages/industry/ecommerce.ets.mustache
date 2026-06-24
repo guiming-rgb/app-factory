@@ -70,14 +70,16 @@ struct ECommercePage {
 
   async loadProducts() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
-    // this.products = data || []
-    this.products = [
-      { id: '1', name: '示例商品 1', price: 99.00, imageUrl: '', rating: 4.5, sales: 128 },
-      { id: '2', name: '示例商品 2', price: 199.00, imageUrl: '', rating: 4.8, sales: 256 },
-    ]
-    this.loading = false
+    try {
+      const result = await ecommerceService.list();
+      if (result && result.length > 0) {
+        this.products = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {
