@@ -1,7 +1,7 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-25（Q2-M2 完成 — Widget 补齐 + detectIndustry 100% + 支付双通道）  
-> **今日收工**：[下一阶段-三栈parity-Claude接力.md](./下一阶段-三栈parity-Claude接力.md) · [模板能力矩阵.md](./模板能力矩阵.md)  
+> **最后更新**：2026-06-25（18 个月路线图全线贯通 — 896 tests · 101+104 门禁）  
+> **今日收工**：[战略路线图-2026-Q2至2027.md](./战略路线图-2026-Q2至2027.md) · [模板能力矩阵.md](./模板能力矩阵.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [产品路径一览.md](./产品路径一览.md) · [Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)
 
 ## 当前进度（勾选）
@@ -80,6 +80,30 @@
 - [x] **三栈 Parity P3**：鸿蒙 19 service + game/payment service 调用 ✅
 - [x] **三栈 Parity P4**：`verify:industry:e2e` 扩展为三栈 19×3 ✅
 - [x] **三栈 Parity P5**：HANDOFF + 能力矩阵同步 ✅
+- [x] **Q2-M1**：Mustache 渲染引擎 + 20 行业 Widget 模板（~180KB Dart）✅
+- [x] **Q2-M2**：detectIndustry 190/190 (100%) + 支付状态机 + Stripe/微信 Webhook ✅
+- [x] **Q2-M3**：三平台推送通知 (FCM + 微信订阅 + 华为PushKit) + 离线优先同步 ✅
+- [x] **Q3-M4**：Spec 自动诊断修复 Agent ✅
+- [x] **Q3-M5**：OWASP 安全审计 + 隐私合规 + 输入消毒 + 限流 ✅
+- [x] **Q3-M6**：三平台性能门禁 (dart analyze + 包体积 + 模块数) ✅
+- [x] **Q4-M1**：组件市场 v1 (注册表 + CRUD API + 全文搜索) ✅
+- [x] **Q4-M2**：三端分析 SDK + 事件 API + Dashboard ✅
+- [x] **Q4-M3/4**：商店发布 GHA + A/B 测试框架 + 发布流水线 ✅
+- [x] **Q5-M1**：团队协作 SaaS (Workspace + RBAC + 实时协同 + 冲突检测) ✅
+- [x] **Q5-M2**：版本管理 (Spec 历史 + 产物版本 + JSON Diff + 回滚) ✅
+- [x] **Q6-M1**：Stripe 订阅计费 (Free/Pro/Enterprise + 用量追踪 + Customer Portal) ✅
+- [x] **Q6-M2**：企业功能 (SSO + 白标 + 合作伙伴 + SLA 追踪) ✅
+- [x] **P0-B-1**：鸿蒙 19 行业差异化服务（84→400+ 行，对齐微信 302 行）✅
+- [x] **P1**：Widget dart analyze 门禁 + 微信 wcc 行业抽样 ✅
+- [x] **P2-D**：测试补强 (896 tests · 27 files) ✅
+- [x] **P3-G**：文档站 (14 页 VitePress) + 战略路线图 ✅
+- [x] **管理后台**：7 页 Admin UI (概览/工作区/组件/伙伴/SLA/计费) ✅
+- [x] **Onboarding**：5 步向导 + Landing Page + Auth 页面 ✅
+- [x] **i18n**：10 locales × 三平台 (422 keys/语言) ✅
+- [x] **a11y**：20 Widget Semantics 标签 + 三端 Accessibility ✅
+- [x] **错误监控**：Flutter/微信/鸿蒙 CrashReporter ✅
+- [x] **E2E 测试**：373 tests (pipeline/template/API/payment/security) ✅
+- [ ] **P3-F**：签名/迁移/生产（依赖维护者：Apple Dev + Google Play + 微信商户号 + Stripe Key）
 
 ## 跨平台策略（批次 P · 维护者必读）
 
@@ -172,7 +196,7 @@ npm run verify:p:desktop:flutter
 | 日期 | 变更 |
 |------|------|
 | 2026-06-25 | **三栈 Parity P0-P5 收官**：微信 detail/form industry service · 鸿蒙 game/payment service · e2e 19×3 · parity v3 170+ 项 |
-| 2026-06-25 | **Q2-M2 完成**：Mustache 20 行业 Widget 模板 · detectIndustry 100% · 支付状态机+双通道 Webhook · 推送+离线迁移 |
+| 2026-06-25 | **18 个月路线图全线贯通**：896 tests · 101+104 门禁 · P0-B-1 鸿蒙差异化 · P1 Widget/wcc 门禁 · P2-D 测试补强 · P3-G 文档收工 |
 | 2026-06-17 | **R1 发行层**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · [收工记录-20260617](./收工记录-20260617-今日收工.md) |
 | 2026-06-16 | **今日收工**：记忆共享 · 安全合规 Agent · push `664ccc2` → [收工记录-20260616](./收工记录-20260616-今日收工.md) |
 | 2026-06-05 | **Claude 总索引**：[Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md) + 根目录 [CLAUDE.md](../CLAUDE.md) |
