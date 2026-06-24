@@ -46,29 +46,32 @@ class TransactionTile extends StatelessWidget {
     final icon = _categoryIcons[category] ?? Icons.more_horiz;
     final color = isIncome ? Colors.green : theme.colorScheme.error;
 
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.1),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        subtitle: Text(
-          DateFormat("MM/dd").format(date),
-          style: AppTheme.caption(theme.textTheme),
-        ),
-        trailing: Text(
-          "${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}",
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: color,
+    return Semantics(
+      label: 'Transaction: $title, ${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}',
+      child: Card(
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(icon, color: color, size: 20),
           ),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            DateFormat("MM/dd").format(date),
+            style: AppTheme.caption(theme.textTheme),
+          ),
+          trailing: Text(
+            "${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}",
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          onTap: onTap,
         ),
-        onTap: onTap,
       ),
     );
   }
@@ -114,13 +117,16 @@ class BudgetProgressBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: ratio,
-            backgroundColor: barColor.withValues(alpha: 0.1),
-            color: barColor,
-            minHeight: 8,
+        Semantics(
+          label: 'Budget: $label, spent ¥${spent.toStringAsFixed(0)} of ¥${budget.toStringAsFixed(0)}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: ratio,
+              backgroundColor: barColor.withValues(alpha: 0.1),
+              color: barColor,
+              minHeight: 8,
+            ),
           ),
         ),
       ],
@@ -143,44 +149,47 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context)
-          .colorScheme
-          .primaryContainer
-          .withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(
-              month,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+    return Semantics(
+      label: 'Monthly summary for $month, income ¥${income.toStringAsFixed(0)}, expense ¥${expense.toStringAsFixed(0)}, balance ¥${(income - expense).toStringAsFixed(0)}',
+      child: Card(
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.3),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                month,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _SummaryItem(
-                  label: "收入",
-                  value: "¥${income.toStringAsFixed(2)}",
-                  color: Colors.green,
-                ),
-                _SummaryItem(
-                  label: "支出",
-                  value: "¥${expense.toStringAsFixed(2)}",
-                  color: Colors.red,
-                ),
-                _SummaryItem(
-                  label: "结余",
-                  value: "¥${(income - expense).toStringAsFixed(2)}",
-                  color: income >= expense ? Colors.green : Colors.red,
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _SummaryItem(
+                    label: "收入",
+                    value: "¥${income.toStringAsFixed(2)}",
+                    color: Colors.green,
+                  ),
+                  _SummaryItem(
+                    label: "支出",
+                    value: "¥${expense.toStringAsFixed(2)}",
+                    color: Colors.red,
+                  ),
+                  _SummaryItem(
+                    label: "结余",
+                    value: "¥${(income - expense).toStringAsFixed(2)}",
+                    color: income >= expense ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

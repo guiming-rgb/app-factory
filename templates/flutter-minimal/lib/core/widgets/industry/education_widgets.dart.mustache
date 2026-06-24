@@ -25,7 +25,7 @@ class TimetableCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = color ?? {{{primaryColor}}};
-    return GestureDetector(
+    return Semantics(label: 'Course: $courseName, room $room', child: GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.all(2),
@@ -60,7 +60,7 @@ class TimetableCell extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -146,7 +146,7 @@ class AssignmentCard extends StatelessWidget {
         ? (submitted ?? 0) / total!
         : null;
 
-    return Card(
+    return Semantics(label: 'Assignment: $title, $course, ${isUrgent ? "urgent" : "due ${deadline.month}/${deadline.day}"}', child: Card(
       child: ListTile(
         leading: Icon(
           isUrgent
@@ -191,7 +191,7 @@ class AssignmentCard extends StatelessWidget {
         ),
         onTap: onTap,
       ),
-    );
+    ));
   }
 }
 
@@ -211,7 +211,7 @@ class GradeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Semantics(label: 'Grade: $grade', child: Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 14,
         vertical: 6,
@@ -231,6 +231,6 @@ class GradeBadge extends StatelessWidget {
           color: _color,
         ),
       ),
-    );
+    ));
   }
 }

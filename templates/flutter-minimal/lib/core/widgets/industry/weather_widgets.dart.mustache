@@ -38,61 +38,65 @@ class WeatherNowHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradient = _backgroundGradient();
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: gradient,
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+    return Semantics(
+      label:
+          'Weather in $cityName: $temperature°, $condition, feels like $feelsLike, humidity $humidity, wind $windSpeed',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // City name
-          Text(
-            cityName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+        child: Column(
+          children: [
+            // City name
+            Text(
+              cityName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Weather icon
-          Icon(weatherIcon, size: 56, color: Colors.white),
-          const SizedBox(height: 8),
-          // Temperature
-          Text(
-            '$temperature°',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 64,
-              fontWeight: FontWeight.w100,
+            const SizedBox(height: 8),
+            // Weather icon
+            Icon(weatherIcon, size: 56, color: Colors.white),
+            const SizedBox(height: 8),
+            // Temperature
+            Text(
+              '$temperature°',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 64,
+                fontWeight: FontWeight.w100,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // Condition text
-          Text(
-            condition,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+            const SizedBox(height: 4),
+            // Condition text
+            Text(
+              condition,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          // Stats row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatItem('Feels like', feelsLike),
-              _buildStatItem('Humidity', humidity),
-              _buildStatItem('Wind', windSpeed),
-            ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            // Stats row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem('Feels like', feelsLike),
+                _buildStatItem('Humidity', humidity),
+                _buildStatItem('Wind', windSpeed),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -132,45 +136,48 @@ class HourlyForecastRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: hours.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final hour = hours[index];
-          return SizedBox(
-            width: 48,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  hour['time'] as String,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
+    return Semantics(
+      label: 'Hourly forecast for ${hours.length} hours',
+      child: SizedBox(
+        height: 100,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: hours.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final hour = hours[index];
+            return SizedBox(
+              width: 48,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    hour['time'] as String,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Icon(
-                  hour['icon'] as IconData,
-                  size: 22,
-                  color: Colors.amber[600],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${hour['temp']}°',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 4),
+                  Icon(
+                    hour['icon'] as IconData,
+                    size: 22,
+                    color: Colors.amber[600],
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 4),
+                  Text(
+                    '${hour['temp']}°',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -197,89 +204,92 @@ class DailyForecastItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final double fraction =
         (currentTemp - lowTemp) / ((highTemp - lowTemp).clamp(1, 100));
-    return Row(
-      children: [
-        // Date
-        SizedBox(
-          width: 60,
-          child: Text(
-            date,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Icon
-        Icon(icon, size: 20, color: Colors.amber[600]),
-        const SizedBox(width: 12),
-        // Low temp
-        SizedBox(
-          width: 28,
-          child: Text(
-            '$lowTemp°',
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 13,
+    return Semantics(
+      label: 'Daily forecast: $date, ${lowTemp}° to ${highTemp}°',
+      child: Row(
+        children: [
+          // Date
+          SizedBox(
+            width: 60,
+            child: Text(
+              date,
+              style: const TextStyle(fontSize: 14),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        // Gradient temperature bar with positioned dot
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final double barWidth = constraints.maxWidth;
-              final double dotLeft = fraction * barWidth;
-              return Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.lightBlue[300]!,
-                          Colors.orange[300]!,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Positioned(
-                    left: (dotLeft - 4).clamp(0.0, barWidth - 8),
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        // High temp
-        SizedBox(
-          width: 28,
-          child: Text(
-            '$highTemp°',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 8),
+          // Icon
+          Icon(icon, size: 20, color: Colors.amber[600]),
+          const SizedBox(width: 12),
+          // Low temp
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$lowTemp°',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 13,
+              ),
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          // Gradient temperature bar with positioned dot
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final double barWidth = constraints.maxWidth;
+                final double dotLeft = fraction * barWidth;
+                return Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.lightBlue[300]!,
+                            Colors.orange[300]!,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Positioned(
+                      left: (dotLeft - 4).clamp(0.0, barWidth - 8),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          // High temp
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$highTemp°',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -308,58 +318,61 @@ class AqiGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color color = _aqiColor();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 100,
-          height: 100,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: CircularProgressIndicator(
-                  value: value / 300.0,
-                  strokeWidth: 8,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
+    return Semantics(
+      label: 'Air quality index: $value, $level, $description',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: CircularProgressIndicator(
+                    value: value / 300.0,
+                    strokeWidth: 8,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$value',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$value',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
                     ),
-                  ),
-                  Text(
-                    level,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: color,
+                    Text(
+                      level,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: color,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          description,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 13,
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -379,33 +392,36 @@ class LifeIndexCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22, color: Colors.grey[600]),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+    return Semantics(
+      label: '$label: $value',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22, color: Colors.grey[600]),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 11,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 11,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

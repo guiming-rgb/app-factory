@@ -22,17 +22,22 @@ class ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Stack(
-        children: [
-          // Full image background
-          Positioned.fill(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey[400],
+    return Semantics(
+      label:
+          'Profile: $name, $age, $distance${bio.isNotEmpty ? ", $bio" : ""}',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Full image background
+            Positioned.fill(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                semanticLabel: 'Photo of $name',
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[400],
+                ),
               ),
             ),
           ),
@@ -135,6 +140,7 @@ class ProfileCard extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -158,27 +164,36 @@ class SwipeActionBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Dislike (red close)
-        _ActionButton(
-          icon: Icons.close,
-          color: Colors.red,
-          size: 60,
-          onTap: onDislike,
+        Semantics(
+          label: 'Dislike',
+          child: _ActionButton(
+            icon: Icons.close,
+            color: Colors.red,
+            size: 60,
+            onTap: onDislike,
+          ),
         ),
         const SizedBox(width: 32),
         // Superlike (blue star)
-        _ActionButton(
-          icon: Icons.star,
-          color: Colors.blue,
-          size: 48,
-          onTap: onSuperlike,
+        Semantics(
+          label: 'Super like',
+          child: _ActionButton(
+            icon: Icons.star,
+            color: Colors.blue,
+            size: 48,
+            onTap: onSuperlike,
+          ),
         ),
         const SizedBox(width: 32),
         // Like (green heart)
-        _ActionButton(
-          icon: Icons.favorite,
-          color: Colors.green,
-          size: 60,
-          onTap: onLike,
+        Semantics(
+          label: 'Like',
+          child: _ActionButton(
+            icon: Icons.favorite,
+            color: Colors.green,
+            size: 60,
+            onTap: onLike,
+          ),
         ),
       ],
     );
@@ -237,25 +252,28 @@ class InterestChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected
-            ? null
-            : Border.all(color: Colors.grey[300]!),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
+    return Semantics(
+      label: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
           color: isSelected
-              ? theme.colorScheme.onPrimary
-              : theme.colorScheme.onSurface,
-          fontSize: 14,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.grey[300]!),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : theme.colorScheme.onSurface,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
       ),
     );

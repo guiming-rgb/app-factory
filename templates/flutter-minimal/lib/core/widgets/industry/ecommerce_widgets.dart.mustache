@@ -36,45 +36,47 @@ class ProductCardEnhanced extends StatelessWidget {
     final hasDiscount =
         originalPrice != null && originalPrice! > price;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          boxShadow: AppTheme.cardShadow(theme.colorScheme),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ---- 商品图片 + 标签 ----
-            Stack(
-              children: [
-                {{#hasImage}}
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: imageUrl != null
-                      ? Image.network(imageUrl!, fit: BoxFit.cover)
-                      : Container(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(
-                            child: Icon(Icons.image, size: 32),
+    return Semantics(
+      label: 'Product: $name, ¥$price${originalPrice != null ? ', was ¥${originalPrice!.toStringAsFixed(2)}' : ''}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow(theme.colorScheme),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ---- 商品图片 + 标签 ----
+              Stack(
+                children: [
+                  {{#hasImage}}
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: imageUrl != null
+                        ? Image.network(imageUrl!, fit: BoxFit.cover, semanticLabel: 'Product image for $name')
+                        : Container(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.image, size: 32),
+                            ),
                           ),
-                        ),
-                ),
-                {{/hasImage}}
-                {{^hasImage}}
-                AspectRatio(
-                  aspectRatio: 1,
-                  child: Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(
-                      child: Icon(Icons.image, size: 32),
+                  ),
+                  {{/hasImage}}
+                  {{^hasImage}}
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Center(
+                        child: Icon(Icons.image, size: 32),
+                      ),
                     ),
                   ),
-                ),
-                {{/hasImage}}
+                  {{/hasImage}}
                 if (tag != null)
                   Positioned(
                     top: 8,
@@ -168,6 +170,7 @@ class ProductCardEnhanced extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -185,33 +188,37 @@ class CartBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.shopping_cart_outlined),
-          onPressed: onTap,
-        ),
-        if (count > 0)
-          Positioned(
-            right: 4,
-            top: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                "$count",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+    return Semantics(
+      label: 'Shopping cart, $count items',
+      child: Stack(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: onTap,
+            semanticsLabel: 'Open shopping cart',
+          ),
+          if (count > 0)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  "$count",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -229,21 +236,30 @@ class RatingStars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) {
-        if (i < rating.floor()) {
-          return Icon(Icons.star, size: size, color: Colors.amber);
-        } else if (i < rating) {
-          return Icon(Icons.star_half, size: size, color: Colors.amber);
-        } else {
-          return Icon(
-            Icons.star_border,
-            size: size,
-            color: Colors.grey.shade300,
-          );
-        }
-      }),
+    return Semantics(
+      label: 'Rating: ${rating.toStringAsFixed(1)} out of 5',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(5, (i) {
+          if (i < rating.floor()) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star, size: size, color: Colors.amber),
+            );
+          } else if (i < rating) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star_half, size: size, color: Colors.amber),
+            );
+          } else {
+            return ExcludeSemantics(
+              child: Icon(
+                Icons.star_border,
+                size: size,
+                color: Colors.grey.shade300,
+              ),
+            );
+          }
+        }),
+      ),
     );
   }
 }

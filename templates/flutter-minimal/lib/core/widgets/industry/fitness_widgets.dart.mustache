@@ -37,7 +37,7 @@ class WorkoutCard extends StatelessWidget {
     final theme = Theme.of(context);
     final levelColor = _levelColors[level ?? ""] ?? Colors.grey;
 
-    return Card(
+    return Semantics(label: 'Workout: $name, $duration, $calories kcal${level != null ? ", $level" : ""}', child: Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -49,7 +49,7 @@ class WorkoutCard extends StatelessWidget {
             if (imageUrl != null)
               AspectRatio(
                 aspectRatio: 2,
-                child: Image.network(imageUrl!, fit: BoxFit.cover),
+                child: Image.network(imageUrl!, fit: BoxFit.cover, semanticLabel: 'Workout image for $name'),
               )
             else
               AspectRatio(
@@ -114,7 +114,7 @@ class WorkoutCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -162,7 +162,7 @@ class ProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = color ?? {{{primaryColor}}};
-    return Column(
+    return Semantics(label: '$label: ${(value * 100).toInt()}%', child: Column(
       children: [
         SizedBox(
           width: 64,
@@ -195,7 +195,7 @@ class ProgressRing extends StatelessWidget {
           style: AppTheme.caption(Theme.of(context).textTheme),
         ),
       ],
-    );
+    ));
   }
 }
 
@@ -217,7 +217,7 @@ class BodyStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    return Semantics(label: '$label: $value $unit', child: Container(
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -245,6 +245,6 @@ class BodyStatCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

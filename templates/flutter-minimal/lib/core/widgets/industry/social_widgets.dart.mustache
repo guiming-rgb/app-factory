@@ -43,7 +43,7 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
+    return Semantics(label: 'Post by $userName', child: Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -62,17 +62,17 @@ class PostCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildUserHeader(ColorScheme colorScheme) {
     return Row(
       children: [
-        CircleAvatar(
+        Semantics(label: 'Avatar of $userName', child: CircleAvatar(
           radius: 20,
           backgroundImage: NetworkImage(avatarUrl),
           onBackgroundImageError: (_, __) {},
-        ),
+        )),
         const SizedBox(width: 12),
         Expanded(
           child: Text(

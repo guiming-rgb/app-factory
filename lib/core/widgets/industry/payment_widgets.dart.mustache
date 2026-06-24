@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// {{industry}} payment widgets for {{displayName}} app.
-/// Uses {{primaryColor}} as the accent color.
+/// test payment widgets for TestApp app.
+/// Uses Colors.teal as the accent color.
 
 class PaymentMethodCard extends StatelessWidget {
   final IconData brandIcon;
@@ -26,89 +26,86 @@ class PaymentMethodCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Semantics(
-      label: 'Payment method: $brandName, $cardNumber${isDefault ? ", default" : ""}',
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 36,
-                decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(brandIcon, size: 24, color: colorScheme.onSurfaceVariant),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 36,
+              decoration: BoxDecoration(
+                border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          brandName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+              child: Icon(brandIcon, size: 24, color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        brandName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (isDefault) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '默认',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                        if (isDefault) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '默认',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.green[700],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    cardNumber,
+                    style: TextStyle(
+                      fontSize: 14,
+                      letterSpacing: 1.5,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 4),
+                  ),
+                  if (expiry != null && expiry!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      cardNumber,
+                      expiry!,
                       style: TextStyle(
-                        fontSize: 14,
-                        letterSpacing: 1.5,
+                        fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (expiry != null && expiry!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        expiry!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              if (!isDefault && onSetDefault != null)
-                TextButton(
-                  onPressed: onSetDefault,
-                  child: const Text('设为默认'),
-                ),
-            ],
-          ),
+            ),
+            if (!isDefault && onSetDefault != null)
+              TextButton(
+                onPressed: onSetDefault,
+                child: const Text('设为默认'),
+              ),
+          ],
         ),
       ),
     );
@@ -145,42 +142,39 @@ class TransactionItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final catColor = _categoryColors[category] ?? Colors.grey;
 
-    return Semantics(
-      label: 'Transaction: $title, ${isIncome ? "income" : "expense"} ¥${amount.toStringAsFixed(2)}',
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        leading: CircleAvatar(
-          radius: 22,
-          backgroundColor: catColor.withValues(alpha: 0.15),
-          child: Icon(
-            _categoryIcon(category),
-            color: catColor,
-            size: 20,
-          ),
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: CircleAvatar(
+        radius: 22,
+        backgroundColor: catColor.withValues(alpha: 0.15),
+        child: Icon(
+          _categoryIcon(category),
+          color: catColor,
+          size: 20,
         ),
-        title: Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-          ),
+      ),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
         ),
-        subtitle: Text(
-          date,
-          style: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurfaceVariant,
-          ),
+      ),
+      subtitle: Text(
+        date,
+        style: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSurfaceVariant,
         ),
-        trailing: Text(
-          '${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: isIncome ? Colors.green : Colors.red,
-          ),
+      ),
+      trailing: Text(
+        '${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: isIncome ? Colors.green : Colors.red,
         ),
       ),
     );
@@ -230,9 +224,7 @@ class BalanceHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Semantics(
-      label: 'Balance: $balanceLabel ¥${_formatBalance(balance)}',
-      child: Container(
+    return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -308,7 +300,6 @@ class BalanceHero extends StatelessWidget {
           ],
         ],
       ),
-      ),
     );
   }
 
@@ -317,32 +308,29 @@ class BalanceHero extends StatelessWidget {
     required String label,
     VoidCallback? onTap,
   }) {
-    return Semantics(
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Icon(icon, color: Colors.white, size: 24),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(24),
             ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.white,
-              ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

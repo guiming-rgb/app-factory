@@ -29,11 +29,13 @@ class HotelCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      label: 'Hotel: $name, $city, rating $ratingScore, from $priceLabel',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -44,6 +46,7 @@ class HotelCard extends StatelessWidget {
                 children: [
                   Image.network(
                     coverUrl,
+                    semanticLabel: 'Photo of $name',
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: Colors.grey[300],
@@ -119,10 +122,11 @@ class HotelCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -152,10 +156,12 @@ class RoomTypeCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return Semantics(
+      label: 'Room: $roomName, $bedType, ${hasBreakfast ? "includes breakfast" : "no breakfast"}, $cancelPolicy, ¥$price',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             Expanded(
@@ -210,8 +216,9 @@ class RoomTypeCard extends StatelessWidget {
                   child: const Text('预订'),
                 ),
               ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -259,33 +266,36 @@ class AmenityGrid extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: amenities.map((item) {
-        return SizedBox(
-          width: 80,
-          height: 80,
-          child: Card(
-            elevation: 0,
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: item.onTap,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(item.icon, size: 24, color: colorScheme.onSurfaceVariant),
-                  const SizedBox(height: 6),
-                  Text(
-                    item.label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
+        return Semantics(
+          label: item.label,
+          child: SizedBox(
+            width: 80,
+            height: 80,
+            child: Card(
+              elevation: 0,
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: item.onTap,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(item.icon, size: 24, color: colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

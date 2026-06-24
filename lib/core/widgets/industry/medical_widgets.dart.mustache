@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
-/// {{industry}} medical widgets for {{displayName}} app.
-/// Uses {{primaryColor}} as the accent color.
+/// test medical widgets for TestApp app.
+/// Uses Colors.teal as the accent color.
 
 class DoctorCard extends StatelessWidget {
   final String avatarUrl;
@@ -30,7 +30,7 @@ class DoctorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Semantics(label: 'Doctor: $name, $title, $hospital · $department, rating $rating', child: Card(
+    return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -106,7 +106,7 @@ class DoctorCard extends StatelessWidget {
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildAvatar(ColorScheme colorScheme) {
@@ -119,7 +119,6 @@ class DoctorCard extends StatelessWidget {
             ? Image.network(
                 avatarUrl,
                 fit: BoxFit.cover,
-                semanticLabel: 'Doctor avatar for $name',
                 errorBuilder: (_, __, ___) => _avatarFallback(colorScheme),
                 loadingBuilder: (_, child, progress) {
                   if (progress == null) return child;
@@ -207,7 +206,7 @@ class DepartmentGrid extends StatelessWidget {
     String name,
     IconData icon,
   ) {
-    return Semantics(label: name, child: InkWell(
+    return InkWell(
       onTap: () => onTap(name),
       borderRadius: BorderRadius.circular(12),
       child: Column(
@@ -228,7 +227,7 @@ class DepartmentGrid extends StatelessWidget {
           ),
         ],
       ),
-    ));
+    );
   }
 }
 
@@ -270,7 +269,7 @@ class AppointmentSlot extends StatelessWidget {
 
     return Opacity(
       opacity: isAvailable ? 1.0 : 0.6,
-      child: Semantics(label: 'Appointment: $time, ${isAvailable ? (isSelected ? "selected" : "available") : "unavailable"}', child: Material(
+      child: Material(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
@@ -293,7 +292,6 @@ class AppointmentSlot extends StatelessWidget {
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -319,7 +317,7 @@ class PrescriptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Semantics(label: 'Prescription: $diagnosis, Dr. $doctorName, $hospital', child: Card(
+    return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -372,6 +370,6 @@ class PrescriptionCard extends StatelessWidget {
           ],
         ),
       ),
-    ));
+    );
   }
 }

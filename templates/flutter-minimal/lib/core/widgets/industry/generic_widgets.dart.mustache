@@ -22,48 +22,51 @@ class FeatureCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(icon, size: 28, color: colorScheme.primary),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
+    return Semantics(
+      label: 'Feature: $title, $subtitle',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: colorScheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -87,26 +90,29 @@ class StatBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          number,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-            color: color ?? colorScheme.onSurface,
+    return Semantics(
+      label: '$label: $number',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            number,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: color ?? colorScheme.onSurface,
+            ),
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: colorScheme.onSurfaceVariant,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -131,43 +137,46 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+    return Semantics(
+      label: 'Empty state: $title, $subtitle${actionLabel != null ? ", action: $actionLabel" : ""}',
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 48,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: onAction,
+                  child: Text(actionLabel!),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

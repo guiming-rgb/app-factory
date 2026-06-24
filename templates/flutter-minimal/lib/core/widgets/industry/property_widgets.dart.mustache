@@ -30,11 +30,13 @@ class RepairOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
+    return Semantics(
+      label: 'Repair order: $title, ${urgency == UrgencyLevel.emergency ? "emergency" : "normal"}',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,6 +84,7 @@ class RepairOrderCard extends StatelessWidget {
                           height: 72,
                           child: Image.network(
                             imageUrls[index],
+                            semanticLabel: 'Repair image',
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               color: Colors.grey[200],
@@ -167,73 +170,76 @@ class PaymentBillCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = colorScheme.primary;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            _buildTypeIcon(colorScheme),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Semantics(
+      label: 'Bill: ${billType.label}, ¥${amount.toStringAsFixed(2)}, $period, ${isPaid ? "paid" : "unpaid"}',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              _buildTypeIcon(colorScheme),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      billType.label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      period,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    billType.label,
+                    '¥${amount.toStringAsFixed(2)}',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isPaid ? colorScheme.onSurfaceVariant : primaryColor,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    period,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 4),
+                  if (isPaid)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        '已缴费',
+                        style: TextStyle(fontSize: 12, color: Colors.green),
+                      ),
+                    )
+                  else
+                    FilledButton(
+                      onPressed: onPay,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text('缴费'),
                     ),
-                  ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '¥${amount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isPaid ? colorScheme.onSurfaceVariant : primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (isPaid)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '已缴费',
-                      style: TextStyle(fontSize: 12, color: Colors.green),
-                    ),
-                  )
-                else
-                  FilledButton(
-                    onPressed: onPay,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      minimumSize: const Size(0, 32),
-                    ),
-                    child: const Text('缴费'),
-                  ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -292,15 +298,17 @@ class NoticeBanner extends StatelessWidget {
       ImportanceLevel.normal => (Icons.campaign_outlined, Colors.grey, Colors.grey),
     };
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Semantics(
+      label: 'Notice: $title, $content',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 24,
@@ -342,6 +350,7 @@ class NoticeBanner extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -370,12 +379,14 @@ class FacilityBookSlot extends StatelessWidget {
     final primaryColor = colorScheme.primary;
     final fillRatio = totalCapacity > 0 ? availableCount / totalCapacity : 0.0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
+    return Semantics(
+      label: 'Facility: $name, $type, $availableCount available of $totalCapacity',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,6 +448,7 @@ class FacilityBookSlot extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

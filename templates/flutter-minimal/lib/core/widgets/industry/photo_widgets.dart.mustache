@@ -18,17 +18,22 @@ class PhotoGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Stack(
-        children: [
-          // Image
-          Positioned.fill(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey[300],
+    return Semantics(
+      label:
+          'Photo: ${caption.isNotEmpty ? caption : "no caption"}, $likesCount likes, $commentsCount comments',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            // Image
+            Positioned.fill(
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                semanticLabel: caption.isNotEmpty ? caption : 'Photo',
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[300],
+                ),
               ),
             ),
           ),
@@ -108,6 +113,7 @@ class PhotoGridTile extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -130,95 +136,99 @@ class ChallengeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      height: 140,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: [
-            // Cover image or purple gradient fallback
-            Positioned.fill(
-              child: coverUrl != null
-                  ? Image.network(
-                      coverUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallback(),
-                    )
-                  : _buildFallback(),
-            ),
-            // Content overlay
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.5),
+    return Semantics(
+      label:
+          'Challenge: $name, $description, $participantCount participants',
+      child: SizedBox(
+        height: 140,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              // Cover image or purple gradient fallback
+              Positioned.fill(
+                child: coverUrl != null
+                    ? Image.network(
+                        coverUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallback(),
+                      )
+                    : _buildFallback(),
+              ),
+              // Content overlay
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.5),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Name
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Description
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          // Participant count
+                          Text(
+                            '$participantCount participants',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const Spacer(),
+                          // Join button
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: theme.colorScheme.primary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              textStyle: const TextStyle(fontSize: 13),
+                            ),
+                            onPressed: () {
+                              // Handle join action
+                            },
+                            child: const Text('参加'),
+                          ),
+                        ],
+                      ),
                     ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
                   ),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Name
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        // Participant count
-                        Text(
-                          '$participantCount participants',
-                          style: const TextStyle(
-                            color: Colors.white60,
-                            fontSize: 11,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Join button
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: theme.colorScheme.primary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            textStyle: const TextStyle(fontSize: 13),
-                          ),
-                          onPressed: () {
-                            // Handle join action
-                          },
-                          child: const Text('参加'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -254,66 +264,69 @@ class UserAvatarBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          children: [
-            // Avatar
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: CircleAvatar(
-                radius: radius,
-                backgroundImage: avatarUrl != null
-                    ? NetworkImage(avatarUrl!)
-                    : null,
-                child: avatarUrl == null
-                    ? const Icon(Icons.person, size: 28)
-                    : null,
-              ),
-            ),
-            // Blue check badge
-            if (isVerified)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 10,
-                    color: Colors.white,
-                  ),
+    return Semantics(
+      label: name ?? 'User avatar${isVerified ? ", verified" : ""}',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            children: [
+              // Avatar
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: radius,
+                  backgroundImage: avatarUrl != null
+                      ? NetworkImage(avatarUrl!)
+                      : null,
+                  child: avatarUrl == null
+                      ? const Icon(Icons.person, size: 28)
+                      : null,
                 ),
               ),
-          ],
-        ),
-        // Name below
-        if (name != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            name!,
-            style: const TextStyle(fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+              // Blue check badge
+              if (isVerified)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                      color: Colors.blue,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 10,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ),
+          // Name below
+          if (name != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              name!,
+              style: const TextStyle(fontSize: 12),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
