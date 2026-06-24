@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { isAuthEnabled } from "@/lib/auth-config";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const PROTECTED_PREFIXES = ["/projects"];
+const PROTECTED_PREFIXES = ["/projects", "/admin"];
 
 /** 安全头 — CSP 移除了 'unsafe-eval' */
 const SECURITY_HEADERS: Record<string, string> = {
@@ -129,8 +129,11 @@ export const config = {
   matcher: [
     "/api/:path*",
     "/projects/:path*",
+    "/admin/:path*",
+    "/onboarding",
     "/login",
     "/signup",
+    "/register",
     "/auth/:path*",
     "/dashboard",
     "/health",
