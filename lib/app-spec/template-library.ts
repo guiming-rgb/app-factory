@@ -1,6 +1,6 @@
 import type { AppSpec } from "./types";
 
-/** 17 套对标竞品深度打磨模板 */
+/** 19 套对标竞品深度打磨模板 — 全行业 Tier-1 水准 */
 export type SpecTemplate = { id: string; name: string; description: string; category: string; icon: string; spec: AppSpec; };
 
 function base(appName: string, displayName: string, screens: AppSpec["screens"], entities: AppSpec["entities"], tabs: string[], limits: string[], theme?: string): AppSpec {
@@ -164,6 +164,23 @@ export const TEMPLATE_LIBRARY: SpecTemplate[] = [
       {name:"user_profile",fields:[f("id","uuid",true),f("user_id","uuid"),f("display_name","string"),f("bio","string"),f("photos","json"),f("age","int"),f("gender","string"),f("interests","json"),f("location","string"),f("verified","bool")]},
       {name:"match",fields:[f("id","uuid",true),f("user_id","uuid"),f("matched_user_id","uuid"),f("status","string"),f("matched_at","datetime")]},
     ],["discover","matches","chat","my_profile"],["滑动动画需自定义","匹配算法需定制","KYC需第三方"])},
+  // 18. 游戏中心 — 对标 App Store 游戏 / 4399 / TapTap
+  { id: "game", name: "游戏中心", description: "游戏大厅+排行榜+成就系统+用户资料+对战记录", category: "游戏", icon: "🎮",
+    spec: base("game_center","游戏中心",[
+      {id:"game_hub",title:"游戏大厅",type:"card_grid"},{id:"game_detail",title:"游戏详情",type:"detail",entity:"game"},{id:"leaderboard",title:"排行榜",type:"list",entity:"game_score"},{id:"achievements",title:"成就",type:"card_grid"},{id:"match_history",title:"对战记录",type:"list",entity:"match_record"},{id:"profile",title:"我的",type:"placeholder"}
+    ], [
+      {name:"game",fields:[f("id","uuid",true),f("name","string"),f("genre","string"),f("icon","image"),f("description","string"),f("rating","float"),f("player_count","int"),f("is_online","bool")]},
+      {name:"game_score",fields:[f("id","uuid",true),f("user_id","uuid"),f("game_id","uuid"),f("score","int"),f("level","int"),f("played_at","datetime")],relations:[{target:"game",type:"belongs_to"}]},
+      {name:"match_record",fields:[f("id","uuid",true),f("user_id","uuid"),f("game_id","uuid"),f("opponent_id","uuid"),f("result","string"),f("score_diff","int"),f("played_at","datetime")],relations:[{target:"game",type:"belongs_to"}]},
+    ],["game_hub","leaderboard","match_history","profile"],["在线对战需WebSocket","支付需Stripe"])},
+  // 19. 收银支付 — 对标 支付宝 / 微信支付 / Stripe
+  { id: "payment", name: "收银支付", description: "余额管理+交易记录+支付方式+转账+二维码收款", category: "金融", icon: "💳",
+    spec: base("payment","收银支付",[
+      {id:"balance",title:"余额",type:"dashboard"},{id:"transaction_list",title:"账单",type:"list",entity:"transaction"},{id:"payment_methods",title:"支付方式",type:"list",entity:"payment_method"},{id:"transfer",title:"转账",type:"form"},{id:"qr_code",title:"收款码",type:"card_grid"},{id:"profile",title:"我的",type:"placeholder"}
+    ], [
+      {name:"payment_method",fields:[f("id","uuid",true),f("user_id","uuid"),f("type","string"),f("brand","string"),f("last4","string"),f("expiry","string"),f("is_default","bool")]},
+      {name:"transaction",fields:[f("id","uuid",true),f("user_id","uuid"),f("type","string"),f("amount","float"),f("category","string"),f("note","string"),f("status","string"),f("date","datetime")]},
+    ],["balance","transaction_list","payment_methods","profile"],["实时支付需银行API","KYC需第三方","退款需额外开发"])},
 ];
 
 export function getTemplateById(id: string): SpecTemplate | undefined {
