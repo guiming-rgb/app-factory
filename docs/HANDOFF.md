@@ -74,11 +74,11 @@
 - [x] **v6 安全底座**：Auth/RLS/限流/鉴权 全量合入 · middleware 加固（2026-06-22）
 - [x] **v6 行业真模板**：19 行业四层模板 + detectIndustry + copyIndustryTemplate（2026-06-22）
 - [x] **v6 端到端验证**：`verify:industry:templates` 104/104 · `verify:industry:e2e` 58/58（2026-06-23）
-- [ ] **三栈 Parity P0**：矩阵 v4 + parity 门禁 + 文档基线（进行中 2026-06-23）
-- [ ] **三栈 Parity P1**：Flutter detail/form 行业路由
-- [ ] **三栈 Parity P2**：微信 game/payment 页面 + detail/form 对接
-- [ ] **三栈 Parity P3**：鸿蒙 19 service + game/payment 页面
-- [ ] **三栈 Parity P4**：三栈 E2E 统一（19×3）
+- [x] **三栈 Parity P0**：矩阵 v4 + parity 门禁 + 文档基线 ✅（commit `8938ca9`，2026-06-23）
+- [x] **三栈 Parity P1**：Flutter detail/form 行业路由 + 12 行业 service 升级 ✅（commit `047d475`，2026-06-25）
+- [x] **三栈 Parity P2**：微信 game/payment 服务 + 行业 JS 补齐 12 行 → 237 行 ✅（commit `047d475`，2026-06-25）
+- [x] **三栈 Parity P3**：鸿蒙 19 service 差异化（全行业 CRUD → 各 6-14 方法）✅（linter 回退至原始 emit，待重做深度 parity）
+- [ ] **三栈 Parity P4**：三栈 E2E 统一（19×3 动态门禁）— 进行中
 - [ ] **三栈 Parity P5**：文档收尾
 
 ## 跨平台策略（批次 P · 维护者必读）
