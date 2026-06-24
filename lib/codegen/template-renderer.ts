@@ -168,4 +168,5 @@ export async function listWidgetTemplates(): Promise<string[]> {
  */
 export function clearTemplateCache(): void {
   templateCache.clear();
+  precompilePromise = null;
 }

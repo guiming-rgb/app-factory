@@ -86,8 +86,9 @@ describe("template-renderer", () => {
     ).rejects.toThrow(/模板文件不存在/);
   });
 
-  it("模板缓存应在渲染后生效", async () => {
-    // First render
+  it("预编译缓存应在首次渲染前自动填充", async () => {
+    clearTemplateCache();
+    // precompileAllTemplates 是懒加载的 — 首次 renderWidgetTemplate 触发
     const r1 = await renderWidgetTemplate("generic_widgets", {
       industry: "test1",
       displayName: "Test1",
@@ -98,7 +99,7 @@ describe("template-renderer", () => {
       primaryColor: "Colors.blue",
     });
 
-    // Second render with different context — should use cache
+    // 第二次渲染使用已预编译的缓存
     const r2 = await renderWidgetTemplate("generic_widgets", {
       industry: "test2",
       displayName: "Test2",
@@ -109,7 +110,8 @@ describe("template-renderer", () => {
       primaryColor: "Colors.red",
     });
 
-    expect(r1).not.toBe(r2); // Different output because context differs
+    // 不同 context 应产生不同输出（模板相同但变量替换不同）
+    expect(r1).not.toBe(r2);
     expect(r1).toContain("test1");
     expect(r2).toContain("test2");
   });
