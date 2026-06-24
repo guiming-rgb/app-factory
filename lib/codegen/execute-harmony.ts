@@ -1,159 +1,120 @@
-import fs from "fs/promises";
-import path from "path";
+// ============================================================
+// 鸿蒙 ArkTS 代码生成执行器 — 继承 BaseCodegenExecutor
+//
+// 平台特有：鸿蒙结构校验门禁 + bundleName / screenCount
+// ============================================================
 
-import { resolveSpecForCodegen } from "@/lib/app-spec/resolve-spec";
-import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
-import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
-import { validateAppSpec } from "@/lib/app-spec/validate";
-import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
-import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
-import {
-  markCodegenRunCompleted,
-  markCodegenRunFailed,
-  markCodegenRunRunning
-} from "@/lib/codegen/runs";
-import { getCodegenStorageBucket } from "@/lib/codegen/storage";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
-import { generateHarmonyProject } from "@/lib/harmony-codegen/generate";
-import {
-  runHarmonyStructureValidate,
-  shouldFailCodegenOnHarmonyStructure,
-  type HarmonyStructureResult
-} from "@/lib/sandbox/harmony-structure";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import type { AppSpec } from "@/lib/app-spec/types";
+import type { CodegenOutput, CodegenGateResult, GateMetadataContext } from "@/lib/codegen/base-executor";
+import { BaseCodegenExecutor, runCodegenSync } from "@/lib/codegen/base-executor";
 
-export type HarmonyCodegenExecuteResult = {
-  runId: string;
-  fileName: string;
-  artifact_path: string;
-  spec_source: string;
-  displayName: string;
-  structure: HarmonyStructureResult;
-};
+// ============================================================
+// Harmony Gate 类型
+// ============================================================
 
-function buildHarmonyMetadata(
-  structure: HarmonyStructureResult,
-  specQuality: ReturnType<typeof assessSpecQuality>
-) {
-  return {
-    buildStatus: structure.status === "passed" ? "passed" : structure.status,
-    structureStatus: structure.status,
-    analyzeEnvironment: "harmony-structure-only",
-    ...(structure.reason ? { buildReason: structure.reason.slice(0, 200) } : {}),
-    specQualityScore: specQuality.score,
-    ...(specQuality.warnings.length
-      ? { specQualityWarnings: specQuality.warnings.join(" · ") }
-      : {})
-  };
+export interface HarmonyGateResult extends CodegenGateResult {
+  status: "passed" | "failed";
+  reason?: string;
 }
 
+// ============================================================
+// HarmonyExecutor
+// ============================================================
+
+export class HarmonyExecutor extends BaseCodegenExecutor<HarmonyGateResult> {
+  readonly target = "harmony" as const;
+
+  async generateCode(spec: AppSpec): Promise<CodegenOutput> {
+    const { generateHarmonyProject } = await import(
+      "@/lib/harmony-codegen/generate"
+    );
+    const result = await generateHarmonyProject(spec);
+    return {
+      outputDir: result.outputDir,
+      appName: result.appName,
+      displayName: result.displayName,
+      bundleName: result.bundleName as string,
+      screenCount: result.screenCount as number,
+    };
+  }
+
+  getFileName(output: CodegenOutput): string {
+    const bundle = (output as { bundleName?: string }).bundleName;
+    return `${bundle || output.appName}-harmony.zip`;
+  }
+
+  async runGate(output: CodegenOutput): Promise<HarmonyGateResult> {
+    const { runHarmonyStructureValidate } = await import(
+      "@/lib/sandbox/harmony-structure"
+    ) as {
+      runHarmonyStructureValidate: (opts: { appDir: string }) => HarmonyGateResult;
+    };
+    return runHarmonyStructureValidate({ appDir: output.outputDir });
+  }
+
+  async isGateFailed(gate: HarmonyGateResult): Promise<boolean> {
+    const { shouldFailCodegenOnHarmonyStructure } = await import(
+      "@/lib/sandbox/harmony-structure"
+    ) as {
+      shouldFailCodegenOnHarmonyStructure: (s: HarmonyGateResult) => boolean;
+    };
+    return shouldFailCodegenOnHarmonyStructure(gate);
+  }
+
+  buildGateMetadata(
+    ctx: GateMetadataContext & { gate: HarmonyGateResult },
+  ): Record<string, unknown> {
+    return {
+      buildStatus: ctx.gate.status === "passed" ? "passed" : ctx.gate.status,
+      structureStatus: ctx.gate.status,
+      analyzeEnvironment: "harmony-structure-only",
+      ...(ctx.gate.reason
+        ? { buildReason: ctx.gate.reason.slice(0, 200) }
+        : {}),
+    };
+  }
+
+  buildGateFailureMsg(gate: HarmonyGateResult): string {
+    return `鸿蒙结构门禁未通过：${gate.reason ?? "unknown"}`;
+  }
+
+  buildResult(input: {
+    runId: string;
+    fileName: string;
+    artifact_path: string;
+    spec_source: string;
+    displayName: string;
+    gate: HarmonyGateResult;
+  }): unknown {
+    return {
+      runId: input.runId,
+      fileName: input.fileName,
+      artifact_path: input.artifact_path,
+      spec_source: input.spec_source,
+      displayName: input.displayName,
+      structure: input.gate,
+    };
+  }
+}
+
+// ============================================================
+// 导出 — 兼容旧 API
+// ============================================================
+
+const harmonyExecutor = new HarmonyExecutor();
+
+/** @deprecated 使用 HarmonyExecutor.execute() 替代 */
 export async function executeHarmonyCodegen(input: {
   projectId: string;
   runId: string;
-}): Promise<HarmonyCodegenExecuteResult> {
-  const { projectId, runId } = input;
+}): Promise<unknown> {
+  return harmonyExecutor.execute(input);
+}
 
-  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
-  await cleanupStaleCodegenRuns({ projectId });
-
-  await markCodegenRunRunning(runId);
-
-  const { data: project, error } = await getSupabaseAdmin()
-    .from("projects")
-    .select("id, title, idea, final_report, status, spec_override")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    const msg = "项目不存在";
-    await markCodegenRunFailed(runId, msg);
-    throw new Error(msg);
-  }
-
-  let outputRoot: string | null = null;
-
-  try {
-    const built = await resolveSpecForCodegen({
-      id: project.id,
-      title: project.title ?? "未命名",
-      idea: project.idea,
-      final_report: project.final_report,
-      spec_override: project.spec_override
-    });
-
-    const validation = validateAppSpec(built.spec);
-    if (!validation.ok) {
-      const msg = `App Spec 校验失败：${validation.errors.join("; ")}`;
-      await markCodegenRunFailed(runId, msg);
-      throw new Error(msg);
-    }
-
-    const spec = validation.spec;
-    const specQuality = assessSpecQuality(spec);
-
-    const { outputDir, appName, displayName, bundleName, screenCount } =
-      await generateHarmonyProject(spec);
-    outputRoot = path.dirname(outputDir);
-
-    // P1: 单独上传 SQL 文件（供 SQL 下载 API）
-    try {
-      const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
-      const ddl = generateCreateTableDDL(spec);
-      const sqlBuffer = Buffer.from(ddl.fullSql, "utf8");
-      await writeArtifactFile(runId, "supabase_migration.sql", sqlBuffer);
-    } catch (sqlErr) {
-      console.warn("[executeHarmonyCodegen] SQL upload skipped:", sqlErr);
-    }
-
-    const structure = runHarmonyStructureValidate({ appDir: outputDir });
-    if (shouldFailCodegenOnHarmonyStructure(structure)) {
-      const msg = `鸿蒙结构门禁未通过：${structure.reason ?? "unknown"}`;
-      await markCodegenRunFailed(runId, msg.slice(0, 4000));
-      throw new Error(msg);
-    }
-
-    const previewHtml = generateSpecPreviewHtml(spec);
-    const previewPath = await writePreviewHtml(runId, previewHtml);
-
-    const buffer = await zipDirectory(outputDir);
-    const fileName = `${bundleName || appName}-harmony.zip`;
-    const { relativePath: artifact_path, storageUploaded } =
-      await writeArtifactFile(runId, fileName, buffer);
-
-    await markCodegenRunCompleted(runId, {
-      artifact_path,
-      spec_source: built.source,
-      metadata: {
-        fileName,
-        displayName,
-        ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
-        bundleName,
-        screenCount,
-        storageUploaded,
-        previewPath,
-        ...(storageUploaded
-          ? { storageBucket: getCodegenStorageBucket() }
-          : {}),
-        ...buildHarmonyMetadata(structure, specQuality),
-        ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
-      }
-    });
-
-    return {
-      runId,
-      fileName,
-      artifact_path,
-      spec_source: built.source,
-      displayName,
-      structure
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "鸿蒙 codegen 失败";
-    await markCodegenRunFailed(runId, message).catch(() => {});
-    throw err;
-  } finally {
-    if (outputRoot) {
-      await fs.rm(outputRoot, { recursive: true, force: true }).catch(() => {});
-    }
-  }
+/** 同步鸿蒙生成（兼容旧 API） */
+export async function runHarmonyCodegenSync(input: {
+  projectId: string;
+  userId?: string;
+}) {
+  return runCodegenSync("harmony", harmonyExecutor, input);
 }

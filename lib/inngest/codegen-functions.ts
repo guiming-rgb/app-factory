@@ -1,103 +1,102 @@
 import { inngest } from "@/lib/inngest/client";
 import { assertInngestProjectOwner } from "@/lib/auth/inngest-project-auth";
+import type { CodegenTarget } from "@/lib/codegen/base-executor";
+
+// ============================================================
+// Inngest Codegen 函数 — 基于 BaseCodegenExecutor 的统一模式
+//
+// 使用工厂函数消除 flutter/wechat/harmony 三份重复代码。
+// 每个平台只有一个 event name 和 executor import path 不同。
+// ============================================================
+
+const CODECONFIG: Array<{
+  target: CodegenTarget;
+  fnId: string;
+  fnName: string;
+  event: string;
+  stepName: string;
+  importPath: string;
+  exportName: string;
+}> = [
+  {
+    target: "flutter",
+    fnId: "codegen-flutter",
+    fnName: "Codegen Flutter ZIP",
+    event: "project/codegen.flutter.requested",
+    stepName: "execute-flutter-codegen",
+    importPath: "@/lib/codegen/execute-flutter",
+    exportName: "FlutterExecutor",
+  },
+  {
+    target: "wechat",
+    fnId: "codegen-wechat",
+    fnName: "Codegen WeChat Mini Program ZIP",
+    event: "project/codegen.wechat.requested",
+    stepName: "execute-wechat-codegen",
+    importPath: "@/lib/codegen/execute-wechat",
+    exportName: "WechatExecutor",
+  },
+  {
+    target: "harmony",
+    fnId: "codegen-harmony",
+    fnName: "Codegen Harmony ArkTS ZIP",
+    event: "project/codegen.harmony.requested",
+    stepName: "execute-harmony-codegen",
+    importPath: "@/lib/codegen/execute-harmony",
+    exportName: "HarmonyExecutor",
+  },
+];
 
 /**
- * Flutter / 微信小程序 codegen 与方案 8-Agent 并列，独立事件与 codegen_runs 表。
- * 使用 dynamic import，避免 /api/inngest 加载时拉取 supabase/llm 顶层 throw。
+ * 工厂：基于配置创建 Inngest 函数
+ * 所有平台共享相同的鉴权 + execute 调用模式
  */
-export const flutterCodegen = inngest.createFunction(
-  {
-    id: "codegen-flutter",
-    name: "Codegen Flutter ZIP",
-    retries: 0,
-    triggers: [{ event: "project/codegen.flutter.requested" }]
-  },
-  async ({ event, step }) => {
-    const projectId = event.data.projectId as string;
-    const runId = event.data.runId as string;
-    const userId = event.data.userId as string | undefined;
+function createCodegenFunction(cfg: (typeof CODECONFIG)[number]) {
+  return inngest.createFunction(
+    {
+      id: cfg.fnId,
+      name: cfg.fnName,
+      // 重试 3 次处理瞬时错误（可通过 CODEGEN_INNGEST_RETRIES 环境变量覆盖）
+      retries: (Number(process.env.CODEGEN_INNGEST_RETRIES ?? "3") || 3) as
+        | 0 | 1 | 2 | 3 | 4 | 5,
+      triggers: [{ event: cfg.event }],
+    },
+    async ({ event, step }) => {
+      const projectId = event.data.projectId as string;
+      const runId = event.data.runId as string;
+      const userId = event.data.userId as string | undefined;
 
-    if (!projectId || !runId) {
-      throw new Error("缺少 projectId 或 runId");
-    }
+      if (!projectId || !runId) {
+        throw new Error(`[${cfg.target}] 缺少 projectId 或 runId`);
+      }
 
-    await assertInngestProjectOwner(projectId, userId);
+      await assertInngestProjectOwner(projectId, userId);
 
-    const result = await step.run("execute-flutter-codegen", async () => {
-      const { executeFlutterCodegen } = await import(
-        "@/lib/codegen/execute-flutter"
-      );
-      return executeFlutterCodegen({ projectId, runId });
-    });
+      const result = await step.run(cfg.stepName, async () => {
+        // 动态导入，避免 /api/inngest 顶层 throw
+        const mod = (await import(cfg.importPath)) as Record<string, unknown>;
+        const ExecutorClass = mod[cfg.exportName] as {
+          new (): { execute: (i: { projectId: string; runId: string; userId?: string }) => Promise<unknown> };
+        };
+        const executor = new ExecutorClass();
+        return executor.execute({ projectId, runId, userId });
+      });
 
-    return { ...result, projectId };
-  }
-);
+      return { ...(result as Record<string, unknown>), projectId };
+    },
+  );
+}
 
-export const wechatCodegen = inngest.createFunction(
-  {
-    id: "codegen-wechat",
-    name: "Codegen WeChat Mini Program ZIP",
-    retries: 0,
-    triggers: [{ event: "project/codegen.wechat.requested" }]
-  },
-  async ({ event, step }) => {
-    const projectId = event.data.projectId as string;
-    const runId = event.data.runId as string;
-    const userId = event.data.userId as string | undefined;
-
-    if (!projectId || !runId) {
-      throw new Error("缺少 projectId 或 runId");
-    }
-
-    await assertInngestProjectOwner(projectId, userId);
-
-    const result = await step.run("execute-wechat-codegen", async () => {
-      const { executeWechatCodegen } = await import(
-        "@/lib/codegen/execute-wechat"
-      );
-      return executeWechatCodegen({ projectId, runId });
-    });
-
-    return { ...result, projectId };
-  }
-);
-
-export const harmonyCodegen = inngest.createFunction(
-  {
-    id: "codegen-harmony",
-    name: "Codegen Harmony ArkTS ZIP",
-    retries: 0,
-    triggers: [{ event: "project/codegen.harmony.requested" }]
-  },
-  async ({ event, step }) => {
-    const projectId = event.data.projectId as string;
-    const runId = event.data.runId as string;
-    const userId = event.data.userId as string | undefined;
-
-    if (!projectId || !runId) {
-      throw new Error("缺少 projectId 或 runId");
-    }
-
-    await assertInngestProjectOwner(projectId, userId);
-
-    const result = await step.run("execute-harmony-codegen", async () => {
-      const { executeHarmonyCodegen } = await import(
-        "@/lib/codegen/execute-harmony"
-      );
-      return executeHarmonyCodegen({ projectId, runId });
-    });
-
-    return { ...result, projectId };
-  }
-);
+export const flutterCodegen = createCodegenFunction(CODECONFIG[0]!);
+export const wechatCodegen = createCodegenFunction(CODECONFIG[1]!);
+export const harmonyCodegen = createCodegenFunction(CODECONFIG[2]!);
 
 export const flutterDesktopGhaPoll = inngest.createFunction(
   {
     id: "codegen-flutter-desktop-gha",
     name: "Poll Flutter desktop GHA artifacts",
-    retries: 0,
-    triggers: [{ event: "project/codegen.flutter.desktop-gha.requested" }]
+    retries: 1,
+    triggers: [{ event: "project/codegen.flutter.desktop-gha.requested" }],
   },
   async ({ event, step }) => {
     const projectId = event.data.projectId as string;
@@ -127,7 +126,7 @@ export const flutterDesktopGhaPoll = inngest.createFunction(
           await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
             status: "running",
             workflowRunId,
-            message: "GitHub Actions 正在构建 Mac .app 与 Windows .exe…"
+            message: "GitHub Actions 正在构建 Mac .app 与 Windows .exe…",
           });
           return { done: false as const };
         }
@@ -135,7 +134,7 @@ export const flutterDesktopGhaPoll = inngest.createFunction(
           await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
             status: "failed",
             workflowRunId,
-            message: "GitHub Actions 桌面构建失败，见 Actions 日志"
+            message: "GitHub Actions 桌面构建失败，见 Actions 日志",
           });
           return { done: true as const, ok: false };
         }
@@ -157,17 +156,17 @@ export const flutterDesktopGhaPoll = inngest.createFunction(
       await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
         status: "failed",
         workflowRunId,
-        message: "GitHub Actions 构建超时（>20 分钟）"
+        message: "GitHub Actions 构建超时（>20 分钟）",
       });
     });
 
     return { projectId, runId, workflowRunId, ok: false, reason: "timeout" };
-  }
+  },
 );
 
 export const codegenInngestFunctions = [
   flutterCodegen,
   wechatCodegen,
   harmonyCodegen,
-  flutterDesktopGhaPoll
+  flutterDesktopGhaPoll,
 ];

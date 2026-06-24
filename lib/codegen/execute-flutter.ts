@@ -1,327 +1,421 @@
+// ============================================================
+// Flutter 代码生成执行器 — 继承 BaseCodegenExecutor
+//
+// 平台特有：Docker dart analyze + auto-fix + AI-fix 回路
+//          后端 API 生成、Edge Functions、桌面构建、Web 构建
+// ============================================================
+
 import fs from "fs/promises";
 import path from "path";
 
-import { resolveSpecForCodegen } from "@/lib/app-spec/resolve-spec";
-import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
-import { validateAppSpec } from "@/lib/app-spec/validate";
-import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
-import { runAutoFixAnalyzeLoop } from "@/lib/codegen/auto-fix-flutter";
-import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
-import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
-import {
-  markCodegenRunCompleted,
-  markCodegenRunFailed,
-  markCodegenRunRunning
-} from "@/lib/codegen/runs";
-import { getCodegenStorageBucket } from "@/lib/codegen/storage";
-import { scheduleDesktopGhaAfterFlutter } from "@/lib/codegen/desktop-gha-orchestrator";
-import { attachDesktopReleases } from "@/lib/flutter-codegen/attach-desktop-releases";
-import { generateFlutterProject } from "@/lib/flutter-codegen/generate";
-import { preferDesktopGhaOverLocalBuild } from "@/lib/github/desktop-gha-config";
-import { shouldAttemptDesktopBuild } from "@/lib/flutter-codegen/desktop-build";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
-import {
-  runDockerFlutterAnalyze,
-  shouldFailCodegenOnAnalyze,
-  type DockerAnalyzeResult
+import type { AppSpec } from "@/lib/app-spec/types";
+import type { CodegenOutput, CodegenGateResult, GateMetadataContext } from "@/lib/codegen/base-executor";
+import { BaseCodegenExecutor, runCodegenSync } from "@/lib/codegen/base-executor";
+import type {
+  DockerAnalyzeResult,
 } from "@/lib/sandbox/docker-analyze";
-import { hasDocker } from "@/lib/sandbox/flutter";
-import { getSupabaseAdmin } from "@/lib/supabase";
 
-export type FlutterCodegenExecuteResult = {
-  runId: string;
-  fileName: string;
-  artifact_path: string;
-  spec_source: string;
-  displayName: string;
-  analyze: DockerAnalyzeResult;
-};
+// ============================================================
+// Flutter Gate 类型
+// ============================================================
 
-function buildAnalyzeMetadata(
-  analyze: DockerAnalyzeResult,
-  autoFix?: { rounds: number; log: string[] }
-) {
-  const analyzeEnvironment = hasDocker()
-    ? "docker-local"
-    : process.env.VERCEL
-      ? "vercel-no-docker"
-      : "no-docker";
-  return {
-    analyzeStatus: analyze.status,
-    analyzeEnvironment,
-    ...(analyze.reason ? { analyzeReason: analyze.reason.slice(0, 200) } : {}),
-    ...(analyze.output
-      ? { analyzeOutput: analyze.output.slice(0, 1500) }
-      : {}),
-    ...(autoFix?.rounds
-      ? {
-          autoFixRounds: autoFix.rounds,
-          autoFixLog: autoFix.log.join("\n").slice(0, 800)
-        }
-      : {})
-  };
+export interface FlutterGateResult extends CodegenGateResult {
+  status: "passed" | "failed" | "skipped";
+  reason?: string;
+  output?: string;
+  /** 自动修复轮次 */
+  autoFixRounds?: number;
+  autoFixLog?: string[];
+  /** AI 修复是否被调用 */
+  aiFixApplied?: boolean;
+  aiFixLog?: string[];
 }
 
-export async function executeFlutterCodegen(input: {
-  projectId: string;
-  runId: string;
-  userId?: string;
-}): Promise<FlutterCodegenExecuteResult> {
-  const { projectId, runId, userId } = input;
+// ============================================================
+// FlutterExecutor
+// ============================================================
 
-  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
-  await cleanupStaleCodegenRuns({ projectId });
+export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
+  readonly target = "flutter" as const;
 
-  await markCodegenRunRunning(runId);
-
-  const { data: project, error } = await getSupabaseAdmin()
-    .from("projects")
-    .select("id, title, idea, final_report, status, spec_override")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    const msg = "项目不存在";
-    await markCodegenRunFailed(runId, msg);
-    throw new Error(msg);
+  async generateCode(spec: AppSpec): Promise<CodegenOutput> {
+    const { generateFlutterProject } = await import(
+      "@/lib/flutter-codegen/generate"
+    );
+    const result = await generateFlutterProject(spec);
+    return {
+      outputDir: result.outputDir,
+      appName: result.appName,
+      displayName: result.displayName,
+    };
   }
 
-  let outputRoot: string | null = null;
+  getFileName(output: CodegenOutput): string {
+    return `${output.appName}-flutter.zip`;
+  }
 
-  try {
-    const built = await resolveSpecForCodegen({
-      id: project.id,
-      title: project.title ?? "未命名",
-      idea: project.idea,
-      final_report: project.final_report,
-      spec_override: project.spec_override
-    });
-
-    const validation = validateAppSpec(built.spec);
-    if (!validation.ok) {
-      const msg = `App Spec 校验失败：${validation.errors.join("; ")}`;
-      await markCodegenRunFailed(runId, msg);
-      throw new Error(msg);
-    }
-
-    const spec = validation.spec;
-    const specQuality = assessSpecQuality(spec);
-    const { outputDir, appName, displayName } = await generateFlutterProject(
-      spec
+  async runGate(output: CodegenOutput): Promise<FlutterGateResult> {
+    const { runDockerFlutterAnalyze } = await import(
+      "@/lib/sandbox/docker-analyze"
     );
-    outputRoot = path.dirname(outputDir);
+    const analyze = runDockerFlutterAnalyze({ outDir: output.outputDir });
+    return {
+      status: analyze.status as "passed" | "failed" | "skipped",
+      reason: analyze.reason,
+      output: analyze.output,
+    };
+  }
 
-    // P1: 单独上传 SQL 文件（供 SQL 下载 API）
-    let sqlArtifactPath: string | null = null;
-    try {
-      const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
-      const ddl = generateCreateTableDDL(spec);
-      const sqlBuffer = Buffer.from(ddl.fullSql, "utf8");
-      const { relativePath } = await writeArtifactFile(
-        runId,
-        "supabase_migration.sql",
-        sqlBuffer
+  isGateFailed(gate: FlutterGateResult): boolean {
+    return gate.status === "failed";
+  }
+
+  async buildGateMetadata(
+    ctx: GateMetadataContext & { gate: FlutterGateResult },
+  ): Promise<Record<string, unknown>> {
+    const { hasDocker } = await import("@/lib/sandbox/flutter") as {
+      hasDocker: () => boolean;
+    };
+    const analyzeEnvironment = hasDocker()
+      ? "docker-local"
+      : process.env.VERCEL
+        ? "vercel-no-docker"
+        : "no-docker";
+
+    return {
+      analyzeStatus: ctx.gate.status,
+      analyzeEnvironment,
+      ...(ctx.gate.reason
+        ? { analyzeReason: ctx.gate.reason.slice(0, 200) }
+        : {}),
+      ...(ctx.gate.output
+        ? { analyzeOutput: ctx.gate.output.slice(0, 1500) }
+        : {}),
+      ...(ctx.gate.autoFixRounds
+        ? {
+            autoFixRounds: ctx.gate.autoFixRounds,
+            autoFixLog: (ctx.gate.autoFixLog ?? []).join("\n").slice(0, 800),
+          }
+        : {}),
+      ...(ctx.gate.aiFixApplied
+        ? {
+            aiFixApplied: true,
+            aiFixLog: (ctx.gate.aiFixLog ?? []).join(" | ").slice(0, 500),
+          }
+        : {}),
+    };
+  }
+
+  buildGateFailureMsg(gate: FlutterGateResult): string {
+    return (
+      `Docker dart analyze 未通过` +
+      (gate.autoFixRounds
+        ? `（已尝试自动修错 ${gate.autoFixRounds} 轮）`
+        : "") +
+      `：${gate.output?.slice(-3000) ?? gate.reason ?? "unknown"}`
+    );
+  }
+
+  // ============================================================
+  // Flutter 特有：auto-fix + AI-fix 循环
+  // ============================================================
+
+  async beforeGate(
+    _output: CodegenOutput,
+    gate: FlutterGateResult,
+  ): Promise<FlutterGateResult> {
+    const outputDir = _output.outputDir;
+    const { shouldFailCodegenOnAnalyze } = await import(
+      "@/lib/sandbox/docker-analyze"
+    );
+
+    let currentGate = gate;
+
+    // Phase 1: 自动修复循环
+    if (shouldFailCodegenOnAnalyze(currentGate as unknown as DockerAnalyzeResult)) {
+      const { runAutoFixAnalyzeLoop } = await import(
+        "@/lib/codegen/auto-fix-flutter"
       );
-      sqlArtifactPath = relativePath;
-    } catch (sqlErr) {
-      console.warn("[executeFlutterCodegen] SQL upload skipped:", sqlErr);
-    }
+      const autoFix = await runAutoFixAnalyzeLoop({
+        appDir: outputDir,
+        initialAnalyze: {
+          status: currentGate.status,
+          reason: currentGate.reason,
+          output: currentGate.output,
+        } as DockerAnalyzeResult,
+      });
 
-    // P0: 后端 API 生成
-    let backendApiGenerated = false;
-    try {
-      const { generateBackendApi } = await import("@/lib/app-spec/generate-backend-api");
-      const api = generateBackendApi(spec);
-      const backendDir = path.join(path.dirname(outputDir), `${appName}-backend`);
-      await fs.mkdir(backendDir, { recursive: true });
-      await fs.writeFile(path.join(backendDir, "server.ts"), api.apiRoutes, "utf8");
-      await fs.writeFile(path.join(backendDir, "types.ts"), api.supabaseTypes, "utf8");
-      await fs.writeFile(path.join(backendDir, ".env.example"), api.envTemplate, "utf8");
-      await fs.writeFile(path.join(backendDir, "package.json"), api.packageJson, "utf8");
-      await fs.writeFile(path.join(backendDir, "README.md"), api.readme, "utf8");
-      // 打包为 ZIP
-      const { zipDirectory } = await import("@/lib/flutter-codegen/zip");
-      const apiZip = await zipDirectory(backendDir);
-      const { relativePath: apiZipPath } = await writeArtifactFile(runId, `${appName}-backend-api.zip`, apiZip);
-      // Edge Functions
-      try {
-        const { generateEdgeFunctions, generateEdgeFunctionIndex } = await import("@/lib/app-spec/generate-edge-functions");
-        const funcs = generateEdgeFunctions(spec);
-        const edgeDir = path.join(backendDir, "supabase", "functions");
-        await fs.mkdir(edgeDir, { recursive: true });
-        for (let i = 0; i < funcs.length; i++) {
-          const e = spec.entities?.[i] as { name?: string } | undefined;
-          const fnName = e?.name ? e.name.toLowerCase() + "s" : `entity_${i}`;
-          await fs.writeFile(path.join(edgeDir, fnName, "index.ts"), funcs[i], "utf8");
+      currentGate = {
+        ...currentGate,
+        status: autoFix.analyze.status as "passed" | "failed",
+        output: autoFix.analyze.output ?? currentGate.output,
+        autoFixRounds: autoFix.rounds,
+        autoFixLog: autoFix.log,
+      };
+
+      // Phase 2: AI 修复（自动修复枯竭后）
+      if (
+        shouldFailCodegenOnAnalyze(
+          autoFix.analyze,
+        ) &&
+        autoFix.analyze.output
+      ) {
+        try {
+          const { tryAiFixAnalyzeErrors } = await import(
+            "@/lib/codegen/ai-fix-analyze"
+          );
+          const { runDockerFlutterAnalyze } = await import(
+            "@/lib/sandbox/docker-analyze"
+          );
+          const aiFixResult = await tryAiFixAnalyzeErrors(
+            autoFix.analyze.output,
+            outputDir,
+          );
+
+          if (aiFixResult.fixed) {
+            const reAnalyze = runDockerFlutterAnalyze({ outDir: outputDir });
+            currentGate = {
+              ...currentGate,
+              status: reAnalyze.status as "passed" | "failed",
+              output:
+                (reAnalyze.output ?? "") +
+                "\n[AI 修复: " +
+                aiFixResult.log.join(" | ") +
+                "]",
+              aiFixApplied: true,
+              aiFixLog: aiFixResult.log,
+            };
+          }
+        } catch (err: unknown) {
+          console.warn("[FlutterExecutor] AI fix skipped:", err);
         }
-        await fs.writeFile(path.join(backendDir, "EDGE_FUNCTIONS.md"), generateEdgeFunctionIndex(spec), "utf8");
-        await fs.writeFile(path.join(edgeDir, ".gitkeep"), "", "utf8");
-      } catch { /* Edge Functions optional */ }
-      backendApiGenerated = true;
-    } catch (e) {
-      console.warn("[executeFlutterCodegen] backend API skipped:", e);
-    }
-
-    let initialAnalyze = runDockerFlutterAnalyze({ outDir: outputDir });
-    const autoFix = await runAutoFixAnalyzeLoop({
-      appDir: outputDir,
-      initialAnalyze
-    });
-    let analyze = autoFix.analyze;
-
-    // P2-2: AI 代码审查回路 — 自动修错枯竭后用 LLM 修复
-    if (shouldFailCodegenOnAnalyze(analyze) && analyze.output) {
-      try {
-        const { tryAiFixAnalyzeErrors } = await import("@/lib/codegen/ai-fix-analyze");
-        const aiFixResult = await tryAiFixAnalyzeErrors(analyze.output, outputDir);
-        if (aiFixResult.fixed) {
-          // 重新跑 analyze
-          analyze = runDockerFlutterAnalyze({ outDir: outputDir });
-          analyze = {
-            ...analyze,
-            output: (analyze.output ?? "") + "\n[AI 修复: " + aiFixResult.log.join(" | ") + "]"
-          };
-        }
-      } catch (aiErr) {
-        console.warn("[executeFlutterCodegen] AI fix skipped:", aiErr);
       }
     }
 
-    if (shouldFailCodegenOnAnalyze(analyze)) {
-      const msg = `Docker dart analyze 未通过（已尝试自动修错 ${autoFix.rounds} 轮 + AI 修复）：${analyze.output?.slice(-3000) ?? analyze.reason ?? "unknown"}`;
-      await markCodegenRunFailed(runId, msg.slice(0, 4000));
-      throw new Error(msg);
+    return currentGate;
+  }
+
+  // ============================================================
+  // Flutter 特有：后端 API + Edge Functions + 桌面构建 + Web 构建 + 通知
+  // ============================================================
+
+  async afterPackaging(pipelineState: {
+    spec: AppSpec;
+    codegen: CodegenOutput;
+    runId: string;
+    projectId: string;
+    userId?: string;
+    project: { id: string; title: string };
+  }): Promise<Record<string, unknown>> {
+    const extraMeta: Record<string, unknown> = {};
+    const { spec, codegen, runId, projectId, userId } = pipelineState;
+
+    // ---- 后端 API + Edge Functions ---- //
+    try {
+      // eslint-disable-next-line prefer-const
+      let { generateBackendApi } = await import(
+        "@/lib/app-spec/generate-backend-api"
+      );
+      const api = generateBackendApi(spec);
+      const backendDir = path.join(
+        path.dirname(codegen.outputDir),
+        `${codegen.appName}-backend`,
+      );
+      await fs.mkdir(backendDir, { recursive: true });
+      await Promise.all([
+        fs.writeFile(path.join(backendDir, "server.ts"), api.apiRoutes, "utf8"),
+        fs.writeFile(path.join(backendDir, "types.ts"), api.supabaseTypes, "utf8"),
+        fs.writeFile(path.join(backendDir, ".env.example"), api.envTemplate, "utf8"),
+        fs.writeFile(path.join(backendDir, "package.json"), api.packageJson, "utf8"),
+        fs.writeFile(path.join(backendDir, "README.md"), api.readme, "utf8"),
+      ]);
+
+      // Edge Functions
+      try {
+        const { generateEdgeFunctions: genFuncs, generateEdgeFunctionIndex } =
+          await import("@/lib/app-spec/generate-edge-functions");
+        const funcs = genFuncs(spec);
+        const edgeDir = path.join(backendDir, "supabase", "functions");
+        await fs.mkdir(edgeDir, { recursive: true });
+        const entities = spec.entities as Array<{ name?: string }> | undefined;
+        for (let i = 0; i < funcs.length; i++) {
+          const e = entities?.[i];
+          const fnName = e?.name ? e.name.toLowerCase() + "s" : `entity_${i}`;
+          const fnDir = path.join(edgeDir, fnName);
+          await fs.mkdir(fnDir, { recursive: true });
+          await fs.writeFile(path.join(fnDir, "index.ts"), funcs[i], "utf8");
+        }
+        await fs.writeFile(path.join(backendDir, "EDGE_FUNCTIONS.md"), generateEdgeFunctionIndex(spec), "utf8");
+        await fs.writeFile(path.join(edgeDir, ".gitkeep"), "", "utf8");
+      } catch {
+        // Edge Functions 可选
+      }
+
+      // 打包 API ZIP
+      const { zipDirectory } = await import("@/lib/flutter-codegen/zip");
+      const apiZip = await zipDirectory(backendDir);
+      const { writeArtifactFile } = await import("@/lib/codegen/artifacts");
+      await writeArtifactFile(runId, `${codegen.appName}-backend-api.zip`, apiZip);
+      extraMeta["backendApiGenerated"] = true;
+    } catch (err: unknown) {
+      console.warn("[FlutterExecutor] backend API skipped:", err);
     }
 
-    const previewHtml = generateSpecPreviewHtml(spec);
-    const previewPath = await writePreviewHtml(runId, previewHtml);
-
-    const desktop = preferDesktopGhaOverLocalBuild()
-      ? null
-      : await attachDesktopReleases({
-          appDir: outputDir,
-          appName,
-          runId
+    // ---- 桌面构建 ---- //
+    try {
+      const { preferDesktopGhaOverLocalBuild } = await import(
+        "@/lib/github/desktop-gha-config"
+      );
+      if (!preferDesktopGhaOverLocalBuild()) {
+        const { attachDesktopReleases } = await import(
+          "@/lib/flutter-codegen/attach-desktop-releases"
+        );
+        const desktop = await attachDesktopReleases({
+          appDir: codegen.outputDir,
+          appName: codegen.appName,
+          runId,
         });
+        if (desktop?.metadata) Object.assign(extraMeta, desktop.metadata);
+      }
+      const { shouldAttemptDesktopBuild } = await import(
+        "@/lib/flutter-codegen/desktop-build"
+      );
+      extraMeta["desktopBuildAttempted"] = shouldAttemptDesktopBuild();
+    } catch (err: unknown) {
+      console.warn("[FlutterExecutor] desktop build skipped:", err);
+    }
 
-    // P1: Flutter Web 构建（有 Flutter SDK 时尝试）
-    let flutterWebArtifact: string | null = null;
+    // ---- Web 构建 ---- //
     try {
       const { tryBuildFlutterWeb } = await import(
         "@/lib/flutter-codegen/build-web"
       );
-      const webResult = tryBuildFlutterWeb(outputDir);
+      const webResult = tryBuildFlutterWeb(codegen.outputDir);
       if (webResult.success && webResult.buildDir) {
         const { uploadFlutterWebPreview } = await import(
           "@/lib/codegen/upload-web-preview"
         );
-        flutterWebArtifact = await uploadFlutterWebPreview(
+        const flutterWebArtifact = await uploadFlutterWebPreview(
           runId,
-          webResult.buildDir
+          webResult.buildDir,
         );
+        extraMeta["flutterWebArtifact"] = flutterWebArtifact;
       }
-    } catch (webErr) {
-      console.warn("[executeFlutterCodegen] Web build skipped:", webErr);
+    } catch (err: unknown) {
+      console.warn("[FlutterExecutor] Web build skipped:", err);
     }
 
-    const buffer = await zipDirectory(outputDir);
-    const fileName = `${appName}-flutter.zip`;
-    const { relativePath: artifact_path, storageUploaded } =
-      await writeArtifactFile(runId, fileName, buffer);
+    // ---- 通知 ---- //
+    void this.notifyComplete(pipelineState.project.title ?? "未命名", "completed");
 
-    // P1: 缓存指纹
-    let specFp = "";
-    try {
-      const { specFingerprint } = await import("@/lib/codegen/cache");
-      specFp = specFingerprint(spec);
-    } catch { /* skip */ }
+    // ---- GHA 桌面触发 ---- //
+    void this.scheduleGha(projectId, runId, codegen.appName, spec, userId);
 
-    // 产物自动验证
-    let artifactQuality: Record<string, unknown> | null = null;
-    try {
-      const { verifyGeneratedArtifact } = await import("@/lib/codegen/verify-artifact");
-      artifactQuality = await verifyGeneratedArtifact(artifact_path) as unknown as Record<string, unknown>;
-    } catch { /* optional */ }
+    return extraMeta;
+  }
 
-    // 通知（Slack/Discord/Email）
+  // ---- 辅助 ---- //
+
+  private async notifyComplete(
+    projectTitle: string,
+    status: "completed" | "failed",
+    error?: string,
+  ): Promise<void> {
     try {
       const { notifyChannel } = await import("@/lib/notifications-channel");
-      await notifyChannel({ projectTitle: project.title ?? "未命名", targets: ["flutter"], status: "completed" });
       const { notifyCodegenComplete } = await import("@/lib/notifications");
-      await notifyCodegenComplete({ email: "", projectTitle: project.title ?? "未命名", targets: ["flutter"] }).catch(() => {});
-    } catch { /* notification best-effort */ }
+      await Promise.allSettled([
+        notifyChannel({ projectTitle, targets: ["flutter"], status, error }),
+        notifyCodegenComplete({
+          email: "",
+          projectTitle,
+          targets: ["flutter"],
+        }),
+      ]);
+    } catch {
+      // best-effort
+    }
+  }
 
-    await markCodegenRunCompleted(runId, {
-      artifact_path,
-      spec_source: built.source,
-      metadata: {
-        fileName,
-        displayName,
-        specFingerprint: specFp,
-        ...(artifactQuality ?? {}),
-        ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
-        storageUploaded,
-        previewPath,
-        ...(storageUploaded
-          ? { storageBucket: getCodegenStorageBucket() }
-          : {}),
-        ...buildAnalyzeMetadata(analyze, autoFix),
-        specQualityScore: specQuality.score,
-        ...(specQuality.warnings.length
-          ? { specQualityWarnings: specQuality.warnings.join(" · ") }
-          : {}),
-        ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {}),
-        ...(desktop?.metadata ?? {}),
-        ...(flutterWebArtifact ? { flutterWebArtifact } : {}),
-        desktopBuildAttempted: shouldAttemptDesktopBuild()
-      }
-    });
-
+  private async scheduleGha(
+    projectId: string,
+    runId: string,
+    appName: string,
+    spec: AppSpec,
+    userId?: string,
+  ): Promise<void> {
     try {
-      const ghaScheduled = await scheduleDesktopGhaAfterFlutter({
-        projectId,
-        runId,
-        appName,
-        spec,
-        userId
+      const { scheduleDesktopGhaAfterFlutter } = await import(
+        "@/lib/codegen/desktop-gha-orchestrator"
+      );
+      await scheduleDesktopGhaAfterFlutter({
+        projectId, runId, appName, spec, userId,
       });
-      if (!ghaScheduled.scheduled) {
-        /* 未配置 GHA 或本地构建 */
-      }
     } catch (err: unknown) {
       const { mergeCodegenRunNestedMetadata } = await import(
         "@/lib/codegen/merge-run-metadata"
       );
       await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
         status: "failed",
-        message: (err instanceof Error ? err.message : String(err)).slice(
-          0,
-          400
-        )
-      });
-    }
-
-    return {
-      runId,
-      fileName,
-      artifact_path,
-      spec_source: built.source,
-      displayName,
-      analyze
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Flutter codegen 失败";
-    await markCodegenRunFailed(runId, message).catch(() => {});
-    try {
-      const { notifyChannel } = await import("@/lib/notifications-channel");
-      await notifyChannel({ projectTitle: project.title ?? "未命名", targets: ["flutter"], status: "failed", error: message }).catch(() => {});
-    } catch { /* notification best-effort */ }
-    const { captureError } = await import("@/lib/monitoring");
-    await captureError(err, { component: "executeFlutterCodegen", projectId, runId, target: "flutter" }).catch(() => {});
-    throw err;
-  } finally {
-    if (outputRoot) {
-      await fs.rm(outputRoot, { recursive: true, force: true }).catch(() => {});
+        message: (err instanceof Error ? err.message : String(err)).slice(0, 400),
+      }).catch(() => {});
     }
   }
+
+  protected async onError(err: unknown): Promise<void> {
+    try {
+      const { captureError } = await import("@/lib/monitoring");
+      await captureError(err, {
+        component: "FlutterExecutor",
+        target: "flutter",
+      });
+    } catch {
+      // 上报失败不阻塞
+    }
+  }
+
+  buildResult(input: {
+    runId: string;
+    fileName: string;
+    artifact_path: string;
+    spec_source: string;
+    displayName: string;
+    gate: FlutterGateResult;
+  }): unknown {
+    return {
+      runId: input.runId,
+      fileName: input.fileName,
+      artifact_path: input.artifact_path,
+      spec_source: input.spec_source,
+      displayName: input.displayName,
+      analyze: {
+        status: input.gate.status,
+        reason: input.gate.reason,
+        output: input.gate.output,
+      },
+    };
+  }
+}
+
+// ============================================================
+// 导出 — 兼容旧 API
+// ============================================================
+
+const flutterExecutor = new FlutterExecutor();
+
+/** @deprecated 使用 FlutterExecutor.execute() 替代 */
+export async function executeFlutterCodegen(input: {
+  projectId: string;
+  runId: string;
+  userId?: string;
+}): Promise<unknown> {
+  return flutterExecutor.execute(input);
+}
+
+/** 同步 Flutter 生成（兼容旧 API） */
+export async function runFlutterCodegenSync(input: {
+  projectId: string;
+  userId?: string;
+}) {
+  return runCodegenSync("flutter", flutterExecutor, input);
 }

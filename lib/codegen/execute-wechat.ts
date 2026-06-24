@@ -1,159 +1,130 @@
-import fs from "fs/promises";
-import path from "path";
+// ============================================================
+// 微信小程序代码生成执行器 — 继承 BaseCodegenExecutor
+//
+// 平台特有：小程序结构校验 + 编译门禁
+// ============================================================
 
-import { resolveSpecForCodegen } from "@/lib/app-spec/resolve-spec";
-import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
-import { validateAppSpec } from "@/lib/app-spec/validate";
-import { assessSpecQuality } from "@/lib/app-spec/spec-quality";
-import { writeArtifactFile, writePreviewHtml } from "@/lib/codegen/artifacts";
-import { generateSpecPreviewHtml } from "@/lib/codegen/preview-html";
-import {
-  markCodegenRunCompleted,
-  markCodegenRunFailed,
-  markCodegenRunRunning
-} from "@/lib/codegen/runs";
-import { getCodegenStorageBucket } from "@/lib/codegen/storage";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
-import {
-  runWechatFullBuildValidate,
-  shouldFailCodegenOnWechatBuild,
-  type WechatFullBuildResult
-} from "@/lib/sandbox/wechat-build";
-import { generateWechatProject } from "@/lib/wechat-codegen/generate";
-import { getSupabaseAdmin } from "@/lib/supabase";
+import type { AppSpec } from "@/lib/app-spec/types";
+import type { CodegenOutput, CodegenGateResult, GateMetadataContext } from "@/lib/codegen/base-executor";
+import { BaseCodegenExecutor, runCodegenSync } from "@/lib/codegen/base-executor";
 
-export type WechatCodegenExecuteResult = {
-  runId: string;
-  fileName: string;
-  artifact_path: string;
-  spec_source: string;
-  displayName: string;
-  build: WechatFullBuildResult;
-};
+// ============================================================
+// WeChat Gate 类型
+// ============================================================
 
-function buildWechatMetadata(build: WechatFullBuildResult) {
-  return {
-    buildStatus: build.status,
-    structureStatus: build.structure.status,
-    compileStatus: build.compile.status,
-    ...(build.reason ? { buildReason: build.reason.slice(0, 200) } : {}),
-    ...(build.output ? { buildOutput: build.output.slice(0, 1500) } : {}),
-    ...(build.compile.wxmlFiles != null
-      ? { compileWxmlFiles: build.compile.wxmlFiles }
-      : {}),
-    ...(build.compile.wxssFiles != null
-      ? { compileWxssFiles: build.compile.wxssFiles }
-      : {})
+export interface WechatGateResult extends CodegenGateResult {
+  status: "passed" | "failed" | "skipped";
+  structure: { status: string };
+  compile: {
+    status: string;
+    wxmlFiles?: number;
+    wxssFiles?: number;
   };
+  reason?: string;
+  output?: string;
 }
 
+// ============================================================
+// WechatExecutor
+// ============================================================
+
+export class WechatExecutor extends BaseCodegenExecutor<WechatGateResult> {
+  readonly target = "wechat" as const;
+
+  async generateCode(spec: AppSpec): Promise<CodegenOutput> {
+    const { generateWechatProject } = await import(
+      "@/lib/wechat-codegen/generate"
+    );
+    const result = await generateWechatProject(spec);
+    return {
+      outputDir: result.outputDir,
+      appName: result.appName,
+      displayName: result.displayName,
+    };
+  }
+
+  getFileName(output: CodegenOutput): string {
+    return `${output.appName}-wechat.zip`;
+  }
+
+  async runGate(output: CodegenOutput): Promise<WechatGateResult> {
+    const { runWechatFullBuildValidate } = await import(
+      "@/lib/sandbox/wechat-build"
+    ) as {
+      runWechatFullBuildValidate: (opts: { appDir: string }) => WechatGateResult;
+    };
+    return runWechatFullBuildValidate({ appDir: output.outputDir });
+  }
+
+  async isGateFailed(gate: WechatGateResult): Promise<boolean> {
+    const { shouldFailCodegenOnWechatBuild } = await import(
+      "@/lib/sandbox/wechat-build"
+    ) as {
+      shouldFailCodegenOnWechatBuild: (g: WechatGateResult) => boolean;
+    };
+    return shouldFailCodegenOnWechatBuild(gate);
+  }
+
+  buildGateMetadata(
+    ctx: GateMetadataContext & { gate: WechatGateResult },
+  ): Record<string, unknown> {
+    const g = ctx.gate;
+    return {
+      buildStatus: g.status,
+      structureStatus: g.structure.status,
+      compileStatus: g.compile.status,
+      ...(g.reason ? { buildReason: g.reason.slice(0, 200) } : {}),
+      ...(g.output ? { buildOutput: g.output.slice(0, 1500) } : {}),
+      ...(g.compile.wxmlFiles != null
+        ? { compileWxmlFiles: g.compile.wxmlFiles }
+        : {}),
+      ...(g.compile.wxssFiles != null
+        ? { compileWxssFiles: g.compile.wxssFiles }
+        : {}),
+    };
+  }
+
+  buildGateFailureMsg(gate: WechatGateResult): string {
+    return `小程序编译门禁未通过：${gate.output?.slice(-3000) ?? gate.reason ?? "unknown"}`;
+  }
+
+  buildResult(input: {
+    runId: string;
+    fileName: string;
+    artifact_path: string;
+    spec_source: string;
+    displayName: string;
+    gate: WechatGateResult;
+  }): unknown {
+    return {
+      runId: input.runId,
+      fileName: input.fileName,
+      artifact_path: input.artifact_path,
+      spec_source: input.spec_source,
+      displayName: input.displayName,
+      build: input.gate,
+    };
+  }
+}
+
+// ============================================================
+// 导出 — 兼容旧 API
+// ============================================================
+
+const wechatExecutor = new WechatExecutor();
+
+/** @deprecated 使用 WechatExecutor.execute() 替代 */
 export async function executeWechatCodegen(input: {
   projectId: string;
   runId: string;
-}): Promise<WechatCodegenExecuteResult> {
-  const { projectId, runId } = input;
+}): Promise<unknown> {
+  return wechatExecutor.execute(input);
+}
 
-  const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
-  await cleanupStaleCodegenRuns({ projectId });
-
-  await markCodegenRunRunning(runId);
-
-  const { data: project, error } = await getSupabaseAdmin()
-    .from("projects")
-    .select("id, title, idea, final_report, status, spec_override")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    const msg = "项目不存在";
-    await markCodegenRunFailed(runId, msg);
-    throw new Error(msg);
-  }
-
-  let outputRoot: string | null = null;
-
-  try {
-    const built = await resolveSpecForCodegen({
-      id: project.id,
-      title: project.title ?? "未命名",
-      idea: project.idea,
-      final_report: project.final_report,
-      spec_override: project.spec_override
-    });
-
-    const validation = validateAppSpec(built.spec);
-    if (!validation.ok) {
-      const msg = `App Spec 校验失败：${validation.errors.join("; ")}`;
-      await markCodegenRunFailed(runId, msg);
-      throw new Error(msg);
-    }
-
-    const spec = validation.spec;
-    const specQuality = assessSpecQuality(spec);
-    const { outputDir, appName, displayName } = await generateWechatProject(spec);
-    outputRoot = path.dirname(outputDir);
-
-    // P1: 单独上传 SQL 文件（供 SQL 下载 API）
-    try {
-      const { generateCreateTableDDL } = await import("@/lib/app-spec/generate-ddl");
-      const ddl = generateCreateTableDDL(spec);
-      const sqlBuffer = Buffer.from(ddl.fullSql, "utf8");
-      await writeArtifactFile(runId, "supabase_migration.sql", sqlBuffer);
-    } catch (sqlErr) {
-      console.warn("[executeWechatCodegen] SQL upload skipped:", sqlErr);
-    }
-
-    const build = runWechatFullBuildValidate({ appDir: outputDir });
-    if (shouldFailCodegenOnWechatBuild(build)) {
-      const msg = `小程序编译门禁未通过：${build.output?.slice(-3000) ?? build.reason ?? "unknown"}`;
-      await markCodegenRunFailed(runId, msg.slice(0, 4000));
-      throw new Error(msg);
-    }
-
-    const previewHtml = generateSpecPreviewHtml(spec);
-    const previewPath = await writePreviewHtml(runId, previewHtml);
-
-    const buffer = await zipDirectory(outputDir);
-    const fileName = `${appName}-wechat.zip`;
-    const { relativePath: artifact_path, storageUploaded } =
-      await writeArtifactFile(runId, fileName, buffer);
-
-    await markCodegenRunCompleted(runId, {
-      artifact_path,
-      spec_source: built.source,
-      metadata: {
-        fileName,
-        displayName,
-        ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
-        storageUploaded,
-        previewPath,
-        ...(storageUploaded
-          ? { storageBucket: getCodegenStorageBucket() }
-          : {}),
-        ...buildWechatMetadata(build),
-        specQualityScore: specQuality.score,
-        ...(specQuality.warnings.length
-          ? { specQualityWarnings: specQuality.warnings.join(" · ") }
-          : {}),
-        ...(built.warning ? { specWarning: built.warning.slice(0, 500) } : {})
-      }
-    });
-
-    return {
-      runId,
-      fileName,
-      artifact_path,
-      spec_source: built.source,
-      displayName,
-      build
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "微信小程序 codegen 失败";
-    await markCodegenRunFailed(runId, message).catch(() => {});
-    throw err;
-  } finally {
-    if (outputRoot) {
-      await fs.rm(outputRoot, { recursive: true, force: true }).catch(() => {});
-    }
-  }
+/** 同步微信生成（兼容旧 API） */
+export async function runWechatCodegenSync(input: {
+  projectId: string;
+  userId?: string;
+}) {
+  return runCodegenSync("wechat", wechatExecutor, input);
 }
