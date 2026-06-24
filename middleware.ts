@@ -6,7 +6,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const PROTECTED_PREFIXES = ["/projects", "/admin"];
 
-/** 安全头 — CSP 移除了 'unsafe-eval' */
+/** 安全头 — CSP 使用 nonce 替代 unsafe-inline（scripts） */
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -15,9 +15,28 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Strict-Transport-Security":
     "max-age=63072000; includeSubDomains; preload",
-  "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'none'; object-src 'none'",
 };
+
+function buildCSPHeader(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https:",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+}
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Buffer.from(bytes).toString("base64url");
+}
 
 /**
  * ✅ 安全地验证重定向 URL
@@ -52,6 +71,9 @@ function safeRedirectPath(input: string, fallback: string): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 生成 per-request nonce（CSP）
+  const nonce = generateNonce();
+
   // API 限流（Supabase 持久化，Vercel serverless 冷启动安全）
   if (pathname.startsWith("/api")) {
     const { checkSupabaseRateLimit } = await import(
@@ -70,7 +92,6 @@ export async function middleware(request: NextRequest) {
     import("@/lib/warmup")
       .then((w) => w.warmup())
       .catch((err) => {
-        // 开发环境记录预热失败，生产环境静默
         if (process.env.NODE_ENV === "development") {
           console.warn("[middleware] warmup failed:", err);
         }
@@ -83,6 +104,9 @@ export async function middleware(request: NextRequest) {
   for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(header, value);
   }
+  // CSP with per-request nonce
+  response.headers.set("Content-Security-Policy", buildCSPHeader(nonce));
+  response.headers.set("x-nonce", nonce);
 
   if (!isAuthEnabled()) {
     return response;
@@ -95,6 +119,7 @@ export async function middleware(request: NextRequest) {
   for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(header, value);
   }
+  response.headers.set("Content-Security-Policy", buildCSPHeader(nonce));
 
   const user = session.user;
 
