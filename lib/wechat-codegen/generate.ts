@@ -40,6 +40,7 @@ import {
   wechatIndustryListCall,
   wechatIndustryRequireLine,
 } from "./industry-bindings";
+import { hasWidgetTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
 
 const TEMPLATE_DIR = path.join(
   process.cwd(),
@@ -116,8 +117,26 @@ async function ensureGeneratedPage(
           : ext.emitWechatExtendedWxss();
     await fs.writeFile(`${fileBase}.wxss`, wxss, "utf8");
   } else {
-    await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
-    await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+    // Q2-P2: Mustache 优先 — 有行业模板时走 Mustache 渲染，否则 fallback 裸字符串 emit
+    const hasMustache = industry !== "generic" && (await hasWidgetTemplate(industry));
+    if (hasMustache) {
+      const ctx = { industry, displayName: specForPage?.displayName || screen.title, tableName: screen.entity || "items", primaryColor: "#0D9488", titleField: "title", primaryKey: "id", hasImage: false };
+      try {
+        const [wxmlRendered, jsRendered] = await Promise.all([
+          renderWidgetTemplate(`${industry}_wxml`, { ...ctx, screenTitle: screen.title } as any),
+          renderWidgetTemplate(`${industry}_js`, { ...ctx, screenTitle: screen.title } as any),
+        ]);
+        await fs.writeFile(`${fileBase}.wxml`, wxmlRendered, "utf8");
+        await fs.writeFile(`${fileBase}.js`, jsRendered, "utf8");
+      } catch {
+        // Mustache 渲染失败 → 静默 fallback 到裸字符串
+        await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
+        await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+      }
+    } else {
+      await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
+      await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+    }
     await fs.writeFile(`${fileBase}.wxss`, "", "utf8");
   }
   await fs.writeFile(`${fileBase}.json`, emitGeneratedPageJson(screen), "utf8");

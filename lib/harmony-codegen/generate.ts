@@ -7,6 +7,7 @@ import type { AppSpec } from "@/lib/app-spec/types";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import { hasWidgetTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
 import {
   buildHarmonyMainPagesJson,
   emitHarmonyPageEts,
@@ -38,7 +39,8 @@ async function copyTemplate(destDir: string): Promise<void> {
 
 async function emitHarmonyScreens(
   appDir: string,
-  spec: AppSpec
+  spec: AppSpec,
+  industry: string = "generic"
 ): Promise<number> {
   const screens = resolveCodegenScreens(spec);
   const pagesDir = path.join(appDir, "entry/src/main/ets/pages");
@@ -62,14 +64,19 @@ async function emitHarmonyScreens(
       else content = ext.emitHarmonyPayment();
       await fs.writeFile(filePath, content, "utf8");
     } else {
-      await fs.writeFile(
-        filePath,
-        emitHarmonyPageEts(screen, componentName, {
-          entry: i === 0,
-          spec
-        }),
-        "utf8"
-      );
+      // P3-P2: Mustache 优先 — 有行业模板时走渲染，否则 fallback 裸字符串
+      const hasMustache = industry !== "generic" && (await hasWidgetTemplate(industry));
+      if (hasMustache) {
+        const ctx = { industry, displayName: spec.displayName, tableName: screen.entity || "items", primaryColor: "#0D9488", titleField: "title", primaryKey: "id", hasImage: false, screenTitle: screen.title };
+        try {
+          const rendered = await renderWidgetTemplate(`${industry}_ets`, ctx as any);
+          await fs.writeFile(filePath, rendered, "utf8");
+        } catch {
+          await fs.writeFile(filePath, emitHarmonyPageEts(screen, componentName, { entry: i === 0, spec }), "utf8");
+        }
+      } else {
+        await fs.writeFile(filePath, emitHarmonyPageEts(screen, componentName, { entry: i === 0, spec }), "utf8");
+      }
     }
   }
 
@@ -187,7 +194,7 @@ export async function generateHarmonyProject(
   indexContent = indexContent.replace(/__DISPLAY_NAME__/g, spec.displayName);
   await fs.writeFile(indexPath, indexContent, "utf8");
 
-  const emitted = await emitHarmonyScreens(appDir, spec);
+  const emitted = await emitHarmonyScreens(appDir, spec, industry);
 
   const listScreen = findEntityListScreen(spec);
   if (listScreen) {
