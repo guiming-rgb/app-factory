@@ -103,26 +103,20 @@ struct EducationPage {
 
   async loadData() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(30)
-    this.courses = [
-      { id: '1', name: '高等数学', time: '08:00-09:40', room: '教学楼301', teacher: '李教授', color: '#1565c0', day: 'mon' },
-      { id: '2', name: '英语读写', time: '10:00-11:40', room: '外语楼203', teacher: '王老师', color: '#2e7d32', day: 'mon' },
-      { id: '3', name: '数据结构', time: '14:00-15:40', room: '实验楼405', teacher: '张教授', color: '#6a1b9a', day: 'mon' },
-      { id: '4', name: '线性代数', time: '08:00-09:40', room: '教学楼302', teacher: '陈教授', color: '#e65100', day: 'tue' },
-      { id: '5', name: '大学物理', time: '10:00-11:40', room: '物理楼101', teacher: '刘教授', color: '#c62828', day: 'tue' },
-      { id: '6', name: '操作系统', time: '08:00-09:40', room: '实验楼301', teacher: '赵教授', color: '#1565c0', day: 'wed' },
-      { id: '7', name: '计算机网络', time: '14:00-15:40', room: '实验楼302', teacher: '孙老师', color: '#2e7d32', day: 'wed' },
-      { id: '8', name: '软件开发实践', time: '10:00-11:40', room: '实训中心', teacher: '周老师', color: '#6a1b9a', day: 'thu' },
-      { id: '9', name: '概率论', time: '08:00-09:40', room: '教学楼303', teacher: '吴教授', color: '#e65100', day: 'fri' },
-    ]
-    this.assignments = [
-      { id: '1', title: '微积分课后习题第三章', courseName: '高等数学', deadline: '明天 23:59', urgent: true },
-      { id: '2', title: '数据结构项目设计报告', courseName: '数据结构', deadline: '3天后', urgent: false },
-      { id: '3', title: '英语作文：环境保护', courseName: '英语读写', deadline: '下周 23:59', urgent: false },
-      { id: '4', title: '物理实验数据处理', courseName: '大学物理', deadline: '还剩2天', urgent: true },
-    ]
-    this.loading = false
+    try {
+      const courses = await educationService.getTodaySchedule();
+      if (courses && courses.length > 0) {
+        this.courses = courses;
+      }
+      const assignments = await educationService.getAssignments();
+      if (assignments && assignments.length > 0) {
+        this.assignments = assignments;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   get dayCourses(): Array<{

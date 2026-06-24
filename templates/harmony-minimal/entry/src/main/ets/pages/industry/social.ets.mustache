@@ -105,39 +105,16 @@ struct SocialPage {
 
   async loadPosts() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("created_at", { ascending: false }).limit(20)
-    this.posts = [
-      {
-        id: '1', authorName: '用户小明', authorAvatar: '',
-        content: '今天去了一家很棒的咖啡馆，环境特别的舒适，适合周末放松！推荐给大家～',
-        images: [], likes: 42, liked: false, comments: 5,
-      },
-      {
-        id: '2', authorName: '摄影爱好者', authorAvatar: '',
-        content: '分享几张最近拍的日落照片，城市的黄昏总是那么美🌇',
-        images: ['https://via.placeholder.com/160', 'https://via.placeholder.com/160'],
-        likes: 128, liked: true, comments: 23,
-      },
-      {
-        id: '3', authorName: '科技达人', authorAvatar: '',
-        content: 'HarmonyOS NEXT 发布了开发者预览版，带来了全新的 ArkUI 增强特性和更流畅的动画引擎。',
-        images: ['https://via.placeholder.com/160'],
-        likes: 256, liked: false, comments: 45,
-      },
-      {
-        id: '4', authorName: '美食博主', authorAvatar: '',
-        content: '自制提拉米苏成功！口感绵密细腻，比外面买的还好吃😋 分享配方给大家',
-        images: ['https://via.placeholder.com/160', 'https://via.placeholder.com/160', 'https://via.placeholder.com/160'],
-        likes: 89, liked: false, comments: 12,
-      },
-      {
-        id: '5', authorName: '旅行日记', authorAvatar: '',
-        content: '周末去了郊外的国家森林公园，空气质量超好，看到了很多野生小动物🦌',
-        images: [], likes: 67, liked: true, comments: 8,
-      },
-    ]
-    this.loading = false
+    try {
+      const result = await socialService.list();
+      if (result && result.length > 0) {
+        this.posts = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

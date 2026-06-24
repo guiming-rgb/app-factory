@@ -109,17 +109,16 @@ struct FitnessPage {
 
   async loadData() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
-    this.workouts = [
-      { name: '晨间慢跑', imageUrl: '', calories: 320, duration: '30min', level: '初级' },
-      { name: 'HIIT燃脂', imageUrl: '', calories: 480, duration: '25min', level: '中级' },
-      { name: '全身力量训练', imageUrl: '', calories: 380, duration: '45min', level: '中级' },
-      { name: '瑜伽放松', imageUrl: '', calories: 180, duration: '40min', level: '初级' },
-      { name: '动感单车', imageUrl: '', calories: 520, duration: '35min', level: '高级' },
-      { name: '核心强化', imageUrl: '', calories: 260, duration: '20min', level: '中级' },
-    ]
-    this.loading = false
+    try {
+      const result = await fitnessService.list();
+      if (result && result.length > 0) {
+        this.workouts = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

@@ -97,18 +97,17 @@ struct CRMPage {
 
   async loadClients() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("deal_value", { ascending: false }).limit(50)
-    this.clients = [
-      { id: '1', name: '张三', company: '示例科技有限公司', dealValue: 50000, stage: 'negotiate', stageLabel: '谈判', avatarUrl: '' },
-      { id: '2', name: '李四', company: '创新企业集团', dealValue: 120000, stage: 'quote', stageLabel: '报价', avatarUrl: '' },
-      { id: '3', name: '王五', company: '数据驱动有限公司', dealValue: 30000, stage: 'need', stageLabel: '需求', avatarUrl: '' },
-      { id: '4', name: '赵六', company: '未来科技股份', dealValue: 80000, stage: 'lead', stageLabel: '线索', avatarUrl: '' },
-      { id: '5', name: '陈七', company: '星辰互联网公司', dealValue: 200000, stage: 'closed', stageLabel: '成交', avatarUrl: '' },
-      { id: '6', name: '刘八', company: '智慧解决方案集团', dealValue: 15000, stage: 'contact', stageLabel: '接触', avatarUrl: '' },
-    ]
-    this.totalDealValue = this.clients.reduce((s, c) => s + c.dealValue, 0)
-    this.loading = false
+    try {
+      const result = await crmService.list();
+      if (result && result.length > 0) {
+        this.clients = result;
+        this.totalDealValue = this.clients.reduce((s, c) => s + c.dealValue, 0);
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   get filteredClients(): Array<{

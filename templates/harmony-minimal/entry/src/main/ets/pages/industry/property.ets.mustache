@@ -109,26 +109,27 @@ struct PropertyPage {
 
   async loadData() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
-    this.repairList = [
-      { id: '1', title: '水管漏水维修', location: '3栋502室', status: 'processing', date: '2026-06-20' },
-      { id: '2', title: '电路故障检修', location: '5栋1103室', status: 'pending', date: '2026-06-22' },
-      { id: '3', title: '门禁系统修复', location: '1栋大堂', status: 'done', date: '2026-06-18' },
-      { id: '4', title: '电梯异响检查', location: '2栋', status: 'processing', date: '2026-06-23' },
-    ]
-    this.bills = [
-      { id: '1', title: '6月物业费', amount: 356.00, dueDate: '2026-06-30', paid: false },
-      { id: '2', title: '6月水费', amount: 48.50, dueDate: '2026-06-30', paid: true },
-    ]
-    this.notices = [
-      { id: '1', title: '本周六小区消防演练通知', date: '2026-06-25', urgent: true },
-      { id: '2', title: '垃圾分类投放时间调整', date: '2026-06-23', urgent: false },
-    ]
-    this.totalRepairs = this.repairList.length
-    this.unpaidBills = this.bills.filter(b => !b.paid).length
-    this.pendingFees = this.bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
-    this.loading = false
+    try {
+      const repairs = await propertyService.getMyRepairs();
+      if (repairs && repairs.length > 0) {
+        this.repairList = repairs;
+      }
+      const payments = await propertyService.getPayments();
+      if (payments && payments.length > 0) {
+        this.bills = payments;
+      }
+      const notices = await propertyService.getNotices();
+      if (notices && notices.length > 0) {
+        this.notices = notices;
+      }
+      this.totalRepairs = this.repairList.length;
+      this.unpaidBills = this.bills.filter(b => !b.paid).length;
+      this.pendingFees = this.bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0);
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {

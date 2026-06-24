@@ -99,17 +99,16 @@ struct RecruitmentPage {
 
   async loadJobs() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("salary_max", { ascending: false }).limit(20)
-    this.jobs = [
-      { id: '1', title: '高级前端开发工程师', company: '示例科技有限公司', companyLogo: '', salaryMin: 25, salaryMax: 40, city: '北京', experience: '3-5年', tags: ['React', 'TypeScript', 'ArkTS'] },
-      { id: '2', title: '后端架构师', company: '数据驱动有限公司', companyLogo: '', salaryMin: 35, salaryMax: 55, city: '上海', experience: '5-10年', tags: ['Go', '微服务', 'Kubernetes'] },
-      { id: '3', title: '产品经理', company: '创新企业集团', companyLogo: '', salaryMin: 20, salaryMax: 35, city: '深圳', experience: '3-5年', tags: ['策略', '数据驱动', '敏捷'] },
-      { id: '4', title: 'UI/UX设计师', company: '未来科技股份', companyLogo: '', salaryMin: 18, salaryMax: 30, city: '杭州', experience: '2-4年', tags: ['Figma', '交互设计', '设计系统'] },
-      { id: '5', title: '测试开发工程师', company: '星辰互联网公司', companyLogo: '', salaryMin: 20, salaryMax: 32, city: '北京', experience: '3-5年', tags: ['自动化测试', 'Python', 'CI/CD'] },
-      { id: '6', title: 'Flutter开发工程师', company: '智慧解决方案集团', companyLogo: '', salaryMin: 22, salaryMax: 38, city: '上海', experience: '2-5年', tags: ['Flutter', 'Dart', '跨平台'] },
-    ]
-    this.loading = false
+    try {
+      const result = await recruitmentService.list();
+      if (result && result.length > 0) {
+        this.jobs = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   get filteredJobs(): Array<{

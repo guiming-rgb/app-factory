@@ -90,16 +90,16 @@ struct HotelPage {
 
   async loadHotels() {
     this.loading = true
-    // TODO: Supabase query via {{tableName}}
-    // const { data } = await supabase.from("{{tableName}}").select("*").order("rating", { ascending: false }).limit(20)
-    this.hotels = [
-      { id: '1', name: '示例豪华酒店', imageUrl: '', stars: 5, rating: 4.8, reviewCount: 1256, price: 1288, amenities: ['免费WiFi', '游泳池', '健身房', '停车场'] },
-      { id: '2', name: '精选商务酒店', imageUrl: '', stars: 4, rating: 4.5, reviewCount: 823, price: 688, amenities: ['免费WiFi', '早餐', '商务中心'] },
-      { id: '3', name: '舒适快捷酒店', imageUrl: '', stars: 3, rating: 4.2, reviewCount: 2156, price: 299, amenities: ['免费WiFi', '24h前台'] },
-      { id: '4', name: '海滨度假酒店', imageUrl: '', stars: 5, rating: 4.9, reviewCount: 3456, price: 1899, amenities: ['免费WiFi', '游泳池', 'SPA', '海滩', '餐厅'] },
-      { id: '5', name: '精品民宿', imageUrl: '', stars: 3, rating: 4.6, reviewCount: 567, price: 458, amenities: ['免费WiFi', '早餐', '接机'] },
-    ]
-    this.loading = false
+    try {
+      const result = await hotelService.list();
+      if (result && result.length > 0) {
+        this.hotels = result;
+      }
+    } catch (e) {
+      // 加载失败
+    } finally {
+      this.loading = false;
+    }
   }
 
   build() {
