@@ -135,6 +135,7 @@
     "verify:industry:e2e": "npx tsx scripts/verify-industry-e2e.mjs",
     "verify:industry:parity": "npx tsx scripts/verify-industry-parity.mjs",
     "verify:industry:device": "npx tsx scripts/verify-industry-device.mjs",
+    "verify:industry:widgets": "npx tsx scripts/verify-industry-widgets.mjs",
     "export:industry:device-samples": "npx tsx scripts/export-industry-device-samples.mjs"
   },
   "dependencies": {
@@ -143,6 +144,7 @@
     "@supabase/supabase-js": "^2.48.1",
     "adm-zip": "^0.5.17",
     "inngest": "^4.3.0",
+    "mustache": "^4.2.0",
     "next": "^14.2.23",
     "openai": "^4.78.1",
     "pino": "^10.3.1",
