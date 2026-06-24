@@ -381,7 +381,7 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
     spec_source: string;
     displayName: string;
     gate: FlutterGateResult;
-  }): unknown {
+  }): FlutterCodegenExecuteResult {
     return {
       runId: input.runId,
       fileName: input.fileName,
@@ -397,6 +397,15 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
   }
 }
 
+export type FlutterCodegenExecuteResult = {
+  runId: string;
+  fileName: string;
+  artifact_path: string;
+  spec_source: string;
+  displayName: string;
+  analyze: { status: string; reason?: string; output?: string };
+};
+
 // ============================================================
 // 导出 — 兼容旧 API
 // ============================================================
@@ -408,8 +417,8 @@ export async function executeFlutterCodegen(input: {
   projectId: string;
   runId: string;
   userId?: string;
-}): Promise<unknown> {
-  return flutterExecutor.execute(input);
+}): Promise<FlutterCodegenExecuteResult> {
+  return flutterExecutor.execute(input) as Promise<FlutterCodegenExecuteResult>;
 }
 
 /** 同步 Flutter 生成（兼容旧 API） */

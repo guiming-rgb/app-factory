@@ -236,7 +236,8 @@ export async function writeEntityDetailPage(
   appDir: string,
   entity: import("@/lib/app-spec/entity-scaffold").AppSpecEntity,
   fs: typeof import("fs/promises"),
-  pathMod: typeof import("path")
+  pathMod: typeof import("path"),
+  industry: import("@/lib/flutter-codegen/emit-industry").IndustryCategory = "generic"
 ): Promise<void> {
   const {
     emitEntityDetailJson,
@@ -246,7 +247,7 @@ export async function writeEntityDetailPage(
   const base = pathMod.join(appDir, "pages", "entity-detail", "entity-detail");
   await fs.mkdir(pathMod.dirname(base), { recursive: true });
   await fs.writeFile(`${base}.wxml`, emitEntityDetailWxml(), "utf8");
-  await fs.writeFile(`${base}.js`, emitEntityDetailJs(entity), "utf8");
+  await fs.writeFile(`${base}.js`, emitEntityDetailJs(entity, industry), "utf8");
   await fs.writeFile(`${base}.json`, emitEntityDetailJson(), "utf8");
   await fs.writeFile(`${base}.wxss`, "", "utf8");
 }

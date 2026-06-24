@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * npm run verify:industry:e2e
- * 19 行业端到端：Spec → Flutter 工程生成 → 结构验证
+ * 19 行业 × 三栈端到端：Spec → 生成 → 结构验证
  */
-import { existsSync, readdirSync, statSync } from "fs";
+import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { rm } from "fs/promises";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
@@ -35,65 +36,135 @@ const ALL_INDUSTRIES = [
 let passed = 0, failed = 0;
 
 function check(label, cond, detail = "") {
-  if (cond) { console.log(`  ✓ ${label}${detail ? ' - ' + detail : ''}`); passed++; }
-  else { console.error(`  ✗ ${label}${detail ? ' - ' + detail : ''}`); failed++; }
+  if (cond) { console.log(`  ✓ ${label}${detail ? " — " + detail : ""}`); passed++; }
+  else { console.error(`  ✗ ${label}${detail ? " — " + detail : ""}`); failed++; }
+}
+
+function buildSpec({ ind, displayName, screens }) {
+  return {
+    specVersion: "0.1.0",
+    appName: `test_${ind}`,
+    displayName,
+    targets: {
+      flutter: { enabled: true, platforms: ["ios","android"], formFactors: ["phone"] },
+      backend: { provider: "supabase" },
+      harmony: { enabled: true, formFactors: ["phone"] },
+      wechatMiniProgram: { enabled: true },
+    },
+    screens: [{ id: "home", title: "首页", type: "tabRoot" }, ...screens, { id: "profile", title: "我的", type: "placeholder" }],
+    entities: screens.filter(s => s.entity).map(s => ({
+      name: s.entity || "items",
+      fields: [{ name: "id", type: "uuid", primary: true }, { name: "title", type: "string" }, { name: "created_at", type: "datetime" }],
+    })),
+    navigation: { tabs: ["home", screens[0]?.id || "list", "profile"].slice(0, 3) },
+    limitations: ["端到端验证"],
+    metadata: { category: ind },
+  };
+}
+
+function grepDir(dir, pattern) {
+  if (!existsSync(dir)) return false;
+  try {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, ent.name);
+      if (ent.isFile()) {
+        try { if (readFileSync(p, "utf8").includes(pattern)) return true; } catch { /* skip binary */ }
+      } else if (ent.isDirectory() && grepDir(p, pattern)) return true;
+    }
+  } catch { /* skip */ }
+  return false;
 }
 
 async function main() {
-  console.log("══ 19 行业端到端验证 ══\n");
+  console.log("══ 19 行业 × 三栈端到端验证 ══\n");
 
-  // ─── 动态加载 generateFlutterProject ───
-  let generateFlutterProject;
+  let genFlutter, genWechat, genHarmony;
   try {
-    const mod = await import("../lib/flutter-codegen/generate.ts");
-    generateFlutterProject = mod.generateFlutterProject;
+    genFlutter = (await import("../lib/flutter-codegen/generate.ts")).generateFlutterProject;
+    genWechat = (await import("../lib/wechat-codegen/generate.ts")).generateWechatProject;
+    genHarmony = (await import("../lib/harmony-codegen/generate.ts")).generateHarmonyProject;
     check("generateFlutterProject 加载", true);
+    check("generateWechatProject 加载", true);
+    check("generateHarmonyProject 加载", true);
   } catch (e) {
-    console.error("❌ 无法加载 generateFlutterProject:", e.message);
+    console.error("❌ 生成器加载失败:", e.message);
     process.exit(1);
   }
 
-  for (const { ind, name, displayName, screens } of ALL_INDUSTRIES) {
+  for (const industry of ALL_INDUSTRIES) {
+    const { ind, name } = industry;
+    const spec = buildSpec(industry);
     console.log(`\n── ${name} (${ind}) ──`);
 
-    const spec = {
-      specVersion: "0.1.0",
-      appName: `test_${ind}`,
-      displayName,
-      targets: { flutter: { enabled: true, platforms: ["ios","android"], formFactors: ["phone"] }, backend: { provider: "supabase" } },
-      screens: [{ id: "home", title: "首页", type: "tabRoot" }, ...screens, { id: "profile", title: "我的", type: "placeholder" }],
-      entities: screens.filter(s => s.entity).map(s => {
-        const tbl = s.entity || "items";
-        return { name: tbl, fields: [{ name: "id", type: "uuid", primary: true }, { name: "title", type: "string" }, { name: "created_at", type: "datetime" }] };
-      }),
-      navigation: { tabs: ["home", screens[0]?.id || "list", "profile"].slice(0, 3) },
-      limitations: ["端到端验证"],
-      metadata: { category: ind }
-    };
-
+    // Flutter
     try {
-      const result = await generateFlutterProject(spec, { keepOutput: true });
-      check("生成成功", !!result.outputDir, result.appName);
-
-      // 检查行业模板文件是否被拷贝
+      const result = await genFlutter(spec, { keepOutput: true });
+      check("Flutter 生成", !!result.outputDir, result.appName);
       const templateDir = join(ROOT, "templates", `industry-${ind}`, "lib", "features", ind);
-      const hasTemplate = existsSync(templateDir);
-
-      if (hasTemplate) {
+      if (existsSync(templateDir)) {
         const modelFiles = readdirSync(join(templateDir, "models")).filter(f => f.endsWith(".dart"));
         const pageFiles = readdirSync(join(templateDir, "pages")).filter(f => f.endsWith(".dart"));
-        check("models", modelFiles.length > 0, `${modelFiles.length} 文件`);
-        check("pages", pageFiles.length >= 2, `${pageFiles.length} 文件`);
+        check("Flutter models", modelFiles.length > 0, `${modelFiles.length} 文件`);
+        check("Flutter pages", pageFiles.length >= 2, `${pageFiles.length} 文件`);
       }
-
-      // 清理
-      const { rm } = await import("fs/promises");
-      const tmpRoot = result.outputDir.split("/").slice(0, -1).join("/");
-      await rm(tmpRoot, { recursive: true, force: true }).catch(() => {});
-
+      const routerFile = join(result.outputDir, "lib", "router", "app_router.dart");
+      if (existsSync(routerFile)) {
+        const router = readFileSync(routerFile, "utf8");
+        check("Flutter router", router.includes("import"));
+      }
+      await rm(result.outputDir.split("/").slice(0, -1).join("/"), { recursive: true, force: true }).catch(() => {});
     } catch (e) {
-      console.error(`  ✗ 失败: ${e.message}`);
-      failed++;
+      check("Flutter 生成", false, e.message?.slice(0, 80));
+    }
+
+    // 微信
+    try {
+      const wResult = await genWechat(spec);
+      check("微信 生成", !!wResult.outputDir, wResult.appName);
+      const detailJs = join(wResult.outputDir, "pages", "entity-detail", "entity-detail.js");
+      if (existsSync(detailJs)) {
+        const js = readFileSync(detailJs, "utf8");
+        check("微信 detail 含 .get(", js.includes(".get("));
+        check("微信 detail 含 industry service", js.includes("Service") && js.includes("services/industry"));
+      }
+      const formScreen = spec.screens.find(s => s.type === "form");
+      if (formScreen) {
+        const safe = formScreen.id.replace(/[^a-z0-9_]/gi, "_").toLowerCase();
+        const formJs = join(wResult.outputDir, "pages", safe, `${safe}.js`);
+        if (existsSync(formJs)) {
+          const js = readFileSync(formJs, "utf8");
+          check("微信 form 含 .create(", js.includes(".create("));
+        }
+      }
+      if (ind === "game") {
+        const gameJs = readFileSync(join(wResult.outputDir, "pages", "play", "play.js"), "utf8");
+        check("微信 gameService", gameJs.includes("gameService"));
+      }
+      if (ind === "payment") {
+        const payJs = readFileSync(join(wResult.outputDir, "pages", "checkout", "checkout.js"), "utf8");
+        check("微信 paymentService", payJs.includes("paymentService"));
+      }
+      await rm(wResult.outputDir.split("/").slice(0, -1).join("/"), { recursive: true, force: true }).catch(() => {});
+    } catch (e) {
+      check("微信 生成", false, e.message?.slice(0, 80));
+    }
+
+    // 鸿蒙
+    try {
+      const hResult = await genHarmony(spec);
+      check("鸿蒙 生成", !!(hResult.outputDir || hResult.bundleName));
+      const svcPath = join(hResult.outputDir, "entry/src/main/ets/services/IndustryServices.ets");
+      if (existsSync(svcPath)) {
+        const svc = readFileSync(svcPath, "utf8");
+        check("鸿蒙 IndustryServices", svc.includes(`${ind}Service`));
+      }
+      if (ind === "game" || ind === "payment") {
+        const pagesDir = join(hResult.outputDir, "entry/src/main/ets/pages");
+        check("鸿蒙 页面引用 IndustryServices", grepDir(pagesDir, "IndustryServices"));
+      }
+      await rm(hResult.outputDir.split("/").slice(0, -1).join("/"), { recursive: true, force: true }).catch(() => {});
+    } catch (e) {
+      check("鸿蒙 生成", false, e.message?.slice(0, 80));
     }
   }
 

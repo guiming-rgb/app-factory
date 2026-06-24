@@ -95,7 +95,7 @@ export class WechatExecutor extends BaseCodegenExecutor<WechatGateResult> {
     spec_source: string;
     displayName: string;
     gate: WechatGateResult;
-  }): unknown {
+  }): WechatCodegenExecuteResult {
     return {
       runId: input.runId,
       fileName: input.fileName,
@@ -107,6 +107,15 @@ export class WechatExecutor extends BaseCodegenExecutor<WechatGateResult> {
   }
 }
 
+export type WechatCodegenExecuteResult = {
+  runId: string;
+  fileName: string;
+  artifact_path: string;
+  spec_source: string;
+  displayName: string;
+  build: WechatGateResult;
+};
+
 // ============================================================
 // 导出 — 兼容旧 API
 // ============================================================
@@ -117,8 +126,8 @@ const wechatExecutor = new WechatExecutor();
 export async function executeWechatCodegen(input: {
   projectId: string;
   runId: string;
-}): Promise<unknown> {
-  return wechatExecutor.execute(input);
+}): Promise<WechatCodegenExecuteResult> {
+  return wechatExecutor.execute(input) as Promise<WechatCodegenExecuteResult>;
 }
 
 /** 同步微信生成（兼容旧 API） */

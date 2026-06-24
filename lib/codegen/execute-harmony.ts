@@ -85,7 +85,7 @@ export class HarmonyExecutor extends BaseCodegenExecutor<HarmonyGateResult> {
     spec_source: string;
     displayName: string;
     gate: HarmonyGateResult;
-  }): unknown {
+  }): HarmonyCodegenExecuteResult {
     return {
       runId: input.runId,
       fileName: input.fileName,
@@ -97,6 +97,15 @@ export class HarmonyExecutor extends BaseCodegenExecutor<HarmonyGateResult> {
   }
 }
 
+export type HarmonyCodegenExecuteResult = {
+  runId: string;
+  fileName: string;
+  artifact_path: string;
+  spec_source: string;
+  displayName: string;
+  structure: HarmonyGateResult;
+};
+
 // ============================================================
 // 导出 — 兼容旧 API
 // ============================================================
@@ -107,8 +116,8 @@ const harmonyExecutor = new HarmonyExecutor();
 export async function executeHarmonyCodegen(input: {
   projectId: string;
   runId: string;
-}): Promise<unknown> {
-  return harmonyExecutor.execute(input);
+}): Promise<HarmonyCodegenExecuteResult> {
+  return harmonyExecutor.execute(input) as Promise<HarmonyCodegenExecuteResult>;
 }
 
 /** 同步鸿蒙生成（兼容旧 API） */

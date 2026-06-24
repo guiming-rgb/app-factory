@@ -206,6 +206,10 @@ async function main() {
   ok("微信 game JS 调用 gameService", wxExt.includes("gameService"));
   ok("微信 payment JS 调用 paymentService", wxExt.includes("paymentService"));
 
+  const detailEmit = readFileSync(join(ROOT, "lib/wechat-codegen/emit-entity-detail.ts"), "utf8");
+  ok("微信 detail emit 含 industry require", detailEmit.includes("wechatIndustryRequireLine"));
+  ok("微信 detail emit 含 .get(", detailEmit.includes(".get("));
+
   const hExt = readFileSync(join(ROOT, "lib/harmony-codegen/emit-extended.ts"), "utf8");
   ok("鸿蒙 game emit 含 IndustryServices import", hExt.includes("import { gameService }"));
   ok("鸿蒙 payment emit 含 IndustryServices import", hExt.includes("import { paymentService }"));
@@ -218,8 +222,8 @@ async function main() {
   console.log("\n── 文档状态验证 ──\n");
   const matrix = readFileSync(join(ROOT, "docs/模板能力矩阵.md"), "utf8");
   ok("矩阵版本 v4", matrix.includes("v4"));
-  ok("矩阵 game 微信 ✅ (非 P2 目标)", matrix.includes("✅ 脚手架") && !matrix.includes("game.*P2 目标"));
-  ok("矩阵 payment 微信 ✅ (非 P2 目标)", matrix.includes("✅ 脚手架") && !matrix.includes("payment.*P2 目标"));
+  ok("矩阵 game 微信 ✅ 脚手架", matrix.includes("game") && matrix.includes("✅ 脚手架"));
+  ok("矩阵 payment 鸿蒙 ✅ 脚手架", matrix.includes("payment") && matrix.includes("✅ 脚手架"));
 
   console.log(`\n══ 结果: ${passed} 通过 / ${failed} 失败 ══`);
   if (failed) process.exit(1);

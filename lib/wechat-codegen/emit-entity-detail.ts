@@ -5,6 +5,11 @@ import {
   primaryKeyField,
   supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
+import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import {
+  wechatIndustryRequireLine,
+  wechatIndustryServiceName
+} from "./industry-bindings";
 
 function escJs(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ");
@@ -37,7 +42,28 @@ export function emitEntityDetailWxml(): string {
 `;
 }
 
-export function emitEntityDetailJs(entity: AppSpecEntity): string {
+function applyRecordToPage(record: string): string {
+  return `
+        const titleField = this.data.titleField;
+        const displayTitle =
+          record && record[titleField] != null
+            ? String(record[titleField])
+            : record && record.title != null
+              ? String(record.title)
+              : "—";
+        const fieldRows = record
+          ? this.data.fieldDefs.map((f) => ({
+              key: f.key,
+              value: record[f.prop] != null ? String(record[f.prop]) : "—"
+            }))
+          : [];
+        this.setData({ record, displayTitle, fieldRows, loading: false });`;
+}
+
+export function emitEntityDetailJs(
+  entity: AppSpecEntity,
+  industry: IndustryCategory = "generic"
+): string {
   const table = escJs(entityTableName(entity));
   const entityName = escJs(entity.name);
   const pk = escJs(primaryKeyField(entity));
@@ -47,8 +73,38 @@ export function emitEntityDetailJs(entity: AppSpecEntity): string {
     .map((f) => `{ key: "${escJs(f.name)}", prop: "${escJs(f.name)}" }`)
     .join(",\n      ");
 
-  return `const { request, isSupabaseConfigured } = require("../../utils/supabase");
+  const industryRequire = wechatIndustryRequireLine(industry);
+  const serviceName = wechatIndustryServiceName(industry);
+  const useIndustryService = !!serviceName;
 
+  const loadBody = useIndustryService
+    ? `    ${serviceName}.get(recordId)
+      .then((record) => {${applyRecordToPage("record")}
+      })
+      .catch((err) => {
+        this.setData({
+          error: err && err.message ? err.message : "加载失败",
+          loading: false
+        });
+      });`
+    : `    const filter = encodeURIComponent(this.data.pk + "=eq." + recordId);
+    request(
+      this.data.table + "?select=${select}&" + filter,
+      { method: "GET" }
+    )
+      .then((rows) => {
+        const list = Array.isArray(rows) ? rows : [];
+        const record = list[0] || null;${applyRecordToPage("record")}
+      })
+      .catch((err) => {
+        this.setData({
+          error: err && err.message ? err.message : "加载失败",
+          loading: false
+        });
+      });`;
+
+  return `const { request, isSupabaseConfigured } = require("../../utils/supabase");
+${industryRequire}
 Page({
   data: {
     entityName: "${entityName}",
@@ -82,35 +138,7 @@ Page({
       return;
     }
     this.setData({ loading: true, error: "" });
-    const filter = encodeURIComponent(this.data.pk + "=eq." + recordId);
-    request(
-      this.data.table + "?select=${select}&" + filter,
-      { method: "GET" }
-    )
-      .then((rows) => {
-        const list = Array.isArray(rows) ? rows : [];
-        const record = list[0] || null;
-        const titleField = this.data.titleField;
-        const displayTitle =
-          record && record[titleField] != null
-            ? String(record[titleField])
-            : record && record.title != null
-              ? String(record.title)
-              : "—";
-        const fieldRows = record
-          ? this.data.fieldDefs.map((f) => ({
-              key: f.key,
-              value: record[f.prop] != null ? String(record[f.prop]) : "—"
-            }))
-          : [];
-        this.setData({ record, displayTitle, fieldRows, loading: false });
-      })
-      .catch((err) => {
-        this.setData({
-          error: err && err.message ? err.message : "加载失败",
-          loading: false
-        });
-      });
+${loadBody}
   }
 });
 `;

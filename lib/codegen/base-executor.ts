@@ -95,10 +95,10 @@ export interface PlatformCodegenContract<TGate extends CodegenGateResult> {
   runGate(output: CodegenOutput): TGate | Promise<TGate>;
 
   /** 门禁失败判定 */
-  isGateFailed(gate: TGate): boolean;
+  isGateFailed(gate: TGate): boolean | Promise<boolean>;
 
   /** 构建门禁失败的元数据 */
-  buildGateMetadata(ctx: GateMetadataContext & { gate: TGate }): Record<string, unknown>;
+  buildGateMetadata(ctx: GateMetadataContext & { gate: TGate }): Record<string, unknown> | Promise<Record<string, unknown>>;
 
   /** 门禁失败时生成错误消息 */
   buildGateFailureMsg(gate: TGate): string;

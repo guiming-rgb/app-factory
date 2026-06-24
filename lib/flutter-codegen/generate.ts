@@ -293,7 +293,7 @@ export async function generateFlutterProject(
   // 生成所有页面（Tab + 非 Tab）
   const allScreens = spec.screens;
   for (const screen of allScreens) {
-    const ref = pageWidgetRef(screen, { spec });
+    const ref = pageWidgetRef(screen, { spec, industry });
     if (!ref.needsGenerated) continue;
 
     let content: string;

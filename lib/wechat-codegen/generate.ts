@@ -204,7 +204,7 @@ export async function generateWechatProject(
       : undefined;
   if (entityForDetail) {
     appJson = ensureEntityDetailInAppJson(appJson) as typeof appJson;
-    await writeEntityDetailPage(appDir, entityForDetail, fs, path);
+    await writeEntityDetailPage(appDir, entityForDetail, fs, path, industry);
   }
   await fs.writeFile(
     appJsonPath,
