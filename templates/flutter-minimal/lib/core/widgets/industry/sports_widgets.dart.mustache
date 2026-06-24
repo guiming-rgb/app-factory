@@ -1,0 +1,406 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// A live match card with pulsing dot for live status and score display.
+class LiveMatchCard extends StatelessWidget {
+  final String homeTeam;
+  final String awayTeam;
+  final String homeLogoUrl;
+  final String awayLogoUrl;
+  final int homeScore;
+  final int awayScore;
+  final String minute;
+  final bool isLive;
+  final String status;
+  final String venue;
+
+  const LiveMatchCard({
+    super.key,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.homeLogoUrl,
+    required this.awayLogoUrl,
+    required this.homeScore,
+    required this.awayScore,
+    this.minute = '',
+    this.isLive = false,
+    required this.status,
+    this.venue = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Status row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isLive) _buildLiveDot(),
+                if (isLive) const SizedBox(width: 6),
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: isLive ? Colors.red : Colors.grey[600],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Score row
+            Row(
+              children: [
+                // Home team
+                Expanded(
+                  child: _buildTeamColumn(homeTeam, homeLogoUrl),
+                ),
+                const SizedBox(width: 16),
+                // Score
+                Text(
+                  '$homeScore : $awayScore',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Away team
+                Expanded(
+                  child: _buildTeamColumn(awayTeam, awayLogoUrl),
+                ),
+              ],
+            ),
+            // Minute
+            if (minute.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                minute,
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            // Venue
+            if (venue.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                venue,
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveDot() {
+    return _PulsingDot();
+  }
+
+  Widget _buildTeamColumn(String name, String logoUrl) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 20,
+          backgroundImage: NetworkImage(logoUrl),
+          onBackgroundImageError: (_, __) {},
+          child: Icon(Icons.sports, size: 20, color: Colors.grey[400]),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13),
+        ),
+      ],
+    );
+  }
+}
+
+/// A pulsing red dot widget used for live indicator.
+class _PulsingDot extends StatefulWidget {
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: _animation.value),
+            shape: BoxShape.circle,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A single row in the standings table with rank, team, stats, and points.
+class StandingsRow extends StatelessWidget {
+  final int rank;
+  final String teamName;
+  final String teamLogoUrl;
+  final int played;
+  final int wins;
+  final int draws;
+  final int losses;
+  final int points;
+
+  const StandingsRow({
+    super.key,
+    required this.rank,
+    required this.teamName,
+    required this.teamLogoUrl,
+    required this.played,
+    required this.wins,
+    required this.draws,
+    required this.losses,
+    required this.points,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // Rank
+          SizedBox(
+            width: 28,
+            child: Text(
+              rank <= 3 ? _medalEmoji() : '$rank',
+              textAlign: TextAlign.center,
+              style: rank > 3
+                  ? const TextStyle(fontSize: 14)
+                  : const TextStyle(fontSize: 16),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Team logo + name
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  teamLogoUrl,
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 20,
+                    height: 20,
+                    color: Colors.grey[300],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 100,
+                child: Text(
+                  teamName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          // P / W / D / L
+          SizedBox(
+            width: 32,
+            child: Text(
+              '$played',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$wins',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$draws',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$losses',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Points badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$points',
+              style: TextStyle(
+                color: theme.colorScheme.onPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _medalEmoji() {
+    switch (rank) {
+      case 1:
+        return '\u{1F947}';
+      case 2:
+        return '\u{1F948}';
+      case 3:
+        return '\u{1F949}';
+      default:
+        return '';
+    }
+  }
+}
+
+/// A news highlight card (180px tall) with gradient overlay.
+class NewsHighlightCard extends StatelessWidget {
+  final String coverUrl;
+  final String title;
+  final String source;
+
+  const NewsHighlightCard({
+    super.key,
+    required this.coverUrl,
+    required this.title,
+    required this.source,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 180,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            // Cover image
+            Positioned.fill(
+              child: Image.network(
+                coverUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[800],
+                ),
+              ),
+            ),
+            // Gradient overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.8),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            // Text content
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    source,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

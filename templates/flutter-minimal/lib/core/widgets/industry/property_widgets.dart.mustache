@@ -1,0 +1,443 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// {{industry}} property widgets for {{displayName}} app.
+/// Uses {{primaryColor}} as the accent color.
+
+enum UrgencyLevel { emergency, normal }
+
+enum RepairStatus { pending, processing, completed, cancelled }
+
+class RepairOrderCard extends StatelessWidget {
+  final UrgencyLevel urgency;
+  final String title;
+  final RepairStatus status;
+  final String description;
+  final List<String> imageUrls;
+  final VoidCallback onTap;
+
+  const RepairOrderCard({
+    super.key,
+    required this.urgency,
+    required this.title,
+    required this.status,
+    required this.description,
+    this.imageUrls = const [],
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildUrgencyChip(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  _buildStatusBadge(colorScheme),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (imageUrls.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 72,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageUrls.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 72,
+                          height: 72,
+                          child: Image.network(
+                            imageUrls[index],
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey[200],
+                              child: const Icon(Icons.broken_image_outlined, size: 28),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUrgencyChip() {
+    final isEmergency = urgency == UrgencyLevel.emergency;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isEmergency ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        isEmergency ? '紧急' : '一般',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: isEmergency ? Colors.red : Colors.orange,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(ColorScheme colorScheme) {
+    final (Color bgColor, Color textColor, String label) = switch (status) {
+      RepairStatus.pending => (Colors.blue, Colors.blue, '待处理'),
+      RepairStatus.processing => (Colors.orange, Colors.orange, '处理中'),
+      RepairStatus.completed => (Colors.green, Colors.green, '已完成'),
+      RepairStatus.cancelled => (Colors.grey, Colors.grey, '已取消'),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+}
+
+class PaymentBillCard extends StatelessWidget {
+  final BillType billType;
+  final double amount;
+  final String period;
+  final bool isPaid;
+  final VoidCallback? onPay;
+
+  const PaymentBillCard({
+    super.key,
+    required this.billType,
+    required this.amount,
+    required this.period,
+    required this.isPaid,
+    this.onPay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            _buildTypeIcon(colorScheme),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    billType.label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    period,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '¥${amount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isPaid ? colorScheme.onSurfaceVariant : primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (isPaid)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '已缴费',
+                      style: TextStyle(fontSize: 12, color: Colors.green),
+                    ),
+                  )
+                else
+                  FilledButton(
+                    onPressed: onPay,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text('缴费'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeIcon(ColorScheme colorScheme) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: billType.color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(billType.icon, color: billType.color, size: 24),
+    );
+  }
+}
+
+enum BillType {
+  property(Icons.domain_outlined, Colors.blue, '物业费'),
+  water(Icons.water_drop_outlined, Colors.lightBlue, '水费'),
+  electricity(Icons.bolt_outlined, Colors.amber, '电费'),
+  gas(Icons.local_fire_department_outlined, Colors.orange, '燃气费'),
+  parking(Icons.local_parking_outlined, Colors.indigo, '停车费');
+
+  final IconData icon;
+  final Color color;
+  final String label;
+
+  const BillType(this.icon, this.color, this.label);
+}
+
+enum ImportanceLevel { emergency, important, normal }
+
+class NoticeBanner extends StatelessWidget {
+  final ImportanceLevel importance;
+  final String title;
+  final String content;
+  final VoidCallback onTap;
+
+  const NoticeBanner({
+    super.key,
+    required this.importance,
+    required this.title,
+    required this.content,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final (IconData icon, Color iconColor, Color borderColor) = switch (importance) {
+      ImportanceLevel.emergency => (Icons.error_outline, Colors.red, Colors.red),
+      ImportanceLevel.important => (Icons.info_outline, Colors.blue, Colors.blue),
+      ImportanceLevel.normal => (Icons.campaign_outlined, Colors.grey, Colors.grey),
+    };
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: iconColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      content,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FacilityBookSlot extends StatelessWidget {
+  final String name;
+  final String type;
+  final int totalCapacity;
+  final int availableCount;
+  final VoidCallback? onBook;
+
+  const FacilityBookSlot({
+    super.key,
+    required this.name,
+    required this.type,
+    required this.totalCapacity,
+    required this.availableCount,
+    this.onBook,
+  });
+
+  bool get _isFull => availableCount <= 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+    final fillRatio = totalCapacity > 0 ? availableCount / totalCapacity : 0.0;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    type,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: fillRatio,
+                            minHeight: 6,
+                            backgroundColor: colorScheme.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _isFull ? Colors.red : primaryColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '剩余 $availableCount',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _isFull ? Colors.red : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton(
+              onPressed: _isFull ? null : onBook,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                minimumSize: const Size(0, 40),
+              ),
+              child: Text(_isFull ? '已满' : '预约'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,263 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// A full-image profile card for dating swiping UI.
+class ProfileCard extends StatelessWidget {
+  final String imageUrl;
+  final String name;
+  final int age;
+  final String distance;
+  final String bio;
+  final List<String> interests;
+
+  const ProfileCard({
+    super.key,
+    required this.imageUrl,
+    required this.name,
+    required this.age,
+    required this.distance,
+    this.bio = '',
+    this.interests = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        children: [
+          // Full image background
+          Positioned.fill(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey[400],
+              ),
+            ),
+          ),
+          // Bottom gradient overlay (black87 to transparent)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.black87,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Name, Age
+                  Row(
+                    children: [
+                      Text(
+                        '$name, $age',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Distance with location icon
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        distance,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Bio
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      bio,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // Interest chips
+                  if (interests.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: interests.map((interest) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            interest,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A swipe action bar with dislike, superlike, and like buttons.
+class SwipeActionBar extends StatelessWidget {
+  final VoidCallback? onDislike;
+  final VoidCallback? onSuperlike;
+  final VoidCallback? onLike;
+
+  const SwipeActionBar({
+    super.key,
+    this.onDislike,
+    this.onSuperlike,
+    this.onLike,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Dislike (red close)
+        _ActionButton(
+          icon: Icons.close,
+          color: Colors.red,
+          size: 60,
+          onTap: onDislike,
+        ),
+        const SizedBox(width: 32),
+        // Superlike (blue star)
+        _ActionButton(
+          icon: Icons.star,
+          color: Colors.blue,
+          size: 48,
+          onTap: onSuperlike,
+        ),
+        const SizedBox(width: 32),
+        // Like (green heart)
+        _ActionButton(
+          icon: Icons.favorite,
+          color: Colors.green,
+          size: 60,
+          onTap: onLike,
+        ),
+      ],
+    );
+  }
+}
+
+/// A single circular action button with colored shadow.
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final double size;
+  final VoidCallback? onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.size,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 12,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Icon(icon, color: color, size: size * 0.45),
+      ),
+    );
+  }
+}
+
+/// A pill-shaped selectable interest chip.
+class InterestChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+
+  const InterestChip({
+    super.key,
+    required this.label,
+    this.isSelected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+        border: isSelected
+            ? null
+            : Border.all(color: Colors.grey[300]!),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isSelected
+              ? theme.colorScheme.onPrimary
+              : theme.colorScheme.onSurface,
+          fontSize: 14,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// {{displayName}} — CRM / Customer Relationship Industry Widgets
+// Dynamically rendered via Mustache — {{displayName}} {{{primaryColor}}}
+// ===================================================================
+
+/// CRM 客户卡片 — name、company、stage 色标（线索=blue / 接触=cyan / 需求=orange
+/// 报价=amber / 谈判=deepOrange / 成交=green / 丢失=grey）
+class ClientCard extends StatelessWidget {
+  const ClientCard({
+    super.key,
+    required this.name,
+    required this.company,
+    this.stage,
+    this.value,
+    this.avatar,
+    this.onTap,
+  });
+
+  final String name;
+  final String company;
+  final String? stage;
+  final String? value;
+  final String? avatar;
+  final VoidCallback? onTap;
+
+  static const Map<String, Color> _stageColors = {
+    "线索": Colors.blue,
+    "接触": Colors.cyan,
+    "需求": Colors.orange,
+    "报价": Colors.amber,
+    "谈判": Colors.deepOrange,
+    "成交": Colors.green,
+    "丢失": Colors.grey,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final stageColor = _stageColors[stage ?? ""] ?? Colors.grey;
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: stageColor.withValues(alpha: 0.15),
+                child: Text(
+                  name.isNotEmpty ? name[0] : "?",
+                  style: TextStyle(
+                    color: stageColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      company,
+                      style: AppTheme.caption(theme.textTheme),
+                    ),
+                  ],
+                ),
+              ),
+              if (stage != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: stageColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    stage!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: stageColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 商机阶段指示器 — 6 阶段管道视觉 + 勾号
+class DealStageIndicator extends StatelessWidget {
+  const DealStageIndicator({super.key, required this.currentStage});
+
+  final String currentStage;
+
+  static const List<String> stages = [
+    "线索",
+    "接触",
+    "需求",
+    "报价",
+    "谈判",
+    "成交",
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final idx = stages.indexOf(currentStage);
+
+    return Row(
+      children: List.generate(stages.length, (i) {
+        final done = i <= idx;
+        return Expanded(
+          child: Row(
+            children: [
+              if (i > 0)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    color: done
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade300,
+                  ),
+                ),
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done
+                      ? theme.colorScheme.primary
+                      : Colors.grey.shade300,
+                ),
+                child: done
+                    ? const Icon(Icons.check, size: 10, color: Colors.white)
+                    : null,
+              ),
+              if (i < stages.length - 1)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    color: done && i < idx
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade300,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+
+/// 活动时间线 — 可折叠的时间节点列表，带圆点连接线
+class ActivityTimeline extends StatelessWidget {
+  const ActivityTimeline({super.key, required this.activities});
+
+  final List<_TimelineItem> activities;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: List.generate(activities.length, (i) {
+        final a = activities[i];
+        final isLast = i == activities.length - 1;
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: a.color ?? theme.colorScheme.primary,
+                      ),
+                    ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 2,
+                          color: Colors.grey.shade200,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        a.title,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        DateFormat("MM/dd HH:mm").format(a.time),
+                        style: AppTheme.caption(theme.textTheme),
+                      ),
+                      if (a.desc != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          a.desc!,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _TimelineItem {
+  final String title;
+  final DateTime time;
+  final String? desc;
+  final Color? color;
+
+  const _TimelineItem({
+    required this.title,
+    required this.time,
+    this.desc,
+    this.color,
+  });
+}

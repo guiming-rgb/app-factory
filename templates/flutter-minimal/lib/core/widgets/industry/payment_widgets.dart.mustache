@@ -1,0 +1,381 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// {{industry}} payment widgets for {{displayName}} app.
+/// Uses {{primaryColor}} as the accent color.
+
+class PaymentMethodCard extends StatelessWidget {
+  final IconData brandIcon;
+  final String brandName;
+  final bool isDefault;
+  final String cardNumber;
+  final String? expiry;
+  final VoidCallback? onSetDefault;
+
+  const PaymentMethodCard({
+    super.key,
+    required this.brandIcon,
+    required this.brandName,
+    this.isDefault = false,
+    required this.cardNumber,
+    this.expiry,
+    this.onSetDefault,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 36,
+              decoration: BoxDecoration(
+                border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(brandIcon, size: 24, color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        brandName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (isDefault) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '默认',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    cardNumber,
+                    style: TextStyle(
+                      fontSize: 14,
+                      letterSpacing: 1.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (expiry != null && expiry!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      expiry!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (!isDefault && onSetDefault != null)
+              TextButton(
+                onPressed: onSetDefault,
+                child: const Text('设为默认'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TransactionItem extends StatelessWidget {
+  final String category;
+  final String title;
+  final String date;
+  final double amount;
+  final bool isIncome;
+
+  static const Map<String, Color> _categoryColors = {
+    '购物': Colors.orange,
+    '餐饮': Colors.red,
+    '出行': Colors.blue,
+    '娱乐': Colors.purple,
+    '转账': Colors.teal,
+    '缴费': Colors.grey,
+  };
+
+  const TransactionItem({
+    super.key,
+    required this.category,
+    required this.title,
+    required this.date,
+    required this.amount,
+    this.isIncome = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final catColor = _categoryColors[category] ?? Colors.grey;
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: CircleAvatar(
+        radius: 22,
+        backgroundColor: catColor.withValues(alpha: 0.15),
+        child: Icon(
+          _categoryIcon(category),
+          color: catColor,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: Text(
+        date,
+        style: TextStyle(
+          fontSize: 12,
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: Text(
+        '${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: isIncome ? Colors.green : Colors.red,
+        ),
+      ),
+    );
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category) {
+      case '购物':
+        return Icons.shopping_bag_outlined;
+      case '餐饮':
+        return Icons.restaurant_outlined;
+      case '出行':
+        return Icons.directions_car_outlined;
+      case '娱乐':
+        return Icons.movie_outlined;
+      case '转账':
+        return Icons.swap_horiz;
+      case '缴费':
+        return Icons.receipt_long_outlined;
+      default:
+        return Icons.receipt_outlined;
+    }
+  }
+}
+
+class BalanceHero extends StatelessWidget {
+  final String balanceLabel;
+  final double balance;
+  final VoidCallback? onRecharge;
+  final VoidCallback? onTransfer;
+  final VoidCallback? onCollect;
+  final double? incomeAmount;
+  final double? expenseAmount;
+
+  const BalanceHero({
+    super.key,
+    this.balanceLabel = '可用余额',
+    required this.balance,
+    this.onRecharge,
+    this.onTransfer,
+    this.onCollect,
+    this.incomeAmount,
+    this.expenseAmount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.indigo, Colors.purple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      child: Column(
+        children: [
+          Text(
+            balanceLabel,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '¥${_formatBalance(balance)}',
+            style: const TextStyle(
+              fontSize: 40,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildActionButton(
+                icon: Icons.wallet_add_outlined,
+                label: '充值',
+                onTap: onRecharge,
+              ),
+              _buildActionButton(
+                icon: Icons.send_outlined,
+                label: '转账',
+                onTap: onTransfer,
+              ),
+              _buildActionButton(
+                icon: Icons.qr_code_scanner_outlined,
+                label: '收款',
+                onTap: onCollect,
+              ),
+            ],
+          ),
+          if (incomeAmount != null || expenseAmount != null) ...[
+            const SizedBox(height: 20),
+            const Divider(color: Colors.white24, height: 1),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildFlowItem(
+                  label: '收入',
+                  amount: incomeAmount ?? 0,
+                  color: Colors.greenAccent,
+                ),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: Colors.white24,
+                ),
+                _buildFlowItem(
+                  label: '支出',
+                  amount: expenseAmount ?? 0,
+                  color: Colors.orangeAccent,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlowItem({
+    required String label,
+    required double amount,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: Colors.white70),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '¥${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatBalance(double value) {
+    if (value >= 100000000) {
+      return '${(value / 100000000).toStringAsFixed(2)}亿';
+    }
+    if (value >= 10000) {
+      final yi = (value / 10000).toStringAsFixed(2);
+      final parts = yi.split('.');
+      final intPart = parts[0];
+      final buffer = StringBuffer();
+      for (int i = 0; i < intPart.length; i++) {
+        if (i > 0 && (intPart.length - i) % 3 == 0) {
+          buffer.write(',');
+        }
+        buffer.write(intPart[i]);
+      }
+      return '${buffer.toString()}.${parts[1]}';
+    }
+    return value.toStringAsFixed(2);
+  }
+}

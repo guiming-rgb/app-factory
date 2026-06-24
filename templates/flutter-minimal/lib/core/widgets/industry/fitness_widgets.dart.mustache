@@ -1,0 +1,250 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// {{displayName}} — Fitness / Workout Industry Widgets
+// Dynamically rendered via Mustache — {{displayName}} {{{primaryColor}}}
+// ===================================================================
+
+/// 健身课程/动作卡片 — 封面图、名称、时长、卡路里、等级徽章
+class WorkoutCard extends StatelessWidget {
+  const WorkoutCard({
+    super.key,
+    required this.name,
+    required this.duration,
+    required this.calories,
+    this.level,
+    this.imageUrl,
+    this.onTap,
+  });
+
+  final String name;
+  final String duration;
+  final int calories;
+  final String? level;
+  final String? imageUrl;
+  final VoidCallback? onTap;
+
+  static const Map<String, Color> _levelColors = {
+    "初级": Colors.green,
+    "中级": Colors.orange,
+    "高级": Colors.red,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final levelColor = _levelColors[level ?? ""] ?? Colors.grey;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            {{#hasImage}}
+            // 条件渲染：有图片时展示封面，无图片时展示默认占位
+            if (imageUrl != null)
+              AspectRatio(
+                aspectRatio: 2,
+                child: Image.network(imageUrl!, fit: BoxFit.cover),
+              )
+            else
+              AspectRatio(
+                aspectRatio: 2,
+                child: Container(
+                  color: theme.colorScheme.primaryContainer,
+                  child: const Center(
+                    child: Icon(Icons.fitness_center, size: 32),
+                  ),
+                ),
+              ),
+            {{/hasImage}}
+            {{^hasImage}}
+            // 无图片模式 — 用纯色背景 + 图标替代
+            AspectRatio(
+              aspectRatio: 2,
+              child: Container(
+                color: theme.colorScheme.primaryContainer,
+                child: const Center(
+                  child: Icon(Icons.fitness_center, size: 32),
+                ),
+              ),
+            ),
+            {{/hasImage}}
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _Tag(
+                        icon: Icons.timer,
+                        text: duration,
+                      ),
+                      const SizedBox(width: 12),
+                      _Tag(
+                        icon: Icons.local_fire_department,
+                        text: "$calories kcal",
+                      ),
+                      if (level != null) ...[
+                        const SizedBox(width: 12),
+                        _Tag(
+                          icon: Icons.speed,
+                          text: level!,
+                          color: levelColor,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Tag extends StatelessWidget {
+  const _Tag({
+    required this.icon,
+    required this.text,
+    this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color ?? Colors.grey),
+        const SizedBox(width: 3),
+        Text(
+          text,
+          style: TextStyle(fontSize: 11, color: color ?? Colors.grey),
+        ),
+      ],
+    );
+  }
+}
+
+/// 进度环 — 环形进度指示器 + 百分比文字
+class ProgressRing extends StatelessWidget {
+  const ProgressRing({
+    super.key,
+    required this.value,
+    required this.label,
+    this.color,
+  });
+
+  /// 进度值，范围 0.0 ~ 1.0
+  final double value;
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? {{{primaryColor}}};
+    return Column(
+      children: [
+        SizedBox(
+          width: 64,
+          height: 64,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CircularProgressIndicator(
+                value: value,
+                strokeWidth: 6,
+                backgroundColor: c.withValues(alpha: 0.1),
+                color: c,
+              ),
+              Center(
+                child: Text(
+                  "${(value * 100).toInt()}%",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: c,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: AppTheme.caption(Theme.of(context).textTheme),
+        ),
+      ],
+    );
+  }
+}
+
+/// 身体数据卡片 — 图标、数值、单位、标签，带阴影卡片效果
+class BodyStatCard extends StatelessWidget {
+  const BodyStatCard({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.unit,
+    this.icon,
+  });
+
+  final String label;
+  final String value;
+  final String unit;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.cardShadow(theme.colorScheme),
+      ),
+      child: Column(
+        children: [
+          if (icon != null)
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(unit, style: AppTheme.caption(theme.textTheme)),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}

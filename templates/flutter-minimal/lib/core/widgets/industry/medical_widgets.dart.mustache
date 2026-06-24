@@ -1,0 +1,375 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// {{industry}} medical widgets for {{displayName}} app.
+/// Uses {{primaryColor}} as the accent color.
+
+class DoctorCard extends StatelessWidget {
+  final String avatarUrl;
+  final String name;
+  final String title;
+  final String hospital;
+  final String department;
+  final double rating;
+  final int fee;
+  final VoidCallback onTap;
+
+  const DoctorCard({
+    super.key,
+    required this.avatarUrl,
+    required this.name,
+    required this.title,
+    required this.hospital,
+    required this.department,
+    this.rating = 0,
+    this.fee = 0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              _buildAvatar(colorScheme),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        if (title.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$hospital · $department',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildStarRating(colorScheme),
+                        const SizedBox(width: 8),
+                        Text(
+                          '¥$fee/次',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(ColorScheme colorScheme) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: avatarUrl.isNotEmpty
+            ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _avatarFallback(colorScheme),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return _avatarFallback(colorScheme);
+                },
+              )
+            : _avatarFallback(colorScheme),
+      ),
+    );
+  }
+
+  Widget _avatarFallback(ColorScheme colorScheme) {
+    return Container(
+      color: Colors.blue[100],
+      child: Icon(Icons.person, size: 36, color: Colors.blue[700]),
+    );
+  }
+
+  Widget _buildStarRating(ColorScheme colorScheme) {
+    final starCount = rating.round();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < starCount ? Icons.star : Icons.star_border,
+          size: 16,
+          color: index < starCount ? Colors.amber : Colors.grey[400],
+        );
+      }),
+    );
+  }
+}
+
+class DepartmentGrid extends StatelessWidget {
+  final List<Map<String, String>> departments;
+  final ValueChanged<String> onTap;
+
+  static const Map<String, IconData> _departmentIcons = {
+    '内科': Icons.healing,
+    '外科': Icons.medical_services,
+    '儿科': Icons.child_care,
+    '妇科': Icons.pregnant_woman,
+    '眼科': Icons.remove_red_eye,
+    '牙科': Icons.masks,
+    '皮肤科': Icons.face,
+    '骨科': Icons.accessibility,
+    '中医': Icons.eco,
+    '心理': Icons.psychology,
+    '急诊': Icons.emergency,
+  };
+
+  const DepartmentGrid({
+    super.key,
+    this.departments = const [],
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: departments.length,
+      itemBuilder: (context, index) {
+        final dept = departments[index];
+        final name = dept['name'] ?? '';
+        final icon = _departmentIcons[name] ?? Icons.medical_services;
+        return _buildDepartmentItem(context, colorScheme, name, icon);
+      },
+    );
+  }
+
+  Widget _buildDepartmentItem(
+    BuildContext context,
+    ColorScheme colorScheme,
+    String name,
+    IconData icon,
+  ) {
+    return InkWell(
+      onTap: () => onTap(name),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+            child: Icon(icon, color: colorScheme.primary, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppointmentSlot extends StatelessWidget {
+  final String time;
+  final bool isSelected;
+  final bool isAvailable;
+  final VoidCallback? onTap;
+
+  const AppointmentSlot({
+    super.key,
+    required this.time,
+    this.isSelected = false,
+    this.isAvailable = true,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color bgColor;
+    Color textColor;
+    BorderSide borderSide;
+
+    if (isSelected) {
+      bgColor = colorScheme.primary;
+      textColor = colorScheme.onPrimary;
+      borderSide = BorderSide.none;
+    } else if (isAvailable) {
+      bgColor = Colors.transparent;
+      textColor = colorScheme.onSurface;
+      borderSide = BorderSide(color: colorScheme.outline.withValues(alpha: 0.5));
+    } else {
+      bgColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+      textColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+      borderSide = BorderSide.none;
+    }
+
+    return Opacity(
+      opacity: isAvailable ? 1.0 : 0.6,
+      child: Material(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: isAvailable ? onTap : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border(bottom: borderSide),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              time,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: textColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrescriptionCard extends StatelessWidget {
+  final String doctorName;
+  final String date;
+  final String hospital;
+  final String diagnosis;
+  final String? prescription;
+
+  const PrescriptionCard({
+    super.key,
+    required this.doctorName,
+    required this.date,
+    required this.hospital,
+    required this.diagnosis,
+    this.prescription,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  doctorName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              hospital,
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Divider(height: 24),
+            Text(
+              '诊断：$diagnosis',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            if (prescription != null && prescription!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '处方：$prescription',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.primary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

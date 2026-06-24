@@ -1,0 +1,236 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// {{displayName}} — Education / Timetable Industry Widgets
+// Dynamically rendered via Mustache — {{displayName}} {{{primaryColor}}}
+// ===================================================================
+
+/// 课表时间格 — 课程名、教室、颜色边框
+class TimetableCell extends StatelessWidget {
+  const TimetableCell({
+    super.key,
+    required this.courseName,
+    required this.room,
+    this.color,
+    this.onTap,
+  });
+
+  final String courseName;
+  final String room;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? {{{primaryColor}}};
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(2),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: c.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: c.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              courseName,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: c,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              room,
+              style: TextStyle(
+                fontSize: 9,
+                color: c.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 课程卡片 — 课程名、教师、时间、学员数
+class CourseCard extends StatelessWidget {
+  const CourseCard({
+    super.key,
+    required this.name,
+    required this.teacher,
+    this.schedule,
+    this.studentCount,
+    this.onTap,
+  });
+
+  final String name;
+  final String teacher;
+  final String? schedule;
+  final int? studentCount;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Text(name.isNotEmpty ? name[0] : "课"),
+        ),
+        title: Text(
+          name,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          teacher,
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (schedule != null)
+              Text(schedule!, style: const TextStyle(fontSize: 11)),
+            if (studentCount != null)
+              Text(
+                "$studentCount 人",
+                style: AppTheme.caption(Theme.of(context).textTheme),
+              ),
+          ],
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// 作业卡片 — 标题、课程、截止日期，紧急检测（<2 天红色预警）
+class AssignmentCard extends StatelessWidget {
+  const AssignmentCard({
+    super.key,
+    required this.title,
+    required this.course,
+    required this.deadline,
+    this.submitted,
+    this.total,
+    this.onTap,
+  });
+
+  final String title;
+  final String course;
+  final DateTime deadline;
+  final int? submitted;
+  final int? total;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final isUrgent =
+        deadline.isBefore(now.add(const Duration(days: 2)));
+    final ratio = total != null && total! > 0
+        ? (submitted ?? 0) / total!
+        : null;
+
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          isUrgent
+              ? Icons.warning_amber_rounded
+              : Icons.assignment,
+          color:
+              isUrgent ? Colors.red : theme.colorScheme.primary,
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              course,
+              style: AppTheme.caption(theme.textTheme),
+            ),
+            if (ratio != null) ...[
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: ratio,
+                  minHeight: 4,
+                  backgroundColor: Colors.grey.shade200,
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: Text(
+          isUrgent ? "⏰ 截止" : "${deadline.month}/${deadline.day}",
+          style: TextStyle(
+            fontSize: 11,
+            color: isUrgent ? Colors.red : Colors.grey,
+          ),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// 成绩徽章 — 分数色标（>=90 绿色 / >=75 蓝色 / >=60 橙色 / 红色）
+class GradeBadge extends StatelessWidget {
+  const GradeBadge({super.key, required this.grade});
+
+  final String grade;
+
+  Color get _color {
+    final g = double.tryParse(grade) ?? 0;
+    if (g >= 90) return Colors.green;
+    if (g >= 75) return Colors.blue;
+    if (g >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: _color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _color.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Text(
+        grade,
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: _color,
+        ),
+      ),
+    );
+  }
+}

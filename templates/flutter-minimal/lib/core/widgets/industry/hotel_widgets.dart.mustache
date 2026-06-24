@@ -1,0 +1,304 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// {{industry}} hotel widgets for {{displayName}} app.
+/// Uses {{primaryColor}} as the accent color.
+
+class HotelCard extends StatelessWidget {
+  final String coverUrl;
+  final String name;
+  final double starRating;
+  final String city;
+  final double ratingScore;
+  final String priceLabel;
+  final VoidCallback onTap;
+
+  const HotelCard({
+    super.key,
+    required this.coverUrl,
+    required this.name,
+    required this.starRating,
+    required this.city,
+    required this.ratingScore,
+    required this.priceLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    coverUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[300],
+                      child: const Center(child: Icon(Icons.hotel_outlined, size: 48)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        ratingScore.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      ...List.generate(starRating.floor(), (i) {
+                        return const Icon(Icons.star, size: 16, color: Colors.amber);
+                      }),
+                      if (starRating - starRating.floor() >= 0.5)
+                        const Icon(Icons.star_half, size: 16, color: Colors.amber),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on_outlined,
+                          size: 14, color: colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Text(
+                        city,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        priceLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RoomTypeCard extends StatelessWidget {
+  final String roomName;
+  final String bedType;
+  final bool hasBreakfast;
+  final String cancelPolicy;
+  final double price;
+  final VoidCallback onBook;
+
+  const RoomTypeCard({
+    super.key,
+    required this.roomName,
+    required this.bedType,
+    required this.hasBreakfast,
+    required this.cancelPolicy,
+    required this.price,
+    required this.onBook,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    roomName,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInfoRow(
+                    Icons.bed_outlined,
+                    bedType,
+                    colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 4),
+                  if (hasBreakfast)
+                    _buildInfoRow(
+                      Icons.free_breakfast_outlined,
+                      '含早餐',
+                      colorScheme.onSurfaceVariant,
+                    ),
+                  const SizedBox(height: 4),
+                  _buildInfoRow(
+                    Icons.cancel_outlined,
+                    cancelPolicy,
+                    colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '¥${price.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                FilledButton(
+                  onPressed: onBook,
+                  child: const Text('预订'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(fontSize: 13, color: color),
+        ),
+      ],
+    );
+  }
+}
+
+class AmenityGrid extends StatelessWidget {
+  final List<_AmenityItem> amenities;
+
+  const AmenityGrid({
+    super.key,
+    this.amenities = const [
+      _AmenityItem(Icons.wifi, 'WiFi'),
+      _AmenityItem(Icons.pool_outlined, '泳池'),
+      _AmenityItem(Icons.fitness_center_outlined, '健身'),
+      _AmenityItem(Icons.local_parking_outlined, '停车'),
+      _AmenityItem(Icons.restaurant_outlined, '餐厅'),
+      _AmenityItem(Icons.spa_outlined, 'SPA'),
+      _AmenityItem(Icons.ac_unit_outlined, '空调'),
+      _AmenityItem(Icons.tv_outlined, '电视'),
+      _AmenityItem(Icons.local_laundry_service_outlined, '洗衣'),
+      _AmenityItem(Icons.pets_outlined, '宠物'),
+      _AmenityItem(Icons.local_bar_outlined, '酒吧'),
+    ],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: amenities.map((item) {
+        return SizedBox(
+          width: 80,
+          height: 80,
+          child: Card(
+            elevation: 0,
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: item.onTap,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(item.icon, size: 24, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(height: 6),
+                  Text(
+                    item.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _AmenityItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _AmenityItem(this.icon, this.label, {this.onTap});
+}

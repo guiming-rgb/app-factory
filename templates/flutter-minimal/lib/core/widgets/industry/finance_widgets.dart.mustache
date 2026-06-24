@@ -1,0 +1,221 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// {{displayName}} — Finance / Accounting Industry Widgets
+// Dynamically rendered via Mustache — {{displayName}} {{{primaryColor}}}
+// ===================================================================
+
+/// 交易列表项 — 带金额颜色（收入绿/支出红）、分类图标、日期格式化
+class TransactionTile extends StatelessWidget {
+  const TransactionTile({
+    super.key,
+    required this.title,
+    required this.amount,
+    required this.category,
+    required this.date,
+    required this.isIncome,
+    this.onTap,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final bool isIncome;
+  final VoidCallback? onTap;
+
+  static const Map<String, IconData> _categoryIcons = {
+    "餐饮": Icons.restaurant,
+    "交通": Icons.directions_car,
+    "购物": Icons.shopping_bag,
+    "娱乐": Icons.movie,
+    "住房": Icons.home,
+    "医疗": Icons.local_hospital,
+    "教育": Icons.school,
+    "工资": Icons.work,
+    "投资": Icons.trending_up,
+    "其他": Icons.more_horiz,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final icon = _categoryIcons[category] ?? Icons.more_horiz;
+    final color = isIncome ? Colors.green : theme.colorScheme.error;
+
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.1),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          DateFormat("MM/dd").format(date),
+          style: AppTheme.caption(theme.textTheme),
+        ),
+        trailing: Text(
+          "${isIncome ? '+' : '-'}¥${amount.toStringAsFixed(2)}",
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// 预算进度条 — label、spent/budget 比率、颜色阈值（>90% 红色 / >70% 橙色 / 其余使用主题色）
+class BudgetProgressBar extends StatelessWidget {
+  const BudgetProgressBar({
+    super.key,
+    required this.label,
+    required this.spent,
+    required this.budget,
+  });
+
+  final String label;
+  final double spent;
+  final double budget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratio = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final barColor = ratio > 0.9
+        ? Colors.red
+        : ratio > 0.7
+            ? Colors.orange
+            : {{{primaryColor}}};
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(
+              "¥${spent.toStringAsFixed(0)} / ¥${budget.toStringAsFixed(0)}",
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: ratio,
+            backgroundColor: barColor.withValues(alpha: 0.1),
+            color: barColor,
+            minHeight: 8,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 月度汇总卡片 — 收入/支出/结余 + 月份标签
+class MonthlySummaryCard extends StatelessWidget {
+  const MonthlySummaryCard({
+    super.key,
+    required this.income,
+    required this.expense,
+    required this.month,
+  });
+
+  final double income;
+  final double expense;
+  final String month;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Theme.of(context)
+          .colorScheme
+          .primaryContainer
+          .withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Text(
+              month,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _SummaryItem(
+                  label: "收入",
+                  value: "¥${income.toStringAsFixed(2)}",
+                  color: Colors.green,
+                ),
+                _SummaryItem(
+                  label: "支出",
+                  value: "¥${expense.toStringAsFixed(2)}",
+                  color: Colors.red,
+                ),
+                _SummaryItem(
+                  label: "结余",
+                  value: "¥${(income - expense).toStringAsFixed(2)}",
+                  color: income >= expense ? Colors.green : Colors.red,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: AppTheme.caption(Theme.of(context).textTheme),
+        ),
+      ],
+    );
+  }
+}

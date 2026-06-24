@@ -1,0 +1,240 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// A 160px wide video thumbnail card with duration badge and metadata.
+class VideoThumbCard extends StatelessWidget {
+  final String thumbnailUrl;
+  final String title;
+  final String duration;
+  final int viewsCount;
+  final double rating;
+  final String category;
+
+  const VideoThumbCard({
+    super.key,
+    required this.thumbnailUrl,
+    required this.title,
+    required this.duration,
+    this.viewsCount = 0,
+    this.rating = 0.0,
+    required this.category,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 160,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Thumbnail with duration badge
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[300],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    duration,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          // Views / Rating / Category row
+          DefaultTextStyle(
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 11,
+            ),
+            child: Row(
+              children: [
+                if (viewsCount > 0) ...[
+                  Text('$viewsCount views'),
+                  const Text(' · '),
+                ],
+                if (rating > 0) ...[
+                  const Icon(Icons.star, size: 12, color: Colors.amber),
+                  Text(' $rating'),
+                  const Text(' · '),
+                ],
+                Text(category),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A horizontal scrollable bar of pill-shaped category chips.
+class CategoryScrollBar extends StatelessWidget {
+  final List<String> categories;
+  final int selectedIndex;
+
+  const CategoryScrollBar({
+    super.key,
+    required this.categories,
+    this.selectedIndex = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final isSelected = index == selectedIndex;
+          return GestureDetector(
+            onTap: () {
+              // Notify parent of selection change
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                categories[index],
+                style: TextStyle(
+                  color: isSelected
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A 200px wide "continue watching" card with progress indicator.
+class ContinueWatchingCard extends StatelessWidget {
+  final String thumbnailUrl;
+  final String title;
+  final double progress;
+  final int remainingMinutes;
+
+  const ContinueWatchingCard({
+    super.key,
+    required this.thumbnailUrl,
+    required this.title,
+    this.progress = 0.0,
+    this.remainingMinutes = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 200,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Thumbnail with progress overlay
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        thumbnailUrl,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey[300],
+                        ),
+                      ),
+                      // Progress bar at bottom
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: LinearProgressIndicator(
+                          value: progress.clamp(0.0, 1.0),
+                          backgroundColor: Colors.white24,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.red,
+                          ),
+                          minHeight: 3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Title
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$remainingMinutes min remaining',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

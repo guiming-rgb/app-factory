@@ -1,0 +1,441 @@
+import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// {{industry}} food widgets for {{displayName}} app.
+/// Uses {{primaryColor}} as the accent color.
+
+class RestaurantCard extends StatelessWidget {
+  final String logoUrl;
+  final double rating;
+  final String name;
+  final List<String> cuisineTags;
+  final String deliveryTime;
+  final String deliveryFee;
+  final double minOrder;
+  final VoidCallback onTap;
+
+  const RestaurantCard({
+    super.key,
+    required this.logoUrl,
+    required this.rating,
+    required this.name,
+    required this.cuisineTags,
+    required this.deliveryTime,
+    required this.deliveryFee,
+    required this.minOrder,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLogo(primaryColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildCuisineTags(),
+                        const SizedBox(height: 8),
+                        _buildDeliveryInfo(colorScheme),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '起送 ¥${minOrder.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo(Color primaryColor) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 72,
+            height: 72,
+            child: Image.network(
+              logoUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey[200],
+                child: Icon(Icons.restaurant_outlined, color: primaryColor),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          right: -4,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, size: 12, color: Colors.white),
+                const SizedBox(width: 2),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCuisineTags() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: cuisineTags.map((tag) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            tag,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDeliveryInfo(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Icon(Icons.access_time, size: 14, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Text(
+          deliveryTime,
+          style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(width: 12),
+        Icon(Icons.delivery_dining_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 4),
+        Text(
+          deliveryFee,
+          style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+        ),
+      ],
+    );
+  }
+}
+
+class MenuItemTile extends StatelessWidget {
+  final String thumbnailUrl;
+  final String name;
+  final String description;
+  final double price;
+  final int salesCount;
+  final VoidCallback onAddToCart;
+
+  const MenuItemTile({
+    super.key,
+    required this.thumbnailUrl,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.salesCount,
+    required this.onAddToCart,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: Image.network(
+                thumbnailUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey[200],
+                  child: Icon(Icons.fastfood_outlined, color: primaryColor),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      '¥${price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '月售 $salesCount',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton.filled(
+                      onPressed: onAddToCart,
+                      icon: const Icon(Icons.add, size: 20),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OrderStatusTracker extends StatelessWidget {
+  final int currentStage; // 0-3
+  final List<String> stageLabels;
+
+  const OrderStatusTracker({
+    super.key,
+    required this.currentStage,
+    this.stageLabels = const ['已下单', '商家接单', '骑手取餐', '送达'],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      child: Row(
+        children: List.generate(stageLabels.length * 2 - 1, (index) {
+          if (index.isOdd) {
+            final stageIndex = index ~/ 2;
+            final isCompleted = stageIndex < currentStage;
+            return Expanded(
+              child: Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  color: isCompleted ? primaryColor : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(1.5),
+                ),
+              ),
+            );
+          }
+          final stageIndex = index ~/ 2;
+          final isActive = stageIndex <= currentStage;
+          final icons = [
+            Icons.receipt_long_outlined,
+            Icons.restaurant_outlined,
+            Icons.pedal_bike_outlined,
+            Icons.check_circle_outline,
+          ];
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isActive ? primaryColor : Colors.grey[300],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icons[stageIndex],
+                  size: 20,
+                  color: isActive ? Colors.white : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                stageLabels[stageIndex],
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  color: isActive ? primaryColor : Colors.grey[500],
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class CouponCard extends StatelessWidget {
+  final double amount;
+  final String minOrderCondition;
+  final VoidCallback? onClaim;
+
+  const CouponCard({
+    super.key,
+    required this.amount,
+    required this.minOrderCondition,
+    this.onClaim,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFF8C00), Color(0xFFFFA500)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¥',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ),
+                        Text(
+                          '${amount.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      minOrderCondition,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onPrimary.withOpacity(0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton(
+                onPressed: onClaim,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.orange,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text('领取'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
