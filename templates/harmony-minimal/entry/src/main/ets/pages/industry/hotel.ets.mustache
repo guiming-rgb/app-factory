@@ -1,0 +1,192 @@
+// {{displayName}} — Hotel Booking (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct HotelCard {
+  @State name: string = ''
+  @State imageUrl: string = ''
+  @State stars: number = 0
+  @State rating: number = 0
+  @State reviewCount: number = 0
+  @State price: number = 0
+  @State amenities: string[] = []
+  hotelId: string = ''
+
+  build() {
+    Column() {
+      Stack() {
+        Image(this.imageUrl || 'https://via.placeholder.com/320x180')
+          .width('100%').height(160).objectFit(ImageFit.Cover)
+          .borderRadius({ topLeft: 12, topRight: 12 })
+        Row() {
+          ForEach(Array.from({ length: this.stars }), (_, idx: number) => {
+            Text('★').fontSize(14).fontColor('#FFD700').margin({ right: 1 })
+          })
+        }
+        .position({ bottom: 8, left: 12 })
+        .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+        .backgroundColor('#66000000').borderRadius(8)
+      }
+      .width('100%')
+
+      Column() {
+        Text(this.name).fontSize(17).fontWeight(FontWeight.Medium)
+          .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis }).width('100%')
+        Row() {
+          Text(this.rating.toString()).fontSize(13).fontWeight(FontWeight.Bold).fontColor(Color.White)
+            .backgroundColor('{{primaryColor}}').borderRadius(4)
+            .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+          Text(`${this.reviewCount}条评价`).fontSize(12).fontColor('#999').margin({ left: 6 })
+          Blank()
+          Text(`¥${this.price}`).fontSize(18).fontWeight(FontWeight.Bold).fontColor('{{primaryColor}}')
+          Text('/晚').fontSize(11).fontColor('#999').margin({ left: 2 })
+        }.width('100%').margin({ top: 6 })
+
+        if (this.amenities.length > 0) {
+          Scroll() {
+            Row() {
+              ForEach(this.amenities, (tag: string) => {
+                Text(tag)
+                  .fontSize(11).fontColor('#666')
+                  .backgroundColor('#f5f5f5').borderRadius(8)
+                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                  .margin({ right: 6 })
+              })
+            }
+          }.scrollable(ScrollDirection.Horizontal).height(28).margin({ top: 6 })
+        }
+      }
+      .padding(12).alignItems(HorizontalAlign.Start)
+    }
+    .width('100%').backgroundColor(Color.White).borderRadius(12)
+    .margin({ bottom: 12 })
+    .shadow({ radius: 4, color: '#1a000000', offsetX: 0, offsetY: 2 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/HotelDetail', params: { id: this.hotelId } })
+    })
+  }
+}
+
+@Entry
+@Component
+struct HotelPage {
+  @State hotels: Array<{
+    id: string, name: string, imageUrl: string,
+    stars: number, rating: number, reviewCount: number,
+    price: number, amenities: string[]
+  }> = []
+  @State searchCity: string = ''
+  @State checkInDate: string = ''
+  @State checkOutDate: string = ''
+  @State sortBy: string = 'recommend'
+  @State loading: boolean = false
+  private cityController: TextInputController = new TextInputController()
+
+  aboutToAppear() {
+    this.loadHotels()
+  }
+
+  async loadHotels() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").order("rating", { ascending: false }).limit(20)
+    this.hotels = [
+      { id: '1', name: '示例豪华酒店', imageUrl: '', stars: 5, rating: 4.8, reviewCount: 1256, price: 1288, amenities: ['免费WiFi', '游泳池', '健身房', '停车场'] },
+      { id: '2', name: '精选商务酒店', imageUrl: '', stars: 4, rating: 4.5, reviewCount: 823, price: 688, amenities: ['免费WiFi', '早餐', '商务中心'] },
+      { id: '3', name: '舒适快捷酒店', imageUrl: '', stars: 3, rating: 4.2, reviewCount: 2156, price: 299, amenities: ['免费WiFi', '24h前台'] },
+      { id: '4', name: '海滨度假酒店', imageUrl: '', stars: 5, rating: 4.9, reviewCount: 3456, price: 1899, amenities: ['免费WiFi', '游泳池', 'SPA', '海滩', '餐厅'] },
+      { id: '5', name: '精品民宿', imageUrl: '', stars: 3, rating: 4.6, reviewCount: 567, price: 458, amenities: ['免费WiFi', '早餐', '接机'] },
+    ]
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // Search filters
+            Column() {
+              Row() {
+                Text('📍').fontSize(16)
+                TextInput({ placeholder: '搜索城市或酒店名', controller: this.cityController })
+                  .layoutWeight(1).height(38).backgroundColor('#ffffff1a')
+                  .padding({ left: 8, right: 8 }).fontColor(Color.White)
+                  .placeholderColor('#ffffffb3')
+                  .onChange((v: string) => { this.searchCity = v })
+              }.width('100%').padding(12)
+
+              Row() {
+                Column() {
+                  Text('入住').fontSize(11).fontColor('#ffffffb3')
+                  Text(this.checkInDate || '选择日期').fontSize(14).fontColor(Color.White).margin({ top: 4 })
+                }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                .onClick(() => {
+                  // Date picker integration
+                })
+
+                Text('→').fontSize(16).fontColor('#ffffffb3').margin({ left: 8, right: 8 })
+
+                Column() {
+                  Text('退房').fontSize(11).fontColor('#ffffffb3')
+                  Text(this.checkOutDate || '选择日期').fontSize(14).fontColor(Color.White).margin({ top: 4 })
+                }.layoutWeight(1).alignItems(HorizontalAlign.End)
+                .onClick(() => {
+                  // Date picker integration
+                })
+              }
+              .width('100%').padding({ left: 12, right: 12, bottom: 16 })
+            }
+            .width('100%')
+            .backgroundColor('{{primaryColor}}')
+            .borderRadius({ bottomLeft: 20, bottomRight: 20 })
+
+            // Sort options
+            Row() {
+              ForEach([
+                { id: 'recommend', name: '推荐' },
+                { id: 'price', name: '价格' },
+                { id: 'rating', name: '评分' },
+                { id: 'stars', name: '星级' },
+              ], (opt: { id: string, name: string }) => {
+                Text(opt.name)
+                  .fontSize(13)
+                  .fontColor(this.sortBy === opt.id ? '{{primaryColor}}' : '#666')
+                  .fontWeight(this.sortBy === opt.id ? FontWeight.Medium : FontWeight.Regular)
+                  .margin({ right: 16 }).padding({ bottom: 4 })
+                  .border({ bottom: { width: this.sortBy === opt.id ? 2 : 0, color: '{{primaryColor}}' } })
+                  .onClick(() => { this.sortBy = opt.id })
+              })
+            }
+            .padding({ left: 16, right: 16, top: 12, bottom: 8 })
+            .width('100%')
+
+            // Hotel list
+            if (this.hotels.length === 0) {
+              Text('暂无搜索结果').fontSize(15).fontColor('#999').padding({ top: 40 })
+            } else {
+              List() {
+                ForEach(this.hotels, (item: {
+                  id: string, name: string, imageUrl: string,
+                  stars: number, rating: number, reviewCount: number,
+                  price: number, amenities: string[]
+                }) => {
+                  ListItem() {
+                    HotelCard({ ...item, hotelId: item.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16, bottom: 24 })
+            }
+          }
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}

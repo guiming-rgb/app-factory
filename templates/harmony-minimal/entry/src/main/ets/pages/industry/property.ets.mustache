@@ -1,0 +1,253 @@
+// {{displayName}} — Property Management (Mustache template)
+// Variables: displayName, primaryColor, tableName
+
+import router from '@ohos.router';
+
+@Component
+export struct RepairItem {
+  @State title: string = ''
+  @State location: string = ''
+  @State status: string = ''
+  @State date: string = ''
+  repairId: string = ''
+
+  statusBg(): string {
+    const colors: Record<string, string> = {
+      'pending': '#fff3e0', 'processing': '#e3f2fd', 'done': '#e8f5e9',
+    }
+    return colors[this.status] || '#f5f5f5'
+  }
+
+  statusColor(): string {
+    const colors: Record<string, string> = {
+      'pending': '#e65100', 'processing': '#1976d2', 'done': '#2e7d32',
+    }
+    return colors[this.status] || '#999'
+  }
+
+  statusLabel(): string {
+    const labels: Record<string, string> = {
+      'pending': '待处理', 'processing': '处理中', 'done': '已完成',
+    }
+    return labels[this.status] || this.status
+  }
+
+  build() {
+    Row() {
+      Column() {
+        Text(this.title).fontSize(15).fontWeight(FontWeight.Medium)
+        Text(this.location).fontSize(12).fontColor('#999').margin({ top: 3 })
+        Text(this.date).fontSize(11).fontColor('#bbb').margin({ top: 1 })
+      }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+      Text(this.statusLabel())
+        .fontSize(12).fontColor(this.statusColor())
+        .backgroundColor(this.statusBg())
+        .borderRadius(8).padding({ left: 10, right: 10, top: 4, bottom: 4 })
+    }
+    .width('100%').padding(14).backgroundColor(Color.White).borderRadius(10)
+    .margin({ bottom: 6 })
+    .shadow({ radius: 2, color: '#1a000000', offsetX: 0, offsetY: 1 })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/RepairDetail', params: { id: this.repairId } })
+    })
+  }
+}
+
+@Component
+export struct BillCard {
+  @State title: string = ''
+  @State amount: number = 0
+  @State dueDate: string = ''
+  @State paid: boolean = false
+  billId: string = ''
+
+  build() {
+    Row() {
+      Column() {
+        Text(this.title).fontSize(15).fontWeight(FontWeight.Medium)
+        Text(`截止 ${this.dueDate}`).fontSize(12).fontColor('#999').margin({ top: 3 })
+      }.alignItems(HorizontalAlign.Start).layoutWeight(1)
+      Column() {
+        Text(`¥${this.amount.toFixed(2)}`)
+          .fontSize(17).fontWeight(FontWeight.Bold)
+          .fontColor(this.paid ? '#4caf50' : '{{primaryColor}}')
+        Text(this.paid ? '已缴清' : '待缴费')
+          .fontSize(11).fontColor(this.paid ? '#4caf50' : '#f44336').margin({ top: 2 })
+      }.alignItems(HorizontalAlign.End)
+    }
+    .width('100%').padding(14).backgroundColor(Color.White).borderRadius(10)
+    .margin({ bottom: 6 })
+    .border({ width: 1, color: this.paid ? '#c8e6c9' : '#ffccbc' })
+    .onClick(() => {
+      router.pushUrl({ url: 'pages/BillDetail', params: { id: this.billId } })
+    })
+  }
+}
+
+@Entry
+@Component
+struct PropertyPage {
+  @State repairList: Array<{
+    id: string, title: string, location: string,
+    status: string, date: string
+  }> = []
+  @State bills: Array<{
+    id: string, title: string, amount: number,
+    dueDate: string, paid: boolean
+  }> = []
+  @State notices: Array<{
+    id: string, title: string, date: string, urgent: boolean
+  }> = []
+  @State totalRepairs: number = 0
+  @State unpaidBills: number = 0
+  @State pendingFees: number = 0
+  @State loading: boolean = false
+
+  aboutToAppear() {
+    this.loadData()
+  }
+
+  async loadData() {
+    this.loading = true
+    // TODO: Supabase query via {{tableName}}
+    // const { data } = await supabase.from("{{tableName}}").select("*").limit(20)
+    this.repairList = [
+      { id: '1', title: '水管漏水维修', location: '3栋502室', status: 'processing', date: '2026-06-20' },
+      { id: '2', title: '电路故障检修', location: '5栋1103室', status: 'pending', date: '2026-06-22' },
+      { id: '3', title: '门禁系统修复', location: '1栋大堂', status: 'done', date: '2026-06-18' },
+      { id: '4', title: '电梯异响检查', location: '2栋', status: 'processing', date: '2026-06-23' },
+    ]
+    this.bills = [
+      { id: '1', title: '6月物业费', amount: 356.00, dueDate: '2026-06-30', paid: false },
+      { id: '2', title: '6月水费', amount: 48.50, dueDate: '2026-06-30', paid: true },
+    ]
+    this.notices = [
+      { id: '1', title: '本周六小区消防演练通知', date: '2026-06-25', urgent: true },
+      { id: '2', title: '垃圾分类投放时间调整', date: '2026-06-23', urgent: false },
+    ]
+    this.totalRepairs = this.repairList.length
+    this.unpaidBills = this.bills.filter(b => !b.paid).length
+    this.pendingFees = this.bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
+    this.loading = false
+  }
+
+  build() {
+    Column() {
+      if (this.loading) {
+        LoadingProgress().width(32).height(32).margin({ top: 80 })
+      } else {
+        Scroll() {
+          Column() {
+            // Dashboard cards
+            Grid() {
+              ForEach([
+                { icon: '🔧', value: `${this.totalRepairs}`, label: '报修', color: '{{primaryColor}}' },
+                { icon: '💰', value: `${this.unpaidBills}`, label: '待缴费', color: '#f44336' },
+                { icon: '📋', value: `¥${this.pendingFees.toFixed(0)}`, label: '欠费', color: '#e65100' },
+                { icon: '📢', value: `${this.notices.length}`, label: '通知', color: '#1565c0' },
+              ], (card: { icon: string, value: string, label: string, color: string }) => {
+                GridItem() {
+                  Column() {
+                    Text(card.icon).fontSize(24)
+                    Text(card.value).fontSize(20).fontWeight(FontWeight.Bold)
+                      .fontColor(card.color).margin({ top: 4 })
+                    Text(card.label).fontSize(11).fontColor('#999').margin({ top: 2 })
+                  }.padding(16).backgroundColor(Color.White).borderRadius(12)
+                }
+              })
+            }
+            .columnsTemplate('1fr 1fr')
+            .rowsTemplate('auto')
+            .columnsGap(10).rowsGap(10)
+            .padding(16)
+
+            // Notices
+            Row() {
+              Text('小区通知').fontSize(18).fontWeight(FontWeight.Bold)
+              Blank()
+              Text('更多 >').fontSize(13).fontColor('#999')
+                .onClick(() => { router.pushUrl({ url: 'pages/Notices' }) })
+            }.width('100%').padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+            Scroll() {
+              Row() {
+                ForEach(this.notices, (notice: { id: string, title: string, date: string, urgent: boolean }) => {
+                  Column() {
+                    Row() {
+                      if (notice.urgent) {
+                        Text('紧急').fontSize(10).fontColor(Color.White)
+                          .backgroundColor('#f44336').borderRadius(4)
+                          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                          .margin({ right: 6 })
+                      }
+                      Text(notice.title).fontSize(13).fontWeight(FontWeight.Medium)
+                        .maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+                    }.width('100%')
+                    Text(notice.date).fontSize(11).fontColor('#999').margin({ top: 4 }).width('100%')
+                  }
+                  .width(200).padding(12).backgroundColor(Color.White).borderRadius(10)
+                  .margin({ right: 10 })
+                  .shadow({ radius: 2, color: '#1a000000', offsetX: 0, offsetY: 1 })
+                  .onClick(() => {
+                    router.pushUrl({ url: 'pages/NoticeDetail', params: { id: notice.id } })
+                  })
+                })
+              }.padding({ left: 16, right: 16 })
+            }.height(90).scrollable(ScrollDirection.Horizontal)
+            .margin({ bottom: 8 })
+
+            // Repair list
+            Row() {
+              Text('报修进度').fontSize(18).fontWeight(FontWeight.Bold)
+              Blank()
+              Text('我要报修 >').fontSize(13).fontColor('{{primaryColor}}')
+                .onClick(() => { router.pushUrl({ url: 'pages/RepairForm' }) })
+            }.width('100%').padding({ left: 16, right: 16, top: 8, bottom: 8 })
+
+            if (this.repairList.length === 0) {
+              Text('暂无报修记录').fontSize(14).fontColor('#999').padding({ left: 16, bottom: 16 })
+            } else {
+              List() {
+                ForEach(this.repairList, (item: {
+                  id: string, title: string, location: string,
+                  status: string, date: string
+                }) => {
+                  ListItem() {
+                    RepairItem({ ...item, repairId: item.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16 })
+            }
+
+            // Bills
+            Row() {
+              Text('缴费账单').fontSize(18).fontWeight(FontWeight.Bold)
+              Blank()
+              Text('在线缴费 >').fontSize(13).fontColor('{{primaryColor}}')
+                .onClick(() => { router.pushUrl({ url: 'pages/PaymentForm' }) })
+            }.width('100%').padding({ left: 16, right: 16, top: 12, bottom: 8 })
+
+            if (this.bills.length === 0) {
+              Text('暂无账单').fontSize(14).fontColor('#999').padding({ left: 16, bottom: 24 })
+            } else {
+              List() {
+                ForEach(this.bills, (item: {
+                  id: string, title: string, amount: number,
+                  dueDate: string, paid: boolean
+                }) => {
+                  ListItem() {
+                    BillCard({ ...item, billId: item.id })
+                  }
+                })
+              }
+              .padding({ left: 16, right: 16, bottom: 24 })
+            }
+          }
+        }.layoutWeight(1)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}
