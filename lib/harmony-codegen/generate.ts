@@ -6,8 +6,8 @@ import { countCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
 import type { AppSpec } from "@/lib/app-spec/types";
 import { validateAppSpec } from "@/lib/app-spec/validate";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
-import { hasWidgetTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
+import { zipDirectory } from "@/lib/codegen/zip";
+import { hasPlatformTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
 import {
   buildHarmonyMainPagesJson,
   emitHarmonyPageEts,
@@ -65,14 +65,20 @@ async function emitHarmonyScreens(
       await fs.writeFile(filePath, content, "utf8");
     } else {
       // P3-P2: Mustache 优先 — 有行业模板时走渲染，否则 fallback 裸字符串
-      const hasMustache = industry !== "generic" && (await hasWidgetTemplate(industry));
+      const hasMustache =
+        industry !== "generic" &&
+        (await hasPlatformTemplate("harmony-ets", industry));
       if (hasMustache) {
         const ctx = { industry, displayName: spec.displayName, tableName: screen.entity || "items", primaryColor: "#0D9488", titleField: "title", primaryKey: "id", hasImage: false, screenTitle: screen.title };
         try {
           const rendered = await renderWidgetTemplate(`${industry}_ets`, ctx as any);
           await fs.writeFile(filePath, rendered, "utf8");
-        } catch {
-          await fs.writeFile(filePath, emitHarmonyPageEts(screen, componentName, { entry: i === 0, spec }), "utf8");
+        } catch (err) {
+          console.warn(
+            `[harmony-codegen] Mustache 渲染失败 (industry=${industry}, screen=${screen.id}):`,
+            err
+          );
+          throw err;
         }
       } else {
         await fs.writeFile(filePath, emitHarmonyPageEts(screen, componentName, { entry: i === 0, spec }), "utf8");
@@ -107,7 +113,7 @@ export async function generateHarmonyProject(
   const spec = validation.spec;
   const bundleName = harmonyBundleName(spec.appName);
 
-  const { detectIndustry } = await import("@/lib/flutter-codegen/emit-industry");
+  const { detectIndustry } = await import("@/lib/app-spec/industry");
   const industry = detectIndustry(spec as unknown as Record<string, unknown>);
 
   const outRoot = await fs.mkdtemp(path.join(os.tmpdir(), "app-factory-harmony-"));

@@ -1,4 +1,10 @@
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
+import { listIndustryEmitConfigs } from "@/lib/app-spec/emit-shared";
+
+/** 从 INDUSTRY_METHODS 块提取方法名（供配置 parity 校验） */
+export function extractHarmonyMethodNames(block: string): string[] {
+  return [...block.matchAll(/\n  (\w+):/g)].map((m) => m[1]);
+}
 
 /** P0-B-1: 鸿蒙 19 行业差异化服务方法 — 对齐微信 industry.js 302 行业务逻辑 */
 const INDUSTRY_METHODS: Record<string, string> = {
@@ -296,16 +302,11 @@ const INDUSTRY_METHODS: Record<string, string> = {
  * 对齐微信 services/industry.js 302 行差异化逻辑。
  */
 export function emitHarmonyIndustryServicesEts(industry: IndustryCategory): string {
-  const tableMap: Record<string, string> = {
-    finance: "transactions", crm: "contacts", fitness: "workouts", ecommerce: "products",
-    education: "courses", social: "posts", food: "restaurants", hotel: "hotels",
-    recruitment: "jobs", property: "repairs", video: "videos", weather: "cities",
-    sports: "matches", photo: "photos", dating: "user_profiles", medical: "doctors",
-    blog: "articles", game: "game_scores", payment: "orders",
-  };
+  const configs = listIndustryEmitConfigs();
 
   // 生成 19 个 service 导出（含差异化方法）
-  const serviceBlocks = Object.entries(tableMap).map(([name, table]) => {
+  const serviceBlocks = configs.map((cfg) => {
+    const { id: name, tableName: table } = cfg;
     const extras = INDUSTRY_METHODS[name] || "";
     return `// ${name} Service — ${table}
 export const ${name}Service = {

@@ -39,7 +39,7 @@ vi.mock("@/lib/codegen/artifacts", () => ({ writeArtifactFile: vi.fn(() => Promi
 vi.mock("@/lib/codegen/preview-html", () => ({ generateSpecPreviewHtml: vi.fn(() => "") }));
 vi.mock("@/lib/codegen/runs", () => ({ markCodegenRunRunning: vi.fn(), markCodegenRunCompleted: vi.fn(), markCodegenRunFailed: vi.fn() }));
 vi.mock("@/lib/codegen/storage", () => ({ getCodegenStorageBucket: vi.fn(() => "a") }));
-vi.mock("@/lib/flutter-codegen/zip", () => ({ zipDirectory: vi.fn(() => Promise.resolve(Buffer.from("x".repeat(100000)))) }));
+vi.mock("@/lib/codegen/zip", () => ({ zipDirectory: vi.fn(() => Promise.resolve(Buffer.from("x".repeat(100000)))) }));
 vi.mock("@/lib/codegen/stale-runs", () => ({ cleanupStaleCodegenRuns: vi.fn() }));
 vi.mock("@/lib/flutter-codegen/generate", () => ({ generateFlutterProject: vi.fn(async () => { await new Promise(r => setTimeout(r, 2)); return { outputDir: "/t", appName: "b", displayName: "B" }; }) }));
 

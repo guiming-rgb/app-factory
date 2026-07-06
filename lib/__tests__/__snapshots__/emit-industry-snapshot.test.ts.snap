@@ -1,0 +1,2220 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`emit industry Mustache (19 行业) > finance/ecommerce/medical snapshot 回归 1`] = `
+"import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// finance — Finance / Accounting Industry Widgets
+// Dynamically rendered via Mustache — finance Color(0xFF0D9488)
+// ===================================================================
+
+/// 交易列表项 — 带金额颜色（收入绿/支出红）、分类图标、日期格式化
+class TransactionTile extends StatelessWidget {
+  const TransactionTile({
+    super.key,
+    required this.title,
+    required this.amount,
+    required this.category,
+    required this.date,
+    required this.isIncome,
+    this.onTap,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final bool isIncome;
+  final VoidCallback? onTap;
+
+  static const Map<String, IconData> _categoryIcons = {
+    "餐饮": Icons.restaurant,
+    "交通": Icons.directions_car,
+    "购物": Icons.shopping_bag,
+    "娱乐": Icons.movie,
+    "住房": Icons.home,
+    "医疗": Icons.local_hospital,
+    "教育": Icons.school,
+    "工资": Icons.work,
+    "投资": Icons.trending_up,
+    "其他": Icons.more_horiz,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final icon = _categoryIcons[category] ?? Icons.more_horiz;
+    final color = isIncome ? Colors.green : theme.colorScheme.error;
+
+    return Semantics(
+      label: 'Transaction: $title, \${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}',
+      child: Card(
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            DateFormat("MM/dd").format(date),
+            style: AppTheme.caption(theme.textTheme),
+          ),
+          trailing: Text(
+            "\${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}",
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+}
+
+/// 预算进度条 — label、spent/budget 比率、颜色阈值（>90% 红色 / >70% 橙色 / 其余使用主题色）
+class BudgetProgressBar extends StatelessWidget {
+  const BudgetProgressBar({
+    super.key,
+    required this.label,
+    required this.spent,
+    required this.budget,
+  });
+
+  final String label;
+  final double spent;
+  final double budget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratio = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final barColor = ratio > 0.9
+        ? Colors.red
+        : ratio > 0.7
+            ? Colors.orange
+            : Color(0xFF0D9488);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(
+              "¥\${spent.toStringAsFixed(0)} / ¥\${budget.toStringAsFixed(0)}",
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Semantics(
+          label: 'Budget: $label, spent ¥\${spent.toStringAsFixed(0)} of ¥\${budget.toStringAsFixed(0)}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: ratio,
+              backgroundColor: barColor.withValues(alpha: 0.1),
+              color: barColor,
+              minHeight: 8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 月度汇总卡片 — 收入/支出/结余 + 月份标签
+class MonthlySummaryCard extends StatelessWidget {
+  const MonthlySummaryCard({
+    super.key,
+    required this.income,
+    required this.expense,
+    required this.month,
+  });
+
+  final double income;
+  final double expense;
+  final String month;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Monthly summary for $month, income ¥\${income.toStringAsFixed(0)}, expense ¥\${expense.toStringAsFixed(0)}, balance ¥\${(income - expense).toStringAsFixed(0)}',
+      child: Card(
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.3),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                month,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _SummaryItem(
+                    label: "收入",
+                    value: "¥\${income.toStringAsFixed(2)}",
+                    color: Colors.green,
+                  ),
+                  _SummaryItem(
+                    label: "支出",
+                    value: "¥\${expense.toStringAsFixed(2)}",
+                    color: Colors.red,
+                  ),
+                  _SummaryItem(
+                    label: "结余",
+                    value: "¥\${(income - expense).toStringAsFixed(2)}",
+                    color: income >= expense ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: AppTheme.caption(Theme.of(context).textTheme),
+        ),
+      ],
+    );
+  }
+}
+"
+`;
+
+exports[`emit industry Mustache (19 行业) > finance/ecommerce/medical snapshot 回归 2`] = `
+"import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// ecommerce — E-commerce / Shopping Industry Widgets
+// Dynamically rendered via Mustache — ecommerce Color(0xFFEA580C)
+// ===================================================================
+
+/// 商品卡片（增强版）— 图片、名称、价格/原价（删除线）、评分星、销量、折扣标签
+class ProductCardEnhanced extends StatelessWidget {
+  const ProductCardEnhanced({
+    super.key,
+    required this.name,
+    required this.price,
+    this.originalPrice,
+    this.imageUrl,
+    this.rating,
+    this.sales,
+    this.tag,
+    this.onTap,
+  });
+
+  final String name;
+  final double price;
+  final double? originalPrice;
+  final String? imageUrl;
+  final double? rating;
+  final int? sales;
+  final String? tag;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasDiscount =
+        originalPrice != null && originalPrice! > price;
+
+    return Semantics(
+      label: 'Product: $name, ¥$price\${originalPrice != null ? ', was ¥\${originalPrice!.toStringAsFixed(2)}' : ''}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow(theme.colorScheme),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ---- 商品图片 + 标签 ----
+              Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: imageUrl != null
+                        ? Image.network(imageUrl!, fit: BoxFit.cover, semanticLabel: 'Product image for $name')
+                        : Container(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.image, size: 32),
+                            ),
+                          ),
+                  ),
+                if (tag != null)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        tag!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // ---- 商品信息 ----
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        "¥\${price.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      if (hasDiscount) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          "¥\${originalPrice!.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (rating != null || sales != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (rating != null) ...[
+                          const Icon(Icons.star,
+                              size: 12, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating!.toStringAsFixed(1),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
+                        if (rating != null && sales != null)
+                          const SizedBox(width: 10),
+                        if (sales != null)
+                          Text(
+                            "已售$sales",
+                            style: AppTheme.caption(theme.textTheme),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// 购物车角标 — 带红色数字角标的购物车按钮
+class CartBadge extends StatelessWidget {
+  const CartBadge({
+    super.key,
+    required this.count,
+    this.onTap,
+  });
+
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Shopping cart, $count items',
+      child: Stack(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: onTap,
+            semanticsLabel: 'Open shopping cart',
+          ),
+          if (count > 0)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  "$count",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 星级评分 — 5 星行，支持半星显示
+class RatingStars extends StatelessWidget {
+  const RatingStars({
+    super.key,
+    required this.rating,
+    this.size = 14,
+  });
+
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Rating: \${rating.toStringAsFixed(1)} out of 5',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(5, (i) {
+          if (i < rating.floor()) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star, size: size, color: Colors.amber),
+            );
+          } else if (i < rating) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star_half, size: size, color: Colors.amber),
+            );
+          } else {
+            return ExcludeSemantics(
+              child: Icon(
+                Icons.star_border,
+                size: size,
+                color: Colors.grey.shade300,
+              ),
+            );
+          }
+        }),
+      ),
+    );
+  }
+}
+"
+`;
+
+exports[`emit industry Mustache (19 行业) > finance/ecommerce/medical snapshot 回归 3`] = `
+"import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// medical medical widgets for medical app.
+/// Uses Color(0xFF2563EB) as the accent color.
+
+class DoctorCard extends StatelessWidget {
+  final String avatarUrl;
+  final String name;
+  final String title;
+  final String hospital;
+  final String department;
+  final double rating;
+  final int fee;
+  final VoidCallback onTap;
+
+  const DoctorCard({
+    super.key,
+    required this.avatarUrl,
+    required this.name,
+    required this.title,
+    required this.hospital,
+    required this.department,
+    this.rating = 0,
+    this.fee = 0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(label: 'Doctor: $name, $title, $hospital · $department, rating $rating', child: Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              _buildAvatar(colorScheme),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        if (title.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$hospital · $department',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildStarRating(colorScheme),
+                        const SizedBox(width: 8),
+                        Text(
+                          '¥$fee/次',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+  }
+
+  Widget _buildAvatar(ColorScheme colorScheme) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: avatarUrl.isNotEmpty
+            ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                semanticLabel: 'Doctor avatar for $name',
+                errorBuilder: (_, __, ___) => _avatarFallback(colorScheme),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return _avatarFallback(colorScheme);
+                },
+              )
+            : _avatarFallback(colorScheme),
+      ),
+    );
+  }
+
+  Widget _avatarFallback(ColorScheme colorScheme) {
+    return Container(
+      color: Colors.blue[100],
+      child: Icon(Icons.person, size: 36, color: Colors.blue[700]),
+    );
+  }
+
+  Widget _buildStarRating(ColorScheme colorScheme) {
+    final starCount = rating.round();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < starCount ? Icons.star : Icons.star_border,
+          size: 16,
+          color: index < starCount ? Colors.amber : Colors.grey[400],
+        );
+      }),
+    );
+  }
+}
+
+class DepartmentGrid extends StatelessWidget {
+  final List<Map<String, String>> departments;
+  final ValueChanged<String> onTap;
+
+  static const Map<String, IconData> _departmentIcons = {
+    '内科': Icons.healing,
+    '外科': Icons.medical_services,
+    '儿科': Icons.child_care,
+    '妇科': Icons.pregnant_woman,
+    '眼科': Icons.remove_red_eye,
+    '牙科': Icons.masks,
+    '皮肤科': Icons.face,
+    '骨科': Icons.accessibility,
+    '中医': Icons.eco,
+    '心理': Icons.psychology,
+    '急诊': Icons.emergency,
+  };
+
+  const DepartmentGrid({
+    super.key,
+    this.departments = const [],
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: departments.length,
+      itemBuilder: (context, index) {
+        final dept = departments[index];
+        final name = dept['name'] ?? '';
+        final icon = _departmentIcons[name] ?? Icons.medical_services;
+        return _buildDepartmentItem(context, colorScheme, name, icon);
+      },
+    );
+  }
+
+  Widget _buildDepartmentItem(
+    BuildContext context,
+    ColorScheme colorScheme,
+    String name,
+    IconData icon,
+  ) {
+    return Semantics(label: name, child: InkWell(
+      onTap: () => onTap(name),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+            child: Icon(icon, color: colorScheme.primary, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    ));
+  }
+}
+
+class AppointmentSlot extends StatelessWidget {
+  final String time;
+  final bool isSelected;
+  final bool isAvailable;
+  final VoidCallback? onTap;
+
+  const AppointmentSlot({
+    super.key,
+    required this.time,
+    this.isSelected = false,
+    this.isAvailable = true,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color bgColor;
+    Color textColor;
+    BorderSide borderSide;
+
+    if (isSelected) {
+      bgColor = colorScheme.primary;
+      textColor = colorScheme.onPrimary;
+      borderSide = BorderSide.none;
+    } else if (isAvailable) {
+      bgColor = Colors.transparent;
+      textColor = colorScheme.onSurface;
+      borderSide = BorderSide(color: colorScheme.outline.withValues(alpha: 0.5));
+    } else {
+      bgColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+      textColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+      borderSide = BorderSide.none;
+    }
+
+    return Opacity(
+      opacity: isAvailable ? 1.0 : 0.6,
+      child: Semantics(label: 'Appointment: $time, \${isAvailable ? (isSelected ? "selected" : "available") : "unavailable"}', child: Material(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: isAvailable ? onTap : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border(bottom: borderSide),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              time,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: textColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+class PrescriptionCard extends StatelessWidget {
+  final String doctorName;
+  final String date;
+  final String hospital;
+  final String diagnosis;
+  final String? prescription;
+
+  const PrescriptionCard({
+    super.key,
+    required this.doctorName,
+    required this.date,
+    required this.hospital,
+    required this.diagnosis,
+    this.prescription,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(label: 'Prescription: $diagnosis, Dr. $doctorName, $hospital', child: Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  doctorName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              hospital,
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Divider(height: 24),
+            Text(
+              '诊断：$diagnosis',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            if (prescription != null && prescription!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '处方：$prescription',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.primary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ));
+  }
+}
+"
+`;
+
+exports[`emit industry Mustache (P2 pilot) > ecommerce Mustache widgets 含 ProductCardEnhanced 1`] = `
+"import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// 商城 — E-commerce / Shopping Industry Widgets
+// Dynamically rendered via Mustache — 商城 Color(0xFFEA580C)
+// ===================================================================
+
+/// 商品卡片（增强版）— 图片、名称、价格/原价（删除线）、评分星、销量、折扣标签
+class ProductCardEnhanced extends StatelessWidget {
+  const ProductCardEnhanced({
+    super.key,
+    required this.name,
+    required this.price,
+    this.originalPrice,
+    this.imageUrl,
+    this.rating,
+    this.sales,
+    this.tag,
+    this.onTap,
+  });
+
+  final String name;
+  final double price;
+  final double? originalPrice;
+  final String? imageUrl;
+  final double? rating;
+  final int? sales;
+  final String? tag;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasDiscount =
+        originalPrice != null && originalPrice! > price;
+
+    return Semantics(
+      label: 'Product: $name, ¥$price\${originalPrice != null ? ', was ¥\${originalPrice!.toStringAsFixed(2)}' : ''}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            boxShadow: AppTheme.cardShadow(theme.colorScheme),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ---- 商品图片 + 标签 ----
+              Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: imageUrl != null
+                        ? Image.network(imageUrl!, fit: BoxFit.cover, semanticLabel: 'Product image for $name')
+                        : Container(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.image, size: 32),
+                            ),
+                          ),
+                  ),
+                if (tag != null)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        tag!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // ---- 商品信息 ----
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        "¥\${price.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      if (hasDiscount) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          "¥\${originalPrice!.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (rating != null || sales != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (rating != null) ...[
+                          const Icon(Icons.star,
+                              size: 12, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            rating!.toStringAsFixed(1),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
+                        if (rating != null && sales != null)
+                          const SizedBox(width: 10),
+                        if (sales != null)
+                          Text(
+                            "已售$sales",
+                            style: AppTheme.caption(theme.textTheme),
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// 购物车角标 — 带红色数字角标的购物车按钮
+class CartBadge extends StatelessWidget {
+  const CartBadge({
+    super.key,
+    required this.count,
+    this.onTap,
+  });
+
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Shopping cart, $count items',
+      child: Stack(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            onPressed: onTap,
+            semanticsLabel: 'Open shopping cart',
+          ),
+          if (count > 0)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  "$count",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 星级评分 — 5 星行，支持半星显示
+class RatingStars extends StatelessWidget {
+  const RatingStars({
+    super.key,
+    required this.rating,
+    this.size = 14,
+  });
+
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Rating: \${rating.toStringAsFixed(1)} out of 5',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(5, (i) {
+          if (i < rating.floor()) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star, size: size, color: Colors.amber),
+            );
+          } else if (i < rating) {
+            return ExcludeSemantics(
+              child: Icon(Icons.star_half, size: size, color: Colors.amber),
+            );
+          } else {
+            return ExcludeSemantics(
+              child: Icon(
+                Icons.star_border,
+                size: size,
+                color: Colors.grey.shade300,
+              ),
+            );
+          }
+        }),
+      ),
+    );
+  }
+}
+"
+`;
+
+exports[`emit industry Mustache (P2 pilot) > finance Mustache widgets 含 TransactionTile 1`] = `
+"import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../../core/theme/app_theme.dart';
+
+// ===================================================================
+// 记账本 — Finance / Accounting Industry Widgets
+// Dynamically rendered via Mustache — 记账本 Color(0xFF0D9488)
+// ===================================================================
+
+/// 交易列表项 — 带金额颜色（收入绿/支出红）、分类图标、日期格式化
+class TransactionTile extends StatelessWidget {
+  const TransactionTile({
+    super.key,
+    required this.title,
+    required this.amount,
+    required this.category,
+    required this.date,
+    required this.isIncome,
+    this.onTap,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final bool isIncome;
+  final VoidCallback? onTap;
+
+  static const Map<String, IconData> _categoryIcons = {
+    "餐饮": Icons.restaurant,
+    "交通": Icons.directions_car,
+    "购物": Icons.shopping_bag,
+    "娱乐": Icons.movie,
+    "住房": Icons.home,
+    "医疗": Icons.local_hospital,
+    "教育": Icons.school,
+    "工资": Icons.work,
+    "投资": Icons.trending_up,
+    "其他": Icons.more_horiz,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final icon = _categoryIcons[category] ?? Icons.more_horiz;
+    final color = isIncome ? Colors.green : theme.colorScheme.error;
+
+    return Semantics(
+      label: 'Transaction: $title, \${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}',
+      child: Card(
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            DateFormat("MM/dd").format(date),
+            style: AppTheme.caption(theme.textTheme),
+          ),
+          trailing: Text(
+            "\${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}",
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+}
+
+/// 预算进度条 — label、spent/budget 比率、颜色阈值（>90% 红色 / >70% 橙色 / 其余使用主题色）
+class BudgetProgressBar extends StatelessWidget {
+  const BudgetProgressBar({
+    super.key,
+    required this.label,
+    required this.spent,
+    required this.budget,
+  });
+
+  final String label;
+  final double spent;
+  final double budget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratio = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final barColor = ratio > 0.9
+        ? Colors.red
+        : ratio > 0.7
+            ? Colors.orange
+            : Color(0xFF0D9488);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(
+              "¥\${spent.toStringAsFixed(0)} / ¥\${budget.toStringAsFixed(0)}",
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Semantics(
+          label: 'Budget: $label, spent ¥\${spent.toStringAsFixed(0)} of ¥\${budget.toStringAsFixed(0)}',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: ratio,
+              backgroundColor: barColor.withValues(alpha: 0.1),
+              color: barColor,
+              minHeight: 8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 月度汇总卡片 — 收入/支出/结余 + 月份标签
+class MonthlySummaryCard extends StatelessWidget {
+  const MonthlySummaryCard({
+    super.key,
+    required this.income,
+    required this.expense,
+    required this.month,
+  });
+
+  final double income;
+  final double expense;
+  final String month;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Monthly summary for $month, income ¥\${income.toStringAsFixed(0)}, expense ¥\${expense.toStringAsFixed(0)}, balance ¥\${(income - expense).toStringAsFixed(0)}',
+      child: Card(
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.3),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                month,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _SummaryItem(
+                    label: "收入",
+                    value: "¥\${income.toStringAsFixed(2)}",
+                    color: Colors.green,
+                  ),
+                  _SummaryItem(
+                    label: "支出",
+                    value: "¥\${expense.toStringAsFixed(2)}",
+                    color: Colors.red,
+                  ),
+                  _SummaryItem(
+                    label: "结余",
+                    value: "¥\${(income - expense).toStringAsFixed(2)}",
+                    color: income >= expense ? Colors.green : Colors.red,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: AppTheme.caption(Theme.of(context).textTheme),
+        ),
+      ],
+    );
+  }
+}
+"
+`;
+
+exports[`emit industry Mustache (P2 pilot) > medical Mustache widgets 含 DoctorCard 1`] = `
+"import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
+
+/// medical medical widgets for 在线问诊 app.
+/// Uses Color(0xFF2563EB) as the accent color.
+
+class DoctorCard extends StatelessWidget {
+  final String avatarUrl;
+  final String name;
+  final String title;
+  final String hospital;
+  final String department;
+  final double rating;
+  final int fee;
+  final VoidCallback onTap;
+
+  const DoctorCard({
+    super.key,
+    required this.avatarUrl,
+    required this.name,
+    required this.title,
+    required this.hospital,
+    required this.department,
+    this.rating = 0,
+    this.fee = 0,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(label: 'Doctor: $name, $title, $hospital · $department, rating $rating', child: Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              _buildAvatar(colorScheme),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        if (title.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$hospital · $department',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildStarRating(colorScheme),
+                        const SizedBox(width: 8),
+                        Text(
+                          '¥$fee/次',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+  }
+
+  Widget _buildAvatar(ColorScheme colorScheme) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: avatarUrl.isNotEmpty
+            ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                semanticLabel: 'Doctor avatar for $name',
+                errorBuilder: (_, __, ___) => _avatarFallback(colorScheme),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return _avatarFallback(colorScheme);
+                },
+              )
+            : _avatarFallback(colorScheme),
+      ),
+    );
+  }
+
+  Widget _avatarFallback(ColorScheme colorScheme) {
+    return Container(
+      color: Colors.blue[100],
+      child: Icon(Icons.person, size: 36, color: Colors.blue[700]),
+    );
+  }
+
+  Widget _buildStarRating(ColorScheme colorScheme) {
+    final starCount = rating.round();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < starCount ? Icons.star : Icons.star_border,
+          size: 16,
+          color: index < starCount ? Colors.amber : Colors.grey[400],
+        );
+      }),
+    );
+  }
+}
+
+class DepartmentGrid extends StatelessWidget {
+  final List<Map<String, String>> departments;
+  final ValueChanged<String> onTap;
+
+  static const Map<String, IconData> _departmentIcons = {
+    '内科': Icons.healing,
+    '外科': Icons.medical_services,
+    '儿科': Icons.child_care,
+    '妇科': Icons.pregnant_woman,
+    '眼科': Icons.remove_red_eye,
+    '牙科': Icons.masks,
+    '皮肤科': Icons.face,
+    '骨科': Icons.accessibility,
+    '中医': Icons.eco,
+    '心理': Icons.psychology,
+    '急诊': Icons.emergency,
+  };
+
+  const DepartmentGrid({
+    super.key,
+    this.departments = const [],
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: departments.length,
+      itemBuilder: (context, index) {
+        final dept = departments[index];
+        final name = dept['name'] ?? '';
+        final icon = _departmentIcons[name] ?? Icons.medical_services;
+        return _buildDepartmentItem(context, colorScheme, name, icon);
+      },
+    );
+  }
+
+  Widget _buildDepartmentItem(
+    BuildContext context,
+    ColorScheme colorScheme,
+    String name,
+    IconData icon,
+  ) {
+    return Semantics(label: name, child: InkWell(
+      onTap: () => onTap(name),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+            child: Icon(icon, color: colorScheme.primary, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    ));
+  }
+}
+
+class AppointmentSlot extends StatelessWidget {
+  final String time;
+  final bool isSelected;
+  final bool isAvailable;
+  final VoidCallback? onTap;
+
+  const AppointmentSlot({
+    super.key,
+    required this.time,
+    this.isSelected = false,
+    this.isAvailable = true,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color bgColor;
+    Color textColor;
+    BorderSide borderSide;
+
+    if (isSelected) {
+      bgColor = colorScheme.primary;
+      textColor = colorScheme.onPrimary;
+      borderSide = BorderSide.none;
+    } else if (isAvailable) {
+      bgColor = Colors.transparent;
+      textColor = colorScheme.onSurface;
+      borderSide = BorderSide(color: colorScheme.outline.withValues(alpha: 0.5));
+    } else {
+      bgColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+      textColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.4);
+      borderSide = BorderSide.none;
+    }
+
+    return Opacity(
+      opacity: isAvailable ? 1.0 : 0.6,
+      child: Semantics(label: 'Appointment: $time, \${isAvailable ? (isSelected ? "selected" : "available") : "unavailable"}', child: Material(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: isAvailable ? onTap : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border(bottom: borderSide),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              time,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: textColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+class PrescriptionCard extends StatelessWidget {
+  final String doctorName;
+  final String date;
+  final String hospital;
+  final String diagnosis;
+  final String? prescription;
+
+  const PrescriptionCard({
+    super.key,
+    required this.doctorName,
+    required this.date,
+    required this.hospital,
+    required this.diagnosis,
+    this.prescription,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(label: 'Prescription: $diagnosis, Dr. $doctorName, $hospital', child: Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  doctorName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  date,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              hospital,
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Divider(height: 24),
+            Text(
+              '诊断：$diagnosis',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            if (prescription != null && prescription!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '处方：$prescription',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.primary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ));
+  }
+}
+"
+`;
+
+exports[`emit industry snapshot (P1 pilot) > ecommerce widgets (legacy bare-string) 1`] = `
+"import "package:flutter/material.dart";
+
+import "../theme/app_theme.dart";
+
+/// 商品卡片（增强版 — 价格、评分、销量、角标）
+class ProductCardEnhanced extends StatelessWidget {
+  const ProductCardEnhanced({
+    super.key, required this.name, required this.price,
+    this.originalPrice, this.imageUrl, this.rating, this.sales, this.tag, this.onTap,
+  });
+  final String name;
+  final double price,? originalPrice;
+  final String? imageUrl, tag;
+  final double? rating;
+  final int? sales;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasDiscount = originalPrice != null && originalPrice! > price;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          boxShadow: AppTheme.cardShadow(theme.colorScheme)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Stack(children: [
+            AspectRatio(aspectRatio: 1,
+              child: imageUrl != null
+                  ? Image.network(imageUrl!, fit: BoxFit.cover)
+                  : Container(color: theme.colorScheme.surfaceContainerHighest, child: const Center(child: Icon(Icons.image, size: 32)))),
+            if (tag != null)
+              Positioned(top: 8, left: 8,
+                child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
+                  child: Text(tag!, style: const TextStyle(color: Colors.white, fontSize: 10)))),
+          ]),
+          Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, height: 1.3)),
+            const SizedBox(height: 6),
+            Row(children: [
+              Text("¥\${price.toStringAsFixed(2)}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+              if (hasDiscount) ...[
+                const SizedBox(width: 6),
+                Text("¥\${originalPrice!.toStringAsFixed(2)}", style: const TextStyle(fontSize: 11, decoration: TextDecoration.lineThrough, color: Colors.grey)),
+              ],
+            ]),
+            if (rating != null || sales != null) ...[
+              const SizedBox(height: 4),
+              Row(children: [
+                if (rating != null) ...[Icon(Icons.star, size: 12, color: Colors.amber), const SizedBox(width: 2), Text(rating!.toStringAsFixed(1), style: const TextStyle(fontSize: 11))],
+                if (rating != null && sales != null) const SizedBox(width: 10),
+                if (sales != null) Text("已售\\$sales", style: AppTheme.caption(theme.textTheme)),
+              ]),
+            ],
+          ])),
+        ]),
+      ),
+    );
+  }
+}
+
+/// 购物车角标
+class CartBadge extends StatelessWidget {
+  const CartBadge({super.key, required this.count, this.onTap});
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Stack(children: [
+    IconButton(icon: const Icon(Icons.shopping_cart_outlined), onPressed: onTap),
+    if (count > 0)
+      Positioned(right: 4, top: 4,
+        child: Container(padding: const EdgeInsets.all(4),
+          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+          child: Text("\\$count", style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)))),
+  ]);
+}
+
+/// 星级评分
+class RatingStars extends StatelessWidget {
+  const RatingStars({super.key, required this.rating, this.size = 14});
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (i) {
+    if (i < rating.floor()) return Icon(Icons.star, size: size, color: Colors.amber);
+    if (i < rating) return Icon(Icons.star_half, size: size, color: Colors.amber);
+    return Icon(Icons.star_border, size: size, color: Colors.grey.shade300);
+  }));
+}
+"
+`;
+
+exports[`emit industry snapshot (P1 pilot) > finance widgets (legacy bare-string) 1`] = `
+"import "package:flutter/material.dart";
+import "package:intl/intl.dart";
+
+import "../../../core/theme/app_theme.dart";
+
+/// 交易列表项 — 带金额颜色、分类图标、日期
+class TransactionTile extends StatelessWidget {
+  const TransactionTile({
+    super.key,
+    required this.title,
+    required this.amount,
+    required this.category,
+    required this.date,
+    required this.isIncome,
+    this.onTap,
+  });
+
+  final String title;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final bool isIncome;
+  final VoidCallback? onTap;
+
+  static const _categoryIcons = {
+    "餐饮": Icons.restaurant, "交通": Icons.directions_car, "购物": Icons.shopping_bag,
+    "娱乐": Icons.movie, "住房": Icons.home, "医疗": Icons.local_hospital,
+    "教育": Icons.school, "工资": Icons.work, "投资": Icons.trending_up,
+    "其他": Icons.more_horiz,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final icon = _categoryIcons[category] ?? Icons.more_horiz;
+    final color = isIncome ? Colors.green : theme.colorScheme.error;
+
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.1),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        subtitle: Text(DateFormat("MM/dd").format(date), style: AppTheme.caption(theme.textTheme)),
+        trailing: Text("\${isIncome ? '+' : '-'}¥\${amount.toStringAsFixed(2)}",
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color)),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// 预算进度条
+class BudgetProgressBar extends StatelessWidget {
+  const BudgetProgressBar({
+    super.key,
+    required this.label,
+    required this.spent,
+    required this.budget,
+  });
+
+  final String label;
+  final double spent, budget;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ratio = budget > 0 ? (spent / budget).clamp(0.0, 1.0) : 0.0;
+    final color = ratio > 0.9 ? Colors.red : ratio > 0.7 ? Colors.orange : Colors.green;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: const TextStyle(fontSize: 12)),
+        Text("¥\${spent.toStringAsFixed(0)} / ¥\${budget.toStringAsFixed(0)}",
+          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+      ]),
+      const SizedBox(height: 4),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(value: ratio, backgroundColor: color.withValues(alpha: 0.1), color: color, minHeight: 8),
+      ),
+    ]);
+  }
+}
+
+/// 月度汇总卡片
+class MonthlySummaryCard extends StatelessWidget {
+  const MonthlySummaryCard({super.key, required this.income, required this.expense, required this.month});
+
+  final double income, expense;
+  final String month;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          Text(month, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 12),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+            _SummaryItem(label: "收入", value: "¥\${income.toStringAsFixed(2)}", color: Colors.green),
+            _SummaryItem(label: "支出", value: "¥\${expense.toStringAsFixed(2)}", color: Colors.red),
+            _SummaryItem(label: "结余", value: "¥\${(income - expense).toStringAsFixed(2)}",
+              color: income >= expense ? Colors.green : Colors.red),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({required this.label, required this.value, required this.color});
+  final String label, value;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+    const SizedBox(height: 4),
+    Text(label, style: AppTheme.caption(Theme.of(context).textTheme)),
+  ]);
+}
+"
+`;
+
+exports[`emit industry snapshot (P1 pilot) > medical BLE device widget 1`] = `
+"import "package:flutter/material.dart";
+
+/// BLE 医疗器械扫描与连接
+/// 支持：血压计、血糖仪、体温计、血氧仪、体重秤等标准 BLE Health 设备
+/// 依赖：flutter_blue_plus + 设备 GATT Service UUID
+class MedicalDevicePage extends StatefulWidget {
+  const MedicalDevicePage({super.key});
+
+  @override
+  State<MedicalDevicePage> createState() => _MedicalDevicePageState();
+}
+
+// 标准 BLE Health Device Service UUIDs
+class BleHealthServices {
+  static const bloodPressure = "00001810-0000-1000-8000-00805f9b34fb";
+  static const glucose = "00001808-0000-1000-8000-00805f9b34fb";
+  static const thermometer = "00001809-0000-1000-8000-00805f9b34fb";
+  static const pulseOximeter = "00001822-0000-1000-8000-00805f9b34fb";
+  static const weightScale = "0000181d-0000-1000-8000-00805f9b34fb";
+  static const heartRate = "0000180d-0000-1000-8000-00805f9b34fb";
+
+  static String deviceTypeName(String uuid) {
+    switch (uuid) {
+      case bloodPressure: return "血压计";
+      case glucose: return "血糖仪";
+      case thermometer: return "体温计";
+      case pulseOximeter: return "血氧仪";
+      case weightScale: return "体重秤";
+      case heartRate: return "心率带";
+      default: return "医疗设备";
+    }
+  }
+}
+
+class _DeviceReading {
+  final String deviceName;
+  final String deviceType;
+  final String value;
+  final String unit;
+  final DateTime timestamp;
+  const _DeviceReading({required this.deviceName, required this.deviceType, required this.value, required this.unit, required this.timestamp});
+}
+
+class _MedicalDevicePageState extends State<MedicalDevicePage> {
+  bool _scanning = false;
+  final List<_DeviceReading> _readings = [];
+  String? _connectedDevice;
+
+  @override
+  void initState() {
+    super.initState();
+    // 示例读数
+    _readings.addAll([
+      const _DeviceReading(deviceName: "血压计 A", deviceType: "血压计", value: "118/76", unit: "mmHg", timestamp: null),
+      const _DeviceReading(deviceName: "血糖仪 B", deviceType: "血糖仪", value: "5.4", unit: "mmol/L", timestamp: null),
+    ].map((r) => _DeviceReading(deviceName: r.deviceName, deviceType: r.deviceType, value: r.value, unit: r.unit, timestamp: DateTime.now().subtract(const Duration(minutes: 5))))));
+  }
+
+  Future<void> _startScan() async {
+    setState(() => _scanning = true);
+    // TODO: 替换为真实 BLE 扫描
+    // final devices = await FlutterBluePlus.instance.startScan(timeout: const Duration(seconds: 10));
+    // 过滤出健康设备 UUID (BleHealthServices.*)
+    // 连接 → 订阅 characteristic → 解析 IEEE 11073 数据格式 → 展示读数
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("BLE 医疗器械扫描需要 flutter_blue_plus + 真实硬件"), backgroundColor: Colors.orange),
+      );
+      setState(() => _scanning = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_connectedDevice ?? "医疗设备"),
+        actions: [
+          IconButton(
+            icon: Icon(_scanning ? Icons.bluetooth_searching : Icons.bluetooth),
+            onPressed: _startScan,
+          ),
+        ],
+      ),
+      body: _readings.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.medical_services, size: 64, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  const Text("点击蓝牙图标扫描医疗设备"),
+                  const SizedBox(height: 8),
+                  const Text("支持：血压计 · 血糖仪 · 体温计 · 血氧仪 · 体重秤", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _readings.length,
+              itemBuilder: (_, i) {
+                final r = _readings[i];
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.monitor_heart, color: Colors.red),
+                    title: Text("\${r.deviceType}: \${r.value} \${r.unit}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    subtitle: Text("\${r.deviceName} · \${_formatTime(r.timestamp)}"),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  String _formatTime(DateTime t) {
+    final d = t ?? DateTime.now();
+    return "\${d.hour.toString().padLeft(2, '0')}:\${d.minute.toString().padLeft(2, '0')}";
+  }
+}
+"
+`;
+
+exports[`emit medical BLE (非 Mustache 专项) > medical BLE device widget 1`] = `
+"import "package:flutter/material.dart";
+
+/// BLE 医疗器械扫描与连接
+/// 支持：血压计、血糖仪、体温计、血氧仪、体重秤等标准 BLE Health 设备
+/// 依赖：flutter_blue_plus + 设备 GATT Service UUID
+class MedicalDevicePage extends StatefulWidget {
+  const MedicalDevicePage({super.key});
+
+  @override
+  State<MedicalDevicePage> createState() => _MedicalDevicePageState();
+}
+
+// 标准 BLE Health Device Service UUIDs
+class BleHealthServices {
+  static const bloodPressure = "00001810-0000-1000-8000-00805f9b34fb";
+  static const glucose = "00001808-0000-1000-8000-00805f9b34fb";
+  static const thermometer = "00001809-0000-1000-8000-00805f9b34fb";
+  static const pulseOximeter = "00001822-0000-1000-8000-00805f9b34fb";
+  static const weightScale = "0000181d-0000-1000-8000-00805f9b34fb";
+  static const heartRate = "0000180d-0000-1000-8000-00805f9b34fb";
+
+  static String deviceTypeName(String uuid) {
+    switch (uuid) {
+      case bloodPressure: return "血压计";
+      case glucose: return "血糖仪";
+      case thermometer: return "体温计";
+      case pulseOximeter: return "血氧仪";
+      case weightScale: return "体重秤";
+      case heartRate: return "心率带";
+      default: return "医疗设备";
+    }
+  }
+}
+
+class _DeviceReading {
+  final String deviceName;
+  final String deviceType;
+  final String value;
+  final String unit;
+  final DateTime timestamp;
+  const _DeviceReading({required this.deviceName, required this.deviceType, required this.value, required this.unit, required this.timestamp});
+}
+
+class _MedicalDevicePageState extends State<MedicalDevicePage> {
+  bool _scanning = false;
+  final List<_DeviceReading> _readings = [];
+  String? _connectedDevice;
+
+  @override
+  void initState() {
+    super.initState();
+    // 示例读数
+    _readings.addAll([
+      const _DeviceReading(deviceName: "血压计 A", deviceType: "血压计", value: "118/76", unit: "mmHg", timestamp: null),
+      const _DeviceReading(deviceName: "血糖仪 B", deviceType: "血糖仪", value: "5.4", unit: "mmol/L", timestamp: null),
+    ].map((r) => _DeviceReading(deviceName: r.deviceName, deviceType: r.deviceType, value: r.value, unit: r.unit, timestamp: DateTime.now().subtract(const Duration(minutes: 5))))));
+  }
+
+  Future<void> _startScan() async {
+    setState(() => _scanning = true);
+    // TODO: 替换为真实 BLE 扫描
+    // final devices = await FlutterBluePlus.instance.startScan(timeout: const Duration(seconds: 10));
+    // 过滤出健康设备 UUID (BleHealthServices.*)
+    // 连接 → 订阅 characteristic → 解析 IEEE 11073 数据格式 → 展示读数
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("BLE 医疗器械扫描需要 flutter_blue_plus + 真实硬件"), backgroundColor: Colors.orange),
+      );
+      setState(() => _scanning = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_connectedDevice ?? "医疗设备"),
+        actions: [
+          IconButton(
+            icon: Icon(_scanning ? Icons.bluetooth_searching : Icons.bluetooth),
+            onPressed: _startScan,
+          ),
+        ],
+      ),
+      body: _readings.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.medical_services, size: 64, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  const Text("点击蓝牙图标扫描医疗设备"),
+                  const SizedBox(height: 8),
+                  const Text("支持：血压计 · 血糖仪 · 体温计 · 血氧仪 · 体重秤", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _readings.length,
+              itemBuilder: (_, i) {
+                final r = _readings[i];
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.monitor_heart, color: Colors.red),
+                    title: Text("\${r.deviceType}: \${r.value} \${r.unit}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    subtitle: Text("\${r.deviceName} · \${_formatTime(r.timestamp)}"),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  String _formatTime(DateTime t) {
+    final d = t ?? DateTime.now();
+    return "\${d.hour.toString().padLeft(2, '0')}:\${d.minute.toString().padLeft(2, '0')}";
+  }
+}
+"
+`;

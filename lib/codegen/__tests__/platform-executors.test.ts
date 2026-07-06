@@ -80,6 +80,30 @@ vi.mock("@/lib/codegen/artifacts", () => ({
   writePreviewHtml: vi.fn(() => Promise.resolve("/preview.html")),
 }));
 
+vi.mock("@/lib/codegen/verify-artifact", () => {
+  const okResult = {
+    ok: true,
+    target: "flutter" as const,
+    fileCount: 20,
+    hasPubspec: true,
+    hasRouter: true,
+    hasAuth: true,
+    hasSql: true,
+    hasAppJson: false,
+    hasProjectConfig: false,
+    hasWechatPages: false,
+    hasHarmonyMainPages: false,
+    hasHarmonyEntry: false,
+    hasHarmonyEtsPages: false,
+    dartAnalyze: "skipped" as const,
+    errors: [] as string[],
+  };
+  return {
+    verifyCodegenArtifact: vi.fn(() => Promise.resolve(okResult)),
+    verifyGeneratedArtifact: vi.fn(() => Promise.resolve(okResult)),
+  };
+});
+
 vi.mock("@/lib/codegen/preview-html", () => ({
   generateSpecPreviewHtml: vi.fn(() => "<html>preview</html>"),
 }));
@@ -100,7 +124,7 @@ vi.mock("@/lib/codegen/storage", () => ({
   getCodegenStorageBucket: vi.fn(() => "artifacts"),
 }));
 
-vi.mock("@/lib/flutter-codegen/zip", () => ({
+vi.mock("@/lib/codegen/zip", () => ({
   zipDirectory: vi.fn(() => Promise.resolve(Buffer.from("zip"))),
 }));
 

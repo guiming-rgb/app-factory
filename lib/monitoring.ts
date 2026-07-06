@@ -12,10 +12,41 @@ type ErrorContext = {
   extra?: Record<string, unknown>;
 };
 
+/** P4: codegen 管线 breadcrumb（Sentry 可用时写入） */
+export function addCodegenBreadcrumb(input: {
+  category: string;
+  message: string;
+  level?: "debug" | "info" | "warning" | "error";
+  data?: Record<string, unknown>;
+}) {
+  if (typeof process === "undefined" || !process.env.SENTRY_DSN) return;
+  void import("@sentry/nextjs")
+    .then((Sentry) => {
+      Sentry.addBreadcrumb({
+        category: input.category,
+        message: input.message,
+        level: input.level ?? "info",
+        data: input.data,
+      });
+    })
+    .catch(() => {});
+}
+
 /** 轻量错误追踪（Sentry 未配置时自动回退到 console + Supabase 日志） */
 export async function captureError(error: unknown, context: ErrorContext = {}) {
   const message = error instanceof Error ? error.message : String(error);
   const stack = error instanceof Error ? error.stack : undefined;
+
+  addCodegenBreadcrumb({
+    category: "error",
+    message: message.slice(0, 200),
+    level: "error",
+    data: {
+      component: context.component,
+      target: context.target,
+      runId: context.runId,
+    },
+  });
 
   // Sentry 已配置时自动上报
   if (typeof process !== "undefined" && process.env.SENTRY_DSN) {
@@ -31,8 +62,8 @@ export async function captureError(error: unknown, context: ErrorContext = {}) {
         extra: { ...context.extra, stack },
       });
       return;
-    } catch {
-      // Sentry 不可用时回退
+    } catch (err) {
+      console.warn("[monitoring] Sentry unavailable, falling back:", err);
     }
   }
 
@@ -49,8 +80,8 @@ export async function captureError(error: unknown, context: ErrorContext = {}) {
         ...context.extra,
       },
     });
-  } catch {
-    // 静默
+  } catch (err) {
+    console.warn("[monitoring] Failed to persist error log:", err);
   }
 
   console.error(`[${context.component ?? "unknown"}]`, message);
@@ -92,7 +123,9 @@ export async function measureTiming<T>(
           duration_ms: duration,
           metadata: { label, ...context },
         });
-      } catch { /* 静默 */ }
+      } catch (err) {
+        console.warn("[monitoring] Failed to persist slow query log:", err);
+      }
     }
   }
 }

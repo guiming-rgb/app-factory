@@ -174,6 +174,16 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/lib/auth/quota", () => ({
   checkQuota: vi.fn(() => Promise.resolve({ ok: true })),
   incrementUsage: vi.fn(() => Promise.resolve()),
+  tryConsumeQuota: vi.fn(() => Promise.resolve({ ok: true })),
+}));
+
+// Mock security module (used by projects POST route)
+vi.mock("@/lib/security", () => ({
+  detectPromptInjection: vi.fn(() => ({ safe: true })),
+  sanitizeSpecInput: vi.fn((input: string) => input),
+  sanitizeString: vi.fn((input: string) => input),
+  validateEmail: vi.fn(() => true),
+  validateUrl: vi.fn(() => true),
 }));
 
 // ============================================================

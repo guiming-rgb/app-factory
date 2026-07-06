@@ -23,6 +23,7 @@
 
 import fs from "fs/promises";
 import path from "path";
+import os from "os";
 
 import type { AppSpec } from "@/lib/app-spec/types";
 import type { SpecBuildResult } from "@/lib/app-spec/from-report";
@@ -40,8 +41,11 @@ import {
   markCodegenRunFailed,
 } from "@/lib/codegen/runs";
 import type { CodegenTarget } from "@/lib/codegen/types";
+export type { CodegenTarget };
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import { zipDirectory } from "@/lib/codegen/zip";
+import { verifyCodegenArtifact } from "@/lib/codegen/verify-artifact";
+import { detectIndustryWithConfidence } from "@/lib/app-spec/industry";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 // ============================================================
@@ -139,6 +143,7 @@ interface PipelineState<TGate extends CodegenGateResult> {
   fileName: string;
   storageUploaded: boolean;
   outputRoot: string | null;
+  artifactVerification?: { ok: boolean; errors: string[] };
 }
 
 // ============================================================
@@ -216,7 +221,15 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
       artifactPath: "",
       fileName: "",
       storageUploaded: false,
-      outputRoot: path.dirname(codegen.outputDir),
+      outputRoot: (() => {
+        const parent = path.dirname(codegen.outputDir);
+        const tmp = os.tmpdir();
+        // 避免误删系统 temp 根目录（如 /tmp）
+        if (parent === tmp || parent === "/tmp") {
+          return codegen.outputDir;
+        }
+        return parent;
+      })(),
     };
 
     try {
@@ -243,6 +256,17 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
       state.artifactPath = pkg.artifactPath;
       state.storageUploaded = pkg.storageUploaded;
 
+      // P1: 三栈产物结构校验（Flutter 含 dart analyze）
+      if (state.artifactPath) {
+        const verification = await verifyCodegenArtifact(state.artifactPath, this.target);
+        if (!verification.ok) {
+          const msg = `产物验证失败：${verification.errors.join("; ")}`;
+          await markCodegenRunFailed(runId, msg);
+          throw new Error(msg);
+        }
+        state.artifactVerification = verification;
+      }
+
       // 钩子：平台特定后处理
       const extraMeta = await this.afterPackaging(state);
 
@@ -260,12 +284,12 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : `${this.target} codegen 失败`;
-      await markCodegenRunFailed(runId, message).catch(() => {});
+      await markCodegenRunFailed(runId, message).catch((err) => console.warn("[BaseExecutor] markCodegenRunFailed failed:", err));
       await this.onError(err);
       throw err;
     } finally {
       if (state.outputRoot) {
-        await fs.rm(state.outputRoot, { recursive: true, force: true }).catch(() => {});
+        await fs.rm(state.outputRoot, { recursive: true, force: true }).catch((err) => console.warn("[BaseExecutor] cleanup temp dir failed:", err));
       }
     }
   }
@@ -274,7 +298,7 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
 
   private async preFlight(projectId: string, runId: string): Promise<void> {
     const { cleanupStaleCodegenRuns } = await import("@/lib/codegen/stale-runs");
-    await cleanupStaleCodegenRuns({ projectId }).catch(() => {});
+    await cleanupStaleCodegenRuns({ projectId }).catch((err) => console.warn("[BaseExecutor] cleanupStaleCodegenRuns failed:", err));
     await markCodegenRunRunning(runId);
   }
 
@@ -316,7 +340,7 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
     const validation = validateAppSpec(built.spec);
     if (!validation.ok) {
       const msg = `App Spec 校验失败：${validation.errors.join("; ")}`;
-      markCodegenRunFailed(runId, msg).catch(() => {});
+      markCodegenRunFailed(runId, msg).catch((err) => console.warn("[BaseExecutor] markCodegenRunFailed (post-validation):", err));
       throw new Error(msg);
     }
     return {
@@ -388,14 +412,28 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
       specQuality: quality,
     });
 
+    const industryDetection = detectIndustryWithConfidence(
+      spec as unknown as Record<string, unknown>,
+    );
+
     const baseMeta: Record<string, unknown> = {
+      codegenTarget: this.target,
       fileName: state.fileName,
       displayName: state.codegen.displayName,
+      industryDetected: industryDetection.industry,
+      industryConfidence: industryDetection.confidence,
+      industrySource: industryDetection.source,
+      ...(industryDetection.matchedKeywords?.length
+        ? { industryMatchedKeywords: industryDetection.matchedKeywords }
+        : {}),
       ...(isTodoAppSpec(spec) ? { codegenTodoMvp: true } : {}),
       storageUploaded: state.storageUploaded,
       previewPath: state.previewPath,
       ...(state.storageUploaded
         ? { storageBucket: getCodegenStorageBucket() }
+        : {}),
+      ...(state.artifactVerification
+        ? { artifactVerified: state.artifactVerification.ok }
         : {}),
       specQualityScore: quality.score,
       ...(quality.warnings.length
@@ -414,8 +452,22 @@ export abstract class BaseCodegenExecutor<TGate extends CodegenGateResult = Code
   }
 
   /** 错误回调 — 子类可覆盖用于 Sentry 上报 */
-  protected async onError(_err: unknown): Promise<void> {
-    // 默认不做额外处理
+  protected async onError(err: unknown): Promise<void> {
+    try {
+      const { captureError, addCodegenBreadcrumb } = await import("@/lib/monitoring");
+      addCodegenBreadcrumb({
+        category: "codegen",
+        message: `${this.target} codegen failed`,
+        level: "error",
+        data: { target: this.target },
+      });
+      await captureError(err, {
+        component: `BaseCodegenExecutor:${this.target}`,
+        target: this.target,
+      });
+    } catch (reportErr) {
+      console.warn(`[BaseExecutor:${this.target}] telemetry report failed:`, reportErr);
+    }
   }
 }
 

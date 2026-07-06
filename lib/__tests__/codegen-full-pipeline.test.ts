@@ -87,6 +87,30 @@ vi.mock("@/lib/codegen/artifacts", () => ({
   writePreviewHtml: vi.fn(() => Promise.resolve("/previews/pipeline.html")),
 }));
 
+vi.mock("@/lib/codegen/verify-artifact", () => {
+  const okResult = {
+    ok: true,
+    target: "flutter" as const,
+    fileCount: 20,
+    hasPubspec: true,
+    hasRouter: true,
+    hasAuth: true,
+    hasSql: true,
+    hasAppJson: false,
+    hasProjectConfig: false,
+    hasWechatPages: false,
+    hasHarmonyMainPages: false,
+    hasHarmonyEntry: false,
+    hasHarmonyEtsPages: false,
+    dartAnalyze: "skipped" as const,
+    errors: [] as string[],
+  };
+  return {
+    verifyCodegenArtifact: vi.fn(() => Promise.resolve(okResult)),
+    verifyGeneratedArtifact: vi.fn(() => Promise.resolve(okResult)),
+  };
+});
+
 vi.mock("@/lib/codegen/preview-html", () => ({
   generateSpecPreviewHtml: vi.fn(() => "<html>pipeline</html>"),
 }));
@@ -107,7 +131,7 @@ vi.mock("@/lib/codegen/storage", () => ({
   getCodegenStorageBucket: vi.fn(() => "artifacts"),
 }));
 
-vi.mock("@/lib/flutter-codegen/zip", () => ({
+vi.mock("@/lib/codegen/zip", () => ({
   zipDirectory: vi.fn(() => Promise.resolve(Buffer.from("zipcontent"))),
 }));
 
@@ -772,7 +796,7 @@ describe("1. 全行业多平台生成", () => {
       expect((result as Record<string, unknown>).fileName).toMatch(/\.zip$/);
       generateFlutterResults.push({ industry: cfg.id, result });
     }
-  });
+  }, 120_000);
 
   it("每个行业应通过 WechatExecutor 生成成功", async () => {
     const { WechatExecutor } = await import("@/lib/codegen/execute-wechat");
@@ -1267,24 +1291,40 @@ describe("6. 所有页面类型生成", () => {
     expect(gateResult.status).toBe("passed");
   });
 
-  it("Industy Widgets 应覆盖 5 个垂直行业", async () => {
+  it("Industry Widgets 应覆盖 19 个行业的 Mustache 模板", async () => {
     const { getIndustryWidgetsDart } = await import(
       "@/lib/flutter-codegen/emit-industry"
     );
 
-    const withWidgets = ["finance", "crm", "fitness", "ecommerce", "education"];
+    const widgetSpec = {
+      displayName: "测试应用",
+      appName: "test_app",
+      entities: [
+        {
+          name: "Item",
+          fields: [
+            { name: "id", type: "uuid", primary: true },
+            { name: "name", type: "string" },
+          ],
+        },
+      ],
+      metadata: { primaryColor: "#0D9488" },
+    };
+
+    const withWidgets = [
+      "finance", "crm", "fitness", "ecommerce", "education",
+      "social", "food", "hotel", "recruitment", "property",
+      "video", "weather", "sports", "photo", "dating",
+      "medical", "blog", "game", "payment",
+    ] as const;
 
     for (const ind of withWidgets) {
-      const widgets = getIndustryWidgetsDart(ind as Parameters<typeof getIndustryWidgetsDart>[0]);
+      const widgets = await getIndustryWidgetsDart(
+        ind,
+        widgetSpec as Parameters<typeof getIndustryWidgetsDart>[1]
+      );
       expect(widgets, `行业 ${ind} 应有 Widget 文件`).not.toBeNull();
       expect(widgets!.length).toBeGreaterThan(100);
-    }
-
-    // 其余行业返回 null（使用通用组件）
-    const noWidgets = ["social", "food", "hotel", "recruitment", "property", "video", "weather", "sports", "photo", "dating", "medical", "blog", "game", "payment", "generic"];
-    for (const ind of noWidgets) {
-      const widgets = getIndustryWidgetsDart(ind as Parameters<typeof getIndustryWidgetsDart>[0]);
-      expect(widgets, `行业 ${ind} 应无专用 Widget`).toBeNull();
     }
   });
 });

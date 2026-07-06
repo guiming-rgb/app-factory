@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   renderWidgetTemplate,
   hasWidgetTemplate,
+  hasPlatformTemplate,
   listWidgetTemplates,
   clearTemplateCache,
 } from "@/lib/codegen/template-renderer";
@@ -19,6 +20,30 @@ describe("template-renderer", () => {
 
   afterEach(async () => {
     await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  });
+
+  it("hasPlatformTemplate 应检测微信/鸿蒙模板", async () => {
+    expect(await hasPlatformTemplate("wechat-wxml", "ecommerce")).toBe(true);
+    expect(await hasPlatformTemplate("wechat-js", "ecommerce")).toBe(true);
+    expect(await hasPlatformTemplate("harmony-ets", "ecommerce")).toBe(true);
+    expect(await hasPlatformTemplate("wechat-wxml", "nonexistent_xyz")).toBe(
+      false,
+    );
+  });
+
+  it("renderWidgetTemplate 应渲染微信 WXML 并保留 {{products}}", async () => {
+    const result = await renderWidgetTemplate("ecommerce_wxml", {
+      industry: "ecommerce",
+      displayName: "电商商城",
+      tableName: "products",
+      titleField: "name",
+      primaryKey: "id",
+      hasImage: true,
+      primaryColor: "#0D9488",
+    });
+    expect(result).toContain('wx:for="{{products}}"');
+    expect(result).toContain("#0D9488");
+    expect(result).not.toContain("{{primaryColor}}");
   });
 
   it("hasWidgetTemplate 应检测存在的模板", async () => {
