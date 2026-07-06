@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "conflicts": [
+    {
+      "pattern": "外卖|点餐|餐厅|饭店|美食|delivery|restaurant|menu",
+      "industry": "food"
+    },
+    {
+      "pattern": "电商|购物|商城|商品|ecommerce",
+      "industry": "ecommerce"
+    },
+    {
+      "pattern": "视频|影音|电影|netflix",
+      "industry": "video"
+    },
+    {
+      "pattern": "体育|比赛|球队|赛程|足球|篮球",
+      "industry": "sports"
+    },
+    {
+      "pattern": "交友|相亲|配对|dating|tinder",
+      "industry": "dating"
+    },
+    {
+      "pattern": "游戏|玩法|关卡|对战|射击",
+      "industry": "game"
+    },
+    {
+      "pattern": "支付|付款|收银|结算|充值|stripe",
+      "industry": "payment"
+    },
+    {
+      "pattern": "医疗|问诊|医院|医生|看病|处方",
+      "industry": "medical"
+    }
+  ],
+  "keywordRules": [
+    {
+      "pattern": "记账|财务|账单|理财|记一笔|budget|finance|expense|transaction",
+      "industry": "finance",
+      "label": "finance"
+    },
+    {
+      "pattern": "\\bcrm\\b|客户|customer|client|商机|销售|sales|pipeline",
+      "industry": "crm",
+      "label": "crm"
+    },
+    {
+      "pattern": "健身|运动|训练|跑步|瑜伽|workout|fitness|exercise|gym",
+      "industry": "fitness",
+      "label": "fitness"
+    },
+    {
+      "pattern": "课表|课程|学校|作业|考试|成绩|学习|course|class|timetable|student|exam",
+      "industry": "education",
+      "label": "education"
+    },
+    {
+      "pattern": "外卖|点餐|餐厅|饭店|美食|\\bfood\\b|delivery|restaurant|menu",
+      "industry": "food",
+      "label": "food"
+    },
+    {
+      "pattern": "电商|购物|商城|商品|\\bstore\\b|ecommerce",
+      "industry": "ecommerce",
+      "label": "ecommerce"
+    },
+    {
+      "pattern": "招聘|求职|找工作|职位|简历|\\bjob\\b|recruit|hiring",
+      "industry": "recruitment",
+      "label": "recruitment"
+    },
+    {
+      "pattern": "交友|相亲|配对|dating|tinder|探探",
+      "industry": "dating",
+      "label": "dating"
+    },
+    {
+      "pattern": "游戏|玩法|关卡|得分|对战|射击|flame|\\bgame\\b",
+      "industry": "game",
+      "label": "game"
+    },
+    {
+      "pattern": "体育|比赛|球队|赛程|足球|篮球|球迷|懂球|\\bsport\\b|league",
+      "industry": "sports",
+      "label": "sports"
+    },
+    {
+      "pattern": "物业|小区|报修|缴费|门禁|property|repair",
+      "industry": "property",
+      "label": "property"
+    },
+    {
+      "pattern": "天气|气象|预报|weather|forecast|temperature",
+      "industry": "weather",
+      "label": "weather"
+    },
+    {
+      "pattern": "照片|摄影|拍照|图库|相册|图片|photo|image|gallery|camera|instagram",
+      "industry": "photo",
+      "label": "photo"
+    },
+    {
+      "pattern": "视频|影音|播放|电影|netflix|\\bvideo\\b|movie|film",
+      "industry": "video",
+      "label": "video"
+    },
+    {
+      "pattern": "酒店|住宿|宾馆|民宿|\\bhotel\\b|\\bbooking\\b|客房",
+      "industry": "hotel",
+      "label": "hotel"
+    },
+    {
+      "pattern": "医疗|问诊|医院|医生|看病|处方|medical|doctor|patient",
+      "industry": "medical",
+      "label": "medical"
+    },
+    {
+      "pattern": "支付|付款|收银|收款|结算|充值|stripe|\\bpay\\b|checkout",
+      "industry": "payment",
+      "label": "payment"
+    },
+    {
+      "pattern": "博客|文章|阅读|写作|专栏|\\bblog\\b|article",
+      "industry": "blog",
+      "label": "blog"
+    },
+    {
+      "pattern": "社交|朋友圈|动态|话题|小红书|social|帖子",
+      "industry": "social",
+      "label": "social"
+    }
+  ],
+  "communityRules": [
+    {
+      "pattern": "照片|摄影|拍照|图库|相册|图片|photo|image|gallery|camera|instagram",
+      "industry": "photo",
+      "label": "社区→photo"
+    },
+    {
+      "pattern": "物业|小区|报修|缴费|门禁|property|repair",
+      "industry": "property",
+      "label": "社区→property"
+    },
+    {
+      "default": "social",
+      "label": "社区"
+    }
+  ]
+}

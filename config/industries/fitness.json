@@ -1,0 +1,21 @@
+{
+  "id": "fitness",
+  "pilot": true,
+  "templateDir": "industry-fitness",
+  "entities": [
+    "workouts"
+  ],
+  "displayName": "健身助手",
+  "tableName": "workouts",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "fitnessService",
+  "widgetClasses": [
+    "WorkoutCard"
+  ],
+  "serviceMethods": [
+    "getBodyStats",
+    "addBodyStat",
+    "getWorkoutLog"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HarmonyServiceMethod",
+  "description": "Phase2 B3: 鸿蒙行业 service 方法体配置（从 JSON 生成 INDUSTRY_METHODS）",
+  "type": "object",
+  "required": ["name", "table", "verb"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9]*$" },
+    "table": { "type": "string" },
+    "verb": { "enum": ["GET", "POST", "PATCH", "DELETE", "RPC"] },
+    "path": { "type": "string", "description": "REST path 后缀，如 ?order=created_at.desc" },
+    "body": { "type": "object", "description": "POST/PATCH extraData 模板" },
+    "returns": { "enum": ["array", "single", "void"], "default": "array" }
+  }
+}

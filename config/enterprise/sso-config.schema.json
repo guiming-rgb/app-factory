@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConfigureSSOInput",
+  "type": "object",
+  "required": [
+    "provider",
+    "metadataUrl",
+    "domain"
+  ],
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "saml",
+        "oidc"
+      ]
+    },
+    "metadataUrl": {
+      "type": "string",
+      "minLength": 8,
+      "pattern": "^https?://"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
+    },
+    "clientId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clientSecret": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

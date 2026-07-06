@@ -1,0 +1,21 @@
+{
+  "id": "property",
+  "pilot": true,
+  "templateDir": "industry-property",
+  "entities": [
+    "repairs"
+  ],
+  "displayName": "智慧物业",
+  "tableName": "repairs",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "propertyService",
+  "widgetClasses": [
+    "RepairOrderCard"
+  ],
+  "serviceMethods": [
+    "getMyRepairs",
+    "submitRepair",
+    "getNotices"
+  ]
+}

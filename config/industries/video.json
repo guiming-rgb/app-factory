@@ -1,0 +1,21 @@
+{
+  "id": "video",
+  "pilot": true,
+  "templateDir": "industry-video",
+  "entities": [
+    "videos"
+  ],
+  "displayName": "影音娱乐",
+  "tableName": "videos",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": true,
+  "serviceName": "videoService",
+  "widgetClasses": [
+    "VideoThumbCard"
+  ],
+  "serviceMethods": [
+    "getRecommendations",
+    "search",
+    "getFavorites"
+  ]
+}

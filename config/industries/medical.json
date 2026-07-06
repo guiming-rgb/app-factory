@@ -1,0 +1,22 @@
+{
+  "id": "medical",
+  "pilot": true,
+  "templateDir": "industry-medical",
+  "entities": [
+    "doctors"
+  ],
+  "displayName": "在线问诊",
+  "tableName": "doctors",
+  "primaryColor": "Color(0xFF2563EB)",
+  "hasImage": false,
+  "serviceName": "medicalService",
+  "widgetClasses": [
+    "DoctorCard"
+  ],
+  "serviceMethods": [
+    "getDepartments",
+    "getDoctorsByDept",
+    "searchDoctors",
+    "getDoctorSlots"
+  ]
+}

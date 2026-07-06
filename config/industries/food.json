@@ -1,0 +1,22 @@
+{
+  "id": "food",
+  "pilot": true,
+  "templateDir": "industry-food",
+  "entities": [
+    "restaurants"
+  ],
+  "displayName": "外卖点餐",
+  "tableName": "restaurants",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": true,
+  "serviceName": "foodService",
+  "widgetClasses": [
+    "RestaurantCard"
+  ],
+  "serviceMethods": [
+    "getMenu",
+    "searchRestaurants",
+    "getCart",
+    "createOrder"
+  ]
+}

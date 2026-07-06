@@ -90,7 +90,7 @@ function buildSpec({ ind, displayName, screens }) {
     },
     screens: [
       { id: "home", title: "首页", type: "tabRoot" },
-      ...screens,
+      ...screens.filter((s) => s.id !== "home" && s.id !== "profile"),
       { id: "profile", title: "我的", type: "placeholder" },
     ],
     entities: screens

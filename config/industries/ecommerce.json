@@ -1,0 +1,23 @@
+{
+  "id": "ecommerce",
+  "pilot": true,
+  "templateDir": "industry-ecommerce",
+  "entities": [
+    "products"
+  ],
+  "displayName": "电商商城",
+  "tableName": "products",
+  "primaryColor": "Color(0xFFEA580C)",
+  "hasImage": true,
+  "serviceName": "ecommerceService",
+  "widgetClasses": [
+    "ProductCardEnhanced"
+  ],
+  "serviceMethods": [
+    "getCart",
+    "addToCart",
+    "getOrders",
+    "topSelling",
+    "createOrder"
+  ]
+}

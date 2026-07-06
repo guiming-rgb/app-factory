@@ -12,9 +12,17 @@ import { existsSync, readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { rm } from "fs/promises";
+import { spawnSync } from "child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
+
+function parseIndustryFilter() {
+  const arg = process.argv.find((a) => a.startsWith("--filter="));
+  if (!arg) return null;
+  return arg.slice(9).split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 let passed = 0, failed = 0;
 
 function ok(label, detail = "") { console.log(`  ✓ ${label}${detail ? " — " + detail : ""}`); passed++; }
@@ -44,6 +52,12 @@ const ALL_INDUSTRIES = [
 ];
 
 function buildSpec({ ind, name, displayName, screens }) {
+  const tabHome = { id: "home", title: "首页", type: "tabRoot" };
+  const profile = { id: "profile", title: "我的", type: "placeholder" };
+  const middle = screens.filter((s) => s.id !== "home" && s.id !== "profile");
+  const mergedScreens = [tabHome, ...middle, profile];
+  const firstTab = middle[0]?.id || "list";
+
   return {
     specVersion: "0.1.0",
     appName: `parity_${ind}`,
@@ -54,12 +68,12 @@ function buildSpec({ ind, name, displayName, screens }) {
       harmony: { enabled: true, formFactors: ["phone"] },
       wechatMiniProgram: { enabled: true }
     },
-    screens: [{ id: "home", title: "首页", type: "tabRoot" }, ...screens, { id: "profile", title: "我的", type: "placeholder" }],
-    entities: screens.filter(s => s.entity).map(s => ({
+    screens: mergedScreens,
+    entities: middle.filter(s => s.entity).map(s => ({
       name: s.entity || "items",
       fields: [{ name: "id", type: "uuid", primary: true }, { name: "title", type: "string" }, { name: "created_at", type: "datetime" }],
     })),
-    navigation: { tabs: ["home", screens[0]?.id || "list", "profile"].slice(0, 3) },
+    navigation: { tabs: ["home", firstTab, "profile"].slice(0, 3) },
     limitations: ["parity 门禁验证"],
     metadata: { category: ind }
   };
@@ -102,8 +116,18 @@ async function main() {
     process.exit(1);
   }
 
-  // ── 遍历 19 行业 × 3 平台 ──
-  for (const industry of ALL_INDUSTRIES) {
+  const filter = parseIndustryFilter();
+  const industries = filter
+    ? ALL_INDUSTRIES.filter((i) => filter.includes(i.ind))
+    : ALL_INDUSTRIES;
+  if (filter?.length && industries.length === 0) {
+    console.error("❌ --filter 无匹配行业:", filter.join(", "));
+    process.exit(1);
+  }
+  if (filter) console.log(`── 增量模式: ${industries.map((i) => i.ind).join(", ")} ──\n`);
+
+  // ── 遍历行业 × 3 平台 ──
+  for (const industry of industries) {
     const { ind, name } = industry;
     const spec = buildSpec(industry);
     console.log(`\n── ${name} (${ind}) ──`);
@@ -188,6 +212,41 @@ async function main() {
       await rm(hTmpRoot, { recursive: true, force: true }).catch(() => {});
     } catch (e) {
       fail("鸿蒙 生成", e.message?.slice(0, 80));
+    }
+  }
+
+
+  // ── G-06: Flutter 编译抽样（flutter 可用时执行，不可用则跳过并记录）──
+  console.log("\n── 编译抽样（G-06）──\n");
+  const flutterProbe = spawnSync("flutter", ["--version"], { encoding: "utf8", timeout: 15_000 });
+  if (flutterProbe.status !== 0) {
+    console.log("  ⊘ flutter 不可用，跳过 dart analyze 抽样（非失败）");
+  } else {
+    try {
+      const sampleIndustry = ALL_INDUSTRIES.find((i) => i.ind === "ecommerce");
+      const sampleSpec = buildSpec(sampleIndustry);
+      const sampleResult = await genFlutter(sampleSpec, { keepOutput: true });
+      const sampleDir = sampleResult.outputDir;
+      const pubGet = spawnSync("flutter", ["pub", "get"], {
+        cwd: sampleDir,
+        encoding: "utf8",
+        timeout: 120_000,
+      });
+      if (pubGet.status !== 0) {
+        fail("ecommerce dart analyze 抽样", "flutter pub get 失败");
+      } else {
+        const analyze = spawnSync("dart", ["analyze"], {
+          cwd: sampleDir,
+          encoding: "utf8",
+          timeout: 120_000,
+        });
+        if (analyze.status === 0) ok("ecommerce dart analyze 抽样");
+        else fail("ecommerce dart analyze 抽样", (analyze.stderr || analyze.stdout).slice(0, 160));
+      }
+      const sampleRoot = sampleDir.split("/").slice(0, -1).join("/");
+      await rm(sampleRoot, { recursive: true, force: true }).catch(() => {});
+    } catch (e) {
+      fail("编译抽样", e.message?.slice(0, 120));
     }
   }
 

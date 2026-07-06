@@ -1,0 +1,21 @@
+{
+  "id": "weather",
+  "pilot": true,
+  "templateDir": "industry-weather",
+  "entities": [
+    "cities"
+  ],
+  "displayName": "天气预报",
+  "tableName": "cities",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "weatherService",
+  "widgetClasses": [
+    "WeatherNowHero"
+  ],
+  "serviceMethods": [
+    "getCurrentCity",
+    "getDaily",
+    "getAqi"
+  ]
+}

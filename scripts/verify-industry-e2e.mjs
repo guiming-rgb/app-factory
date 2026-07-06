@@ -11,6 +11,13 @@ import { rm } from "fs/promises";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 
+function parseIndustryFilter() {
+  const arg = process.argv.find((a) => a.startsWith("--filter="));
+  if (!arg) return null;
+  return arg.slice(9).split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+
 const ALL_INDUSTRIES = [
   { ind: "finance", name: "记账", displayName: "我的记账本", screens: [{id:"dashboard_view",title:"总览",type:"dashboard"},{id:"transaction_list",title:"账单",type:"list",entity:"transactions"},{id:"add_transaction",title:"记一笔",type:"form",entity:"transactions"}] },
   { ind: "crm", name: "CRM", displayName: "客户管理", screens: [{id:"dashboard",title:"统计",type:"dashboard"},{id:"client_list",title:"客户",type:"list",entity:"contacts"},{id:"kanban",title:"看板",type:"kanban"}] },
@@ -41,6 +48,12 @@ function check(label, cond, detail = "") {
 }
 
 function buildSpec({ ind, displayName, screens }) {
+  const tabHome = { id: "home", title: "首页", type: "tabRoot" };
+  const profile = { id: "profile", title: "我的", type: "placeholder" };
+  const middle = screens.filter((s) => s.id !== "home" && s.id !== "profile");
+  const mergedScreens = [tabHome, ...middle, profile];
+  const firstTab = middle[0]?.id || "list";
+
   return {
     specVersion: "0.1.0",
     appName: `test_${ind}`,
@@ -51,12 +64,12 @@ function buildSpec({ ind, displayName, screens }) {
       harmony: { enabled: true, formFactors: ["phone"] },
       wechatMiniProgram: { enabled: true },
     },
-    screens: [{ id: "home", title: "首页", type: "tabRoot" }, ...screens, { id: "profile", title: "我的", type: "placeholder" }],
-    entities: screens.filter(s => s.entity).map(s => ({
+    screens: mergedScreens,
+    entities: middle.filter(s => s.entity).map(s => ({
       name: s.entity || "items",
       fields: [{ name: "id", type: "uuid", primary: true }, { name: "title", type: "string" }, { name: "created_at", type: "datetime" }],
     })),
-    navigation: { tabs: ["home", screens[0]?.id || "list", "profile"].slice(0, 3) },
+    navigation: { tabs: ["home", firstTab, "profile"].slice(0, 3) },
     limitations: ["端到端验证"],
     metadata: { category: ind },
   };
@@ -91,7 +104,17 @@ async function main() {
     process.exit(1);
   }
 
-  for (const industry of ALL_INDUSTRIES) {
+  const filter = parseIndustryFilter();
+  const industries = filter
+    ? ALL_INDUSTRIES.filter((i) => filter.includes(i.ind))
+    : ALL_INDUSTRIES;
+  if (filter?.length && industries.length === 0) {
+    console.error("❌ --filter 无匹配行业:", filter.join(", "));
+    process.exit(1);
+  }
+  if (filter) console.log(`── 增量模式: ${industries.map((i) => i.ind).join(", ")} ──\n`);
+
+  for (const industry of industries) {
     const { ind, name } = industry;
     const spec = buildSpec(industry);
     console.log(`\n── ${name} (${ind}) ──`);

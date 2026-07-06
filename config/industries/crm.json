@@ -1,0 +1,21 @@
+{
+  "id": "crm",
+  "pilot": true,
+  "templateDir": "industry-crm",
+  "entities": [
+    "contacts"
+  ],
+  "displayName": "客户管理",
+  "tableName": "contacts",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "crmService",
+  "widgetClasses": [
+    "ClientCard"
+  ],
+  "serviceMethods": [
+    "getPipeline",
+    "getActivities",
+    "addActivity"
+  ]
+}

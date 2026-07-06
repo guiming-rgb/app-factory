@@ -1,0 +1,21 @@
+{
+  "id": "education",
+  "pilot": true,
+  "templateDir": "industry-education",
+  "entities": [
+    "courses"
+  ],
+  "displayName": "课程助手",
+  "tableName": "courses",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "educationService",
+  "widgetClasses": [
+    "TimetableCell"
+  ],
+  "serviceMethods": [
+    "getAssignments",
+    "getGrades",
+    "getTodaySchedule"
+  ]
+}

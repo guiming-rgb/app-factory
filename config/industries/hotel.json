@@ -1,0 +1,21 @@
+{
+  "id": "hotel",
+  "pilot": true,
+  "templateDir": "industry-hotel",
+  "entities": [
+    "hotels"
+  ],
+  "displayName": "酒店预订",
+  "tableName": "hotels",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": true,
+  "serviceName": "hotelService",
+  "widgetClasses": [
+    "HotelCard"
+  ],
+  "serviceMethods": [
+    "search",
+    "getRooms",
+    "bookRoom"
+  ]
+}

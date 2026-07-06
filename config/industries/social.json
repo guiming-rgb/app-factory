@@ -1,0 +1,21 @@
+{
+  "id": "social",
+  "pilot": true,
+  "templateDir": "industry-social",
+  "entities": [
+    "posts"
+  ],
+  "displayName": "社交社区",
+  "tableName": "posts",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": true,
+  "serviceName": "socialService",
+  "widgetClasses": [
+    "PostCard"
+  ],
+  "serviceMethods": [
+    "getTopics",
+    "getPostsByTopic",
+    "likePost"
+  ]
+}

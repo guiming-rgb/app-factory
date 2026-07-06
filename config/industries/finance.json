@@ -1,0 +1,21 @@
+{
+  "id": "finance",
+  "pilot": true,
+  "templateDir": "industry-finance",
+  "entities": [
+    "transactions"
+  ],
+  "displayName": "记账理财",
+  "tableName": "transactions",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": false,
+  "serviceName": "financeService",
+  "widgetClasses": [
+    "TransactionTile"
+  ],
+  "serviceMethods": [
+    "getMonthlySummary",
+    "getBudgets",
+    "getAccounts"
+  ]
+}

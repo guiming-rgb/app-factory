@@ -1,0 +1,21 @@
+{
+  "id": "blog",
+  "pilot": true,
+  "templateDir": "industry-blog",
+  "entities": [
+    "articles"
+  ],
+  "displayName": "博客阅读",
+  "tableName": "articles",
+  "primaryColor": "Color(0xFF0D9488)",
+  "hasImage": true,
+  "serviceName": "blogService",
+  "widgetClasses": [
+    "ArticleCard"
+  ],
+  "serviceMethods": [
+    "getFeed",
+    "getByCategory",
+    "search"
+  ]
+}
