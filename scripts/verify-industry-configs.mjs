@@ -41,7 +41,9 @@ for (const id of REQUIRED) {
   const cfg = JSON.parse(readFileSync(fp, "utf8"));
   const blockRe = new RegExp(id + ":\\s*`([\\s\\S]*?)`,");
   const block = harmonySrc.match(blockRe)?.[1] ?? "";
-  const harmonyMethods = (block.match(/^\s+(\w+):/gm) ?? []).map((m) => m.trim().replace(":", ""));
+  const hardcodedMethods = (block.match(/^\s+(\w+):/gm) ?? []).map((m) => m.trim().replace(":", ""));
+  const generatedMethods = (cfg.harmonyMethods ?? []).map((m) => m.name);
+  const harmonyMethods = [...hardcodedMethods, ...generatedMethods];
   const jsonMethods = cfg.serviceMethods ?? [];
   const missing = jsonMethods.filter((m) => !harmonyMethods.includes(m));
   if (missing.length) {

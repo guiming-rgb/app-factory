@@ -308,7 +308,7 @@ export async function generateFlutterProject(
     automotive: (s) => async () => ({ content: emitFlutterCarDashboard(), fileName: `${s.id}_auto_page.dart` }),
     banking: (s) => async () => ({ content: emitFlutterBankingPayment(), fileName: `${s.id}_banking_page.dart` }),
     insurance: (s) => async () => ({ content: emitFlutterInsuranceClaims(), fileName: `${s.id}_insurance_page.dart` }),
-    kyc: (s) => async () => ({ content: emitFlutterKYCVerification(), fileName: `${s.id}_kyc_page.dart` }),
+    kyc: (s) => async () => ({ content: await emitFlutterKYCVerification(), fileName: `${s.id}_kyc_page.dart` }),
     list: (s) => async () => ({ content: emitGeneratedListPage(s, spec), fileName: `${s.id}_page.dart` }),
     payment: (s) => async () => {
       if (industry === "payment") {
@@ -351,7 +351,7 @@ export async function generateFlutterProject(
         kanban: mod.emitFlutterKanbanPage,
         onboarding: mod.emitFlutterOnboardingPage,
       };
-      content = fnMap[screen.type](screen, spec);
+      content = await fnMap[screen.type](screen, spec);
       fileName = `${screen.id}_${screen.type === "card_grid" ? "grid" : screen.type}_page.dart`;
     } else if (dispatchMap[screen.type]) {
       const result = await dispatchMap[screen.type](screen)();

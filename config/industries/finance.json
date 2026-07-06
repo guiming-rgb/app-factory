@@ -17,5 +17,9 @@
     "getMonthlySummary",
     "getBudgets",
     "getAccounts"
+  ],
+  "harmonyMethods": [
+    { "name": "getBudgets", "table": "budgets", "verb": "GET" },
+    { "name": "getAccounts", "table": "accounts", "verb": "GET" }
   ]
 }

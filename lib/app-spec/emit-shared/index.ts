@@ -6,6 +6,7 @@ export {
   type IndustryEmitConfig,
 } from "./industry-config";
 export { buildWidgetContext } from "./widget-context";
+export { buildDashboardPageContext } from "./extended-context";
 export {
   buildWechatServiceMap,
   getIndustryServiceName,

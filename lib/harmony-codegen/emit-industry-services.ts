@@ -1,5 +1,6 @@
 import type { IndustryCategory } from "@/lib/app-spec/industry";
 import { listIndustryEmitConfigs } from "@/lib/app-spec/emit-shared";
+import { generateHarmonyMethodsFromConfig } from "./harmony-method-generator";
 
 /** 从 INDUSTRY_METHODS 块提取方法名（供配置 parity 校验） */
 export function extractHarmonyMethodNames(block: string): string[] {
@@ -12,9 +13,7 @@ const INDUSTRY_METHODS: Record<string, string> = {
   getMonthlySummary: (month?: string): Promise<Array<Record<string, Object>> | null> => {
     const m = month || new Date().toISOString().substring(0, 7);
     return restFetch("transactions?created_at=gte." + m + "-01&created_at=lte." + m + "-31");
-  },
-  getBudgets: (): Promise<Array<Record<string, Object>> | null> => restFetch("budgets"),
-  getAccounts: (): Promise<Array<Record<string, Object>> | null> => restFetch("accounts"),`,
+  },`,
 
   crm: `
   getPipeline: (): Promise<Array<Record<string, Object>> | null> => restFetch("contacts?order=stage"),
@@ -307,7 +306,8 @@ export function emitHarmonyIndustryServicesEts(industry: IndustryCategory): stri
   // 生成 19 个 service 导出（含差异化方法）
   const serviceBlocks = configs.map((cfg) => {
     const { id: name, tableName: table } = cfg;
-    const extras = INDUSTRY_METHODS[name] || "";
+    const generated = generateHarmonyMethodsFromConfig(cfg.harmonyMethods);
+    const extras = generated + (INDUSTRY_METHODS[name] || "");
     return `// ${name} Service — ${table}
 export const ${name}Service = {
   list: (params?: string): Promise<Array<Record<string, Object>> | null> =>

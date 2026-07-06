@@ -18,6 +18,14 @@ export type IndustryEmitConfig = {
   entities: string[];
   widgetClasses: string[];
   serviceMethods?: string[];
+  /** B3: 可从 JSON 生成的鸿蒙 REST 方法（复杂逻辑仍走 INDUSTRY_METHODS） */
+  harmonyMethods?: Array<{
+    name: string;
+    table: string;
+    verb: "GET" | "POST" | "PATCH" | "DELETE" | "RPC";
+    path?: string;
+    returns?: "array" | "single" | "void";
+  }>;
 };
 
 const CONFIG_DIR = path.join(process.cwd(), "config", "industries");

@@ -2,7 +2,6 @@
  * Phase2 B3: 从行业 JSON serviceMethods 生成鸿蒙 REST 方法体片段
  * 复杂逻辑仍保留在 emit-industry-services.ts INDUSTRY_METHODS 直至全量迁移
  */
-import type { IndustryEmitConfig } from "@/lib/app-spec/emit-shared/industry-config";
 
 export type HarmonyMethodDef = {
   name: string;
@@ -30,7 +29,9 @@ export function generateSimpleHarmonyMethod(def: HarmonyMethodDef): string {
   ${name}: (): Promise<Array<Record<string, Object>> | null> => restFetch("${restPath}"),`;
 }
 
-/** 校验 JSON serviceMethods 是否可被生成器表达（B3 渐进迁移） */
-export function listGeneratableMethods(cfg: IndustryEmitConfig): string[] {
-  return (cfg.serviceMethods ?? []).filter((m) => /^[a-z]/.test(m));
+/** 从行业 JSON harmonyMethods 生成方法体片段 */
+export function generateHarmonyMethodsFromConfig(
+  harmonyMethods: HarmonyMethodDef[] | undefined,
+): string {
+  return (harmonyMethods ?? []).map(generateSimpleHarmonyMethod).join("");
 }

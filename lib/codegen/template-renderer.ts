@@ -13,6 +13,8 @@ const ROOT = process.cwd();
 
 export type PlatformTemplateKind =
   | "flutter-widgets"
+  | "flutter-extended"
+  | "flutter-fintech"
   | "wechat-wxml"
   | "wechat-js"
   | "harmony-ets";
@@ -30,6 +32,28 @@ const PLATFORM_CONFIG: Record<
       "core",
       "widgets",
       "industry",
+    ),
+    extension: ".dart.mustache",
+  },
+  "flutter-extended": {
+    baseDir: path.join(
+      ROOT,
+      "templates",
+      "flutter-minimal",
+      "lib",
+      "pages",
+      "extended",
+    ),
+    extension: ".dart.mustache",
+  },
+  "flutter-fintech": {
+    baseDir: path.join(
+      ROOT,
+      "templates",
+      "flutter-minimal",
+      "lib",
+      "pages",
+      "fintech",
     ),
     extension: ".dart.mustache",
   },
@@ -261,4 +285,51 @@ export async function listWidgetTemplates(): Promise<string[]> {
 export function clearTemplateCache(): void {
   templateCache.clear();
   precompilePromises.clear();
+}
+
+export type PageTemplateKind = "flutter-extended" | "flutter-fintech";
+
+export async function hasPageTemplate(
+  kind: PageTemplateKind,
+  templateStem: string,
+): Promise<boolean> {
+  const cfg = PLATFORM_CONFIG[kind];
+  const templatePath = path.join(cfg.baseDir, `${templateStem}${cfg.extension}`);
+  try {
+    await fs.access(templatePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** B2: Flutter extended/fintech 页 Mustache 渲染 */
+export async function renderPageTemplate(
+  kind: PageTemplateKind,
+  templateStem: string,
+  context: Record<string, unknown>,
+): Promise<string> {
+  await ensurePrecompiled(kind);
+  const cfg = PLATFORM_CONFIG[kind];
+  const templatePath = path.join(cfg.baseDir, `${templateStem}${cfg.extension}`);
+
+  let template = templateCache.get(templatePath);
+  if (!template) {
+    try {
+      template = await fs.readFile(templatePath, "utf-8");
+      templateCache.set(templatePath, template);
+    } catch {
+      throw new Error(
+        `页模板不存在: ${templatePath}。请创建 ${cfg.extension} 文件。`,
+      );
+    }
+  }
+
+  try {
+    return Mustache.render(template, context);
+  } catch (e) {
+    throw new Error(
+      `渲染页模板 ${kind}/${templateStem} 失败: ${(e as Error).message}`,
+    );
+  }
 }
