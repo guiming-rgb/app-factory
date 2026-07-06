@@ -43,12 +43,14 @@ for (const ind of ALL_INDUSTRIES) {
 
 // ─── 2. 行业检测逻辑 ────────────────────────────
 console.log("\n══ 2. detectIndustry 检测逻辑 ══\n");
+const industrySpec = join(ROOT, "lib", "app-spec", "industry.ts");
 const emitIndustry = join(ROOT, "lib", "flutter-codegen", "emit-industry.ts");
+check("app-spec/industry.ts 存在", existsSync(industrySpec));
 check("emit-industry.ts 存在", existsSync(emitIndustry));
 
-// 动态导入检测
+// 动态导入检测（detectIndustry 已提取至 app-spec/industry）
 try {
-  const { detectIndustry } = await import("../lib/flutter-codegen/emit-industry.js");
+  const { detectIndustry } = await import("../lib/app-spec/industry.js");
   // 回退：ts 不直接 import，用函数名检查
   check("detectIndustry 函数存在", typeof detectIndustry === "function");
 
@@ -82,7 +84,7 @@ try {
   console.warn(`  ⚠ 无法动态加载 detectIndustry: ${e.message}`);
   console.warn("  → 改为检查源代码中是否存在 detectIndustry 函数");
   try {
-    const src = await import("fs").then(fs => fs.readFileSync(emitIndustry, "utf8"));
+    const src = await import("fs").then(fs => fs.readFileSync(industrySpec, "utf8"));
     check("源代码含 detectIndustry", src.includes("export function detectIndustry"));
     for (const ind of ALL_INDUSTRIES) {
       check(`源代码含 "${ind}" 检测规则`, src.includes(`return "${ind}"`) || src.includes(`"${ind}"`));

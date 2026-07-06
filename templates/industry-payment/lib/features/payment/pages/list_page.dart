@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/polished_widgets.dart';
+import '../../../core/supabase/supabase_client.dart';
 
 class PaymentOrderListPage extends StatefulWidget {
   const PaymentOrderListPage({super.key});
@@ -23,13 +24,34 @@ class _PaymentOrderListPageState extends State<PaymentOrderListPage> {
   Future<void> _load([String? search]) async {
     setState(() { _loading = true; _error = null; });
     try {
-      var q = Supabase.instance.client.from("orders").select("*").order("created_at",ascending:false).limit(50);
+      final client = supabaseOrNull;
+      if (client == null) {
+        var items = _sampleData();
+        if (search != null && search.isNotEmpty) {
+          final q = search.toLowerCase();
+          items = items.where((item) {
+            final name = (item['name'] ?? item['title'] ?? '').toString().toLowerCase();
+            return name.contains(q);
+          }).toList();
+        }
+        setState(() { _items = items; _loading = false; });
+        return;
+      }
+      var q = client.from("orders").select("*").order("created_at",ascending:false).limit(50);
       if (search != null && search.isNotEmpty) q = q.ilike("name", "%$search%");
       final rows = await q;
       setState(() { _items = List<Map<String,dynamic>>.from(rows as List); _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  List<Map<String, dynamic>> _sampleData() {
+    final now = DateTime.now().toIso8601String();
+    return [
+      {'id': 'demo-1', 'name': '示例数据 A', 'title': '示例数据 A', 'created_at': now},
+      {'id': 'demo-2', 'name': '示例数据 B', 'title': '示例数据 B', 'created_at': now},
+    ];
   }
 
   @override

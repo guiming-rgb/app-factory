@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { isAuthEnabled } from '@/lib/auth-config';
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
@@ -10,10 +10,11 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/browser';
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { next?: string };
+  searchParams: { next?: string; sso?: string };
 }) {
   const nextPath =
     searchParams.next?.startsWith('/') ? searchParams.next : '/projects';
+  const ssoPending = searchParams.sso === 'pending';
 
   if (!isAuthEnabled()) {
     return (
@@ -33,7 +34,7 @@ export default function LoginPage({
     );
   }
 
-  return <LoginFormShell nextPath={nextPath} />;
+  return <LoginFormShell nextPath={nextPath} ssoPending={ssoPending} />;
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
@@ -44,13 +45,40 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LoginFormShell({ nextPath }: { nextPath: string }) {
+function LoginFormShell({
+  nextPath,
+  ssoPending,
+}: {
+  nextPath: string;
+  ssoPending: boolean;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!ssoPending) return;
+    void (async () => {
+      try {
+        const res = await fetch('/api/enterprise/sso/exchange', {
+          method: 'POST',
+          credentials: 'include',
+        });
+        const data = (await res.json()) as { token?: string; error?: string };
+        if (!res.ok || !data.token) {
+          throw new Error(data.error || 'SSO 交换失败');
+        }
+        sessionStorage.setItem('enterprise_sso_token', data.token);
+        router.replace(nextPath);
+        router.refresh();
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'SSO 登录失败');
+      }
+    })();
+  }, [ssoPending, nextPath, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

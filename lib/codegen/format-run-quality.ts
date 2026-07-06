@@ -101,6 +101,15 @@ export function qualityGateBadges(meta: RunQualityMeta): QualityGateBadge[] {
   if (meta.codegenTodoMvp === true) {
     badges.push({ label: "待办 MVP", tone: "ok" });
   }
+  const industry = meta.industryDetected as string | undefined;
+  const confidence = meta.industryConfidence as number | undefined;
+  if (industry && industry !== "generic") {
+    const pct = typeof confidence === "number" ? Math.round(confidence * 100) : null;
+    badges.push({
+      label: pct !== null ? `${industry} ${pct}%` : industry,
+      tone: typeof confidence === "number" && confidence >= 0.85 ? "ok" : "warn",
+    });
+  }
   return badges;
 }
 

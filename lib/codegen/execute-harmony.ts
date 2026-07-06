@@ -95,6 +95,18 @@ export class HarmonyExecutor extends BaseCodegenExecutor<HarmonyGateResult> {
       structure: input.gate,
     };
   }
+
+  protected async onError(err: unknown): Promise<void> {
+    try {
+      const { captureError } = await import("@/lib/monitoring");
+      await captureError(err, {
+        component: "HarmonyExecutor",
+        target: "harmony",
+      });
+    } catch (reportErr) {
+      console.warn("[HarmonyExecutor] telemetry report failed:", reportErr);
+    }
+  }
 }
 
 export type HarmonyCodegenExecuteResult = {

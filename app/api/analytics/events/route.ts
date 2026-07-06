@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { checkSupabaseRateLimitBucket } from "@/lib/auth/rate-limit-supabase";
+import { resolveAnalyticsIngestAppId } from "@/lib/analytics/ingest-auth";
 
 export const runtime = "nodejs";
 
@@ -30,45 +32,11 @@ interface PostBody {
 /** 单次请求最大事件数 */
 const MAX_EVENTS_PER_REQUEST = 100;
 
-/** 每分钟每 app_id 最大事件数 */
+/** 每分钟每 app_id 最大事件数（Supabase 持久化分桶） */
 const RATE_LIMIT_PER_MINUTE = 1000;
 
 /** 滑动窗口（毫秒） */
 const RATE_WINDOW_MS = 60000;
-
-// ============================================================
-// 内存限流桶（单进程，生产环境建议 Redis）
-// ============================================================
-
-const rateBuckets = new Map<string, { count: number; windowStart: number }>();
-
-function checkRateLimit(appId: string): boolean {
-  const now = Date.now();
-  const key = `analytics:${appId}`;
-  const bucket = rateBuckets.get(key);
-
-  if (!bucket || now - bucket.windowStart > RATE_WINDOW_MS) {
-    rateBuckets.set(key, { count: 1, windowStart: now });
-    return true;
-  }
-
-  if (bucket.count >= RATE_LIMIT_PER_MINUTE) {
-    return false;
-  }
-
-  bucket.count++;
-  return true;
-}
-
-// 每分钟清理过期桶
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, bucket] of rateBuckets) {
-    if (now - bucket.windowStart > RATE_WINDOW_MS) {
-      rateBuckets.delete(key);
-    }
-  }
-}, 60000).unref();
 
 // ============================================================
 // 校验
@@ -98,7 +66,7 @@ const ALLOWED_WRITE_ORIGINS = [
  * 接收客户端批量埋点事件并写入 analytics_events 表。
  *
  * Headers:
- *   x-analytics-key: App ID（必须）
+ *   x-analytics-key: ingest secret（见 ANALYTICS_INGEST_KEYS，非 app_id 本身）
  *
  * Body:
  *   { events: [{ app_id, event_type, event_name, screen_name, properties, user_id, session_id, device_info }] }
@@ -107,11 +75,19 @@ const ALLOWED_WRITE_ORIGINS = [
  */
 export async function POST(req: NextRequest) {
   try {
-    // ---- 1. 鉴权 ----
-    const appId = req.headers.get("x-analytics-key")?.trim();
-    if (!appId) {
+    // ---- 1. 鉴权（P2: secret → app_id，禁止 header 直接冒充任意 app_id）----
+    const apiKey = req.headers.get("x-analytics-key")?.trim();
+    if (!apiKey) {
       return NextResponse.json(
         { error: "Missing x-analytics-key header" },
+        { status: 401 }
+      );
+    }
+
+    const appId = resolveAnalyticsIngestAppId(apiKey);
+    if (!appId) {
+      return NextResponse.json(
+        { error: "Invalid analytics ingest key" },
         { status: 401 }
       );
     }
@@ -147,8 +123,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ---- 4. 限流 ----
-    if (!checkRateLimit(appId)) {
+    // ---- 4. 限流（Supabase 分桶，serverless 安全）----
+    const withinLimit = await checkSupabaseRateLimitBucket(
+      `analytics:${appId}`,
+      {
+        limit: RATE_LIMIT_PER_MINUTE,
+        windowMs: RATE_WINDOW_MS,
+        action: "analytics",
+      },
+    );
+    if (!withinLimit) {
       return NextResponse.json(
         {
           error: `Rate limit exceeded (${RATE_LIMIT_PER_MINUTE} events/min per app_id)`,

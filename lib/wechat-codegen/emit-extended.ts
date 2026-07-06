@@ -3,7 +3,7 @@
  * dashboard / card_grid / calendar / kanban
  */
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
 import {
   wechatIndustryFetchExpr,
   wechatIndustryRequireLine,

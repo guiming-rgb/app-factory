@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
+import { requireWorkspaceMember } from "@/lib/auth/require-workspace-member";
 import {
   checkPermission,
   deleteWorkspace,
@@ -33,6 +34,12 @@ export async function GET(
     }
 
     const workspaceId = params.id;
+
+    const memberAuth = await requireWorkspaceMember(workspaceId);
+    if (!memberAuth.ok) {
+      return memberAuth.response;
+    }
+
     const workspace = await getWorkspace(workspaceId);
 
     if (!workspace) {

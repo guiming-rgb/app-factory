@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireProjectOwner } from "@/lib/auth/require-auth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -8,6 +9,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireProjectOwner(params.id);
+    if (auth.error) return auth.error;
+
     const body = await req.json().catch(() => ({}));
     const { rating, feedback, runId, category } = body as Record<string, unknown>;
 
@@ -25,7 +29,8 @@ export async function POST(
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error("[feedback]", err);
+    return NextResponse.json({ error: "操作失败，请稍后重试" }, { status: 500 });
   }
 }
 
@@ -34,6 +39,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await requireProjectOwner(params.id);
+    if (auth.error) return auth.error;
+
     const { data } = await getSupabaseAdmin()
       .from("codegen_feedback")
       .select("*")
@@ -43,6 +51,7 @@ export async function GET(
 
     return NextResponse.json({ feedbacks: data ?? [] });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error("[feedback]", err);
+    return NextResponse.json({ error: "操作失败，请稍后重试" }, { status: 500 });
   }
 }

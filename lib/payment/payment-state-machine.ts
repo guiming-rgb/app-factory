@@ -171,6 +171,52 @@ export function parseStripeEvent(event: {
   }
 }
 
+import { createHash } from "crypto";
+
+/**
+ * 微信支付 V2 回调验签（MD5）
+ * 未配置 WECHAT_PAY_API_KEY 时返回 false（生产环境应拒绝未验签回调）
+ */
+export function verifyWechatPayNotifySignature(xml: string): boolean {
+  const apiKey = process.env.WECHAT_PAY_API_KEY?.trim();
+  if (!apiKey) {
+    return process.env.NODE_ENV !== "production";
+  }
+
+  const getTag = (tag: string) => {
+    const cdata = xml.match(
+      new RegExp(`<${tag}><!\\[CDATA\\[([^\\]]+)\\]\\]></${tag}>`),
+    );
+    if (cdata?.[1]) return cdata[1];
+    const plain = xml.match(new RegExp(`<${tag}>([^<]+)</${tag}>`));
+    return plain?.[1] ?? null;
+  };
+
+  const sign = getTag("sign");
+  if (!sign) return false;
+
+  const fields: Record<string, string> = {};
+  const tagRegex = /<(\w+)>(?:<!\[CDATA\[([^\]]+)\]\]|([^<]+))<\/\1>/g;
+  let match: RegExpExecArray | null;
+  while ((match = tagRegex.exec(xml)) !== null) {
+    const key = match[1];
+    const value = match[2] ?? match[3] ?? "";
+    if (key !== "sign") fields[key] = value;
+  }
+
+  const sorted = Object.keys(fields)
+    .sort()
+    .map((k) => `${k}=${fields[k]}`)
+    .join("&");
+
+  const expected = createHash("md5")
+    .update(`${sorted}&key=${apiKey}`)
+    .digest("hex")
+    .toUpperCase();
+
+  return expected === sign.toUpperCase();
+}
+
 /**
  * 从微信支付回调提取支付信息
  */

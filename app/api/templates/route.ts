@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TEMPLATE_LIBRARY, getTemplateById } from "@/lib/app-spec/template-library";
+import { requireAuth } from "@/lib/auth/require-auth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
 /** POST: 从模板创建项目 */
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth();
+    if (auth.error) return auth.error;
+
     const body = await req.json();
     const templateId = body.templateId as string;
     const template = getTemplateById(templateId);
@@ -29,6 +33,7 @@ export async function POST(req: NextRequest) {
       idea: template.description,
       spec_override: template.spec,
       status: "completed",
+      owner_id: auth.user.id,
     }).select("id, title").single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

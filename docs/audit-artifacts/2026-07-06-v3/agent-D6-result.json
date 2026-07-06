@@ -1,0 +1,62 @@
+{
+  "agent_id": "D6",
+  "dimension": "外部 API 语义正确性",
+  "status": "COMPLETE",
+  "findings_count": 15,
+  "severity_distribution": {
+    "CRITICAL": 2,
+    "HIGH": 4,
+    "MEDIUM": 7,
+    "LOW": 2,
+    "PLAUSIBLE": 0
+  },
+  "coverage": {
+    "filesTouched": [
+      "lib/llm.ts",
+      "lib/llm-circuit-breaker.ts",
+      "lib/supabase.ts",
+      "lib/supabase/browser.ts",
+      "lib/codegen/storage.ts",
+      "lib/billing/subscriptions.ts",
+      "lib/billing/invoicing.ts",
+      "lib/billing/pricing.ts",
+      "lib/payment/payment-state-machine.ts",
+      "app/api/stripe/webhook/route.ts",
+      "app/api/payment/webhook/route.ts",
+      "app/api/billing/portal/route.ts",
+      "app/api/billing/subscribe/route.ts",
+      "app/api/admin/dashboard/route.ts",
+      "lib/inngest/client.ts",
+      "lib/inngest/codegen-functions.ts",
+      "lib/inngest/functions.ts",
+      "lib/codegen/inngest-preflight.ts",
+      "lib/codegen/enqueue.ts",
+      "lib/auth/inngest-project-auth.ts",
+      "lib/github/oauth-state.ts",
+      "lib/github/config.ts",
+      "lib/github/connections-server.ts",
+      "lib/github/push-token.ts",
+      "lib/github/push-artifact.ts",
+      "lib/github/desktop-gha.ts",
+      "lib/github/desktop-gha-config.ts",
+      "app/api/github/oauth/callback/route.ts",
+      "lib/workflow.ts",
+      "lib/security/rate-limiter.ts"
+    ],
+    "filesSkipped": [
+      { "file": "components/GitHubConnectButton.tsx", "reason": "纯 UI 组件" },
+      { "file": "components/ui/admin-sidebar.tsx", "reason": "纯 UI 组件" },
+      { "file": "lib/agents/", "reason": "Agent prompt 模板，非 API 调用" },
+      { "file": "templates/", "reason": "生成代码模板，非运行时 API" },
+      { "file": "scripts/", "reason": "构建/验证脚本，非外部 API" }
+    ],
+    "blindSpots": [
+      "Supabase RLS policy 与查询代码的 runtime 一致性（需 Supabase Dashboard 验证）",
+      "Stripe webhook 端点是否在 Stripe Dashboard 正确配置",
+      "DeepSeek vs OpenAI error type 兼容性（生产环境 DeepSeek 实际响应）",
+      "Inngest Cloud 生产环境的实际超时行为"
+    ]
+  },
+  "tool_calls": 12,
+  "timestamp": "2026-07-06T00:00:00Z"
+}

@@ -33,7 +33,7 @@ li{margin:4px 0}
 .footer{text-align:center;font-size:11px;color:#999;margin-top:60px;border-top:1px solid #eee;padding-top:20px}
 </style></head>
 <body>
-<div class="cover"><h1>${title}</h1><p>App 生产工厂 · 8 Agent 协同报告</p><p style="font-size:14px">${new Date().toLocaleDateString("zh-CN")}</p></div>
+<div class="cover"><h1>${title}</h1><p>App 生产工厂 · 9 Agent 协同报告</p><p style="font-size:14px">${new Date().toLocaleDateString("zh-CN")}</p></div>
 <p>${escaped}</p>
 <div class="footer"><p>由 App 生产工厂自动生成</p></div>
 </body></html>`;

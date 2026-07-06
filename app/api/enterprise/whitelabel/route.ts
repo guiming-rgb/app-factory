@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
+import { requireWorkspaceMember } from "@/lib/auth/require-workspace-member";
 import {
   setWhiteLabel,
   getWhiteLabel,
@@ -81,6 +82,9 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const auth = await requireWorkspaceMember(workspaceId);
+    if (!auth.ok) return auth.response;
 
     const config = await getWhiteLabel(workspaceId);
     if (!config) {

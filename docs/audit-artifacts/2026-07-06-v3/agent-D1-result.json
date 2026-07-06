@@ -1,0 +1,63 @@
+{
+  "status": "COMPLETE",
+  "agent": "D1",
+  "dimension": "Auth & Security",
+  "timestamp": "2026-07-06T12:00:00Z",
+  "findings_count": 10,
+  "severity_breakdown": {
+    "CRITICAL": 2,
+    "HIGH": 3,
+    "MEDIUM": 3,
+    "LOW": 2
+  },
+  "coverage_notes": {
+    "filesTouched": [
+      "middleware.ts",
+      "lib/auth/api-user.ts",
+      "lib/auth/require-auth.ts",
+      "lib/auth/require-admin.ts",
+      "lib/auth/require-workspace-member.ts",
+      "lib/auth-config.ts",
+      "lib/supabase.ts",
+      "lib/security/index.ts",
+      "lib/security/input-sanitizer.ts",
+      "lib/security/rate-limiter.ts",
+      "lib/enterprise/sso-service.ts",
+      "lib/enterprise/sso-cookie.ts",
+      "lib/billing/subscription-service.ts",
+      "lib/billing/usage.ts",
+      "lib/billing/invoicing.ts",
+      "lib/analytics/ingest-auth.ts",
+      "app/api/stripe/webhook/route.ts",
+      "app/api/payment/webhook/route.ts",
+      "app/api/billing/webhook/route.ts",
+      "app/api/webhook/codegen/route.ts",
+      "app/api/enterprise/sso/callback/route.ts",
+      "app/api/enterprise/sso/exchange/route.ts",
+      "app/api/admin/route.ts",
+      "app/api/admin/dashboard/route.ts",
+      "app/api/admin/workspaces-all/route.ts",
+      "app/api/projects/route.ts",
+      "app/api/data-export/route.ts",
+      "app/api/user/delete/route.ts",
+      "app/api/billing/portal/route.ts",
+      "app/api/billing/subscribe/route.ts",
+      "app/api/billing/usage/route.ts",
+      "app/api/billing/plans/route.ts",
+      "app/api/analytics/events/route.ts",
+      "app/api/experiments/route.ts",
+      "app/api/inngest/route.ts",
+      "app/api/generated-privacy/route.ts",
+      "app/api/workspaces/route.ts",
+      ".env.example"
+    ],
+    "blindSpots": [
+      "GitHub OAuth callback route not fully reviewed",
+      "SSO SAML XML parsing security not checked (no SAML implementation)",
+      "WebSocket/Realtime channel auth not reviewed",
+      "Vercel deployment middleware (vercel.json) not reviewed",
+      "Flutter/WeChat/Harmony codegen outputs' security properties not reviewed (out of scope for factory web)"
+    ]
+  },
+  "methodology": "Systematic route-by-route auth check + service_role usage audit + secrets scan + input validation review"
+}

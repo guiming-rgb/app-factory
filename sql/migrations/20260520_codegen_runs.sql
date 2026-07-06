@@ -18,3 +18,5 @@ create table if not exists codegen_runs (
 create index if not exists idx_codegen_runs_project_id on codegen_runs(project_id);
 create index if not exists idx_codegen_runs_status on codegen_runs(status);
 create index if not exists idx_codegen_runs_created_at on codegen_runs(created_at desc);
+-- P1性能优化：最常见的查询模式（project_id + target + status + created_at）
+create index if not exists idx_codegen_runs_lookup on codegen_runs(project_id, target, status, created_at desc);

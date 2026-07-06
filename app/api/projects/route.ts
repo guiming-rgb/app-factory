@@ -5,6 +5,7 @@ import {
 } from "@/lib/auth/api-user";
 import { isAuthEnabled } from "@/lib/auth-config";
 import { getSupabaseForUserRequest } from "@/lib/supabase/request-client";
+import { detectPromptInjection, sanitizeSpecInput } from "@/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,8 @@ export async function GET() {
     const { data, error } = await query;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[GET /api/projects]", error.message);
+      return NextResponse.json({ error: "获取项目列表失败，请稍后重试" }, { status: 500 });
     }
 
     return NextResponse.json({ projects: data ?? [] });
@@ -78,19 +80,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const title = buildProjectTitle(idea);
+    // ✅ 提示注入检测 — 拒绝试图操控 LLM 系统提示词的输入
+    const injectionCheck = detectPromptInjection(idea);
+    if (!injectionCheck.safe) {
+      return NextResponse.json(
+        { error: `输入包含不安全内容：${injectionCheck.risk}` },
+        { status: 400 }
+      );
+    }
+
+    // ✅ 输入清洗 — 移除控制字符/HTML 标签，截断超长 UTF-8
+    const sanitizedIdea = sanitizeSpecInput(idea);
+    if (sanitizedIdea.length < 10) {
+      return NextResponse.json(
+        { error: "清洗后的描述不足 10 个有效字符，请提供更具体的 App 想法" },
+        { status: 400 }
+      );
+    }
+
+    const title = buildProjectTitle(sanitizedIdea);
 
     const user = await getApiUser();
     if (isAuthEnabled() && !user) {
       return unauthorizedResponse();
     }
 
-    // 配额检查 (B-1)
+    // ✅ 原子配额检查（check + increment 在 DB 层单次事务内完成）
     if (user) {
-      const { checkQuota, incrementUsage } = await import("@/lib/auth/quota");
-      const quota = await checkQuota(user.id, "project");
-      if (!quota.ok) return NextResponse.json({ error: quota.message }, { status: 403 });
-      await incrementUsage(user.id, "project");
+      const { tryConsumeQuota } = await import("@/lib/auth/quota");
+      const quotaResult = await tryConsumeQuota(user.id, "project");
+      if (!quotaResult.ok) return NextResponse.json({ error: quotaResult.message }, { status: 403 });
     }
 
     const insert: {
@@ -100,7 +119,7 @@ export async function POST(req: NextRequest) {
       owner_id?: string;
     } = {
       title,
-      idea,
+      idea: sanitizedIdea,
       status: "pending"
     };
     if (user) {
@@ -116,13 +135,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("[POST /api/projects]", error.message);
+      return NextResponse.json({ error: "创建项目失败，请稍后重试" }, { status: 500 });
     }
 
     return NextResponse.json({ project: data });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "创建项目失败";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[POST /api/projects]", error);
+    return NextResponse.json({ error: "创建项目失败，请稍后重试" }, { status: 500 });
   }
 }

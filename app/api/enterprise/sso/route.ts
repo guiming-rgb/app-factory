@@ -174,6 +174,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ redirectUrl: url });
     }
 
+    const auth = await requireEnterpriseAdmin(workspaceId);
+    if (!auth.ok) return auth.response;
+
     // Get config (redacted, no client secret)
     const config = await getSSOConfigSafe(workspaceId);
     if (!config) {

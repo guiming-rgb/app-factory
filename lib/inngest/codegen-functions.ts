@@ -56,6 +56,7 @@ function createCodegenFunction(cfg: (typeof CODECONFIG)[number]) {
     {
       id: cfg.fnId,
       name: cfg.fnName,
+      concurrency: { limit: 3 },
       // 重试 3 次处理瞬时错误（可通过 CODEGEN_INNGEST_RETRIES 环境变量覆盖）
       retries: (Number(process.env.CODEGEN_INNGEST_RETRIES ?? "3") || 3) as
         | 0 | 1 | 2 | 3 | 4 | 5,
@@ -96,6 +97,7 @@ export const flutterDesktopGhaPoll = inngest.createFunction(
     id: "codegen-flutter-desktop-gha",
     name: "Poll Flutter desktop GHA artifacts",
     retries: 1,
+    concurrency: { limit: 2 },
     triggers: [{ event: "project/codegen.flutter.desktop-gha.requested" }],
   },
   async ({ event, step }) => {

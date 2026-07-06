@@ -28,8 +28,8 @@ app-factory/
 │   └── health/                 # 健康检查页
 │
 ├── lib/                        # 核心业务逻辑（最大模块，38 个子目录）
-│   ├── agents.ts               # 8 Agent 定义与注册
-│   ├── workflow.ts             # 8 Agent 串行工作流编排
+│   ├── agents.ts               # 9 Agent 定义与注册
+│   ├── workflow.ts             # 9 Agent 串行工作流编排
 │   ├── llm.ts                  # LLM 调用封装（支持 OpenAI 兼容 API）
 │   ├── app-spec/               # App Spec IR 引擎（19 个文件）
 │   ├── flutter-codegen/        # Flutter 代码生成（20 个文件）
@@ -67,23 +67,24 @@ app-factory/
   → POST /api/projects/[id]/generate
   → Inngest.send("project/generate.requested")
   → 接口秒回 { mode: "async" }
-  → 8 Agent 串行执行项目工作流
+  → 9 Agent 分步执行项目工作流（Inngest per-agent step）
   → 完成后 status=completed, final_report 有实质内容
   → 前端轮询刷新展示结果
 ```
 
-### 8 Agent 执行顺序与职责
+### 9 Agent 执行顺序与职责
 
 | 序号 | Agent ID | 中文名 | 职责 |
 |------|----------|--------|------|
-| 1 | `ceo` | CEO | 项目愿景、目标、成功标准 |
+| 1 | `ceo` | CEO 总策划 | 项目愿景、MVP 边界、风险 |
 | 2 | `product_manager` | 产品经理 | PRD、用户故事、功能优先级 |
-| 3 | `architect` | 架构师 | 技术架构、数据模型、API 设计 |
-| 4 | `ui_designer` | UI 设计师 | 页面布局、交互设计、设计系统 |
-| 5 | `developer` | 开发 | 核心实现、代码结构、技术选型 |
-| 6 | `qa_lead` | QA 负责人 | 测试策略、用例、质量门禁 |
-| 7 | `devops` | DevOps | 部署方案、CI/CD、监控 |
-| 8 | `business_advisor` | 商业顾问 | 商业模式、市场分析、收入预测 |
+| 3 | `project_manager` | 项目经理 | 里程碑、排期、交付计划 |
+| 4 | `architect` | 架构师 | 技术架构、数据模型、API 设计 |
+| 5 | `security_compliance` | 安全合规 | 安全审计、合规检查 |
+| 6 | `ui_designer` | UI 设计师 | 页面布局、交互设计、设计系统 |
+| 7 | `dev_lead` | 开发负责人 | 实现方案、代码结构、技术选型 |
+| 8 | `qa_lead` | 测试负责人 | 测试策略、用例、质量门禁 |
+| 9 | `business_advisor` | 商业顾问 | 商业模式、市场分析、收入预测 |
 
 ### 代码生成流程
 
@@ -105,7 +106,7 @@ app-factory/
 
 | 事件 | 触发方 | 处理函数 |
 |------|--------|----------|
-| `project/generate.requested` | `POST /api/projects/[id]/generate` | `executeProjectWorkflow` |
+| `project/generate.requested` | `POST /api/projects/[id]/generate` | `runProjectWorkflowAgent` × N + `finalizeProjectWorkflow` |
 | `codegen/flutter.requested` | API/Inngest | Flutter 代码生成 |
 | `codegen/wechat.requested` | API/Inngest | 微信小程序生成 |
 | `codegen/harmony.requested` | API/Inngest | 鸿蒙代码生成 |

@@ -5,7 +5,7 @@ import {
   primaryKeyField,
   supabaseSelectColumns
 } from "@/lib/app-spec/entity-scaffold";
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
 import {
   wechatIndustryRequireLine,
   wechatIndustryServiceName

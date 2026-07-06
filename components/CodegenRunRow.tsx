@@ -43,6 +43,12 @@ function formatSpecSource(source: string | null, meta: Record<string, unknown>) 
   if (rounds && rounds > 0) suffix += ` · 自动修 ${rounds} 轮`;
   const score = meta.specQualityScore as number | undefined;
   if (typeof score === "number") suffix += ` · Spec ${score}`;
+  const industry = meta.industryDetected as string | undefined;
+  const confidence = meta.industryConfidence as number | undefined;
+  if (industry && industry !== "generic") {
+    const pct = typeof confidence === "number" ? ` ${Math.round(confidence * 100)}%` : "";
+    suffix += ` · ${industry}${pct}`;
+  }
   return base + suffix;
 }
 

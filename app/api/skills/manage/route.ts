@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
-import { isAuthEnabled } from "@/lib/auth-config";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   createSkillDraft,
   listAllSkillsForManage,
@@ -11,22 +10,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function requireManageUser(): Promise<
-  | { ok: true; user: Awaited<ReturnType<typeof getApiUser>> }
-  | { ok: false; response: ReturnType<typeof unauthorizedResponse> }
-> {
-  if (!isAuthEnabled()) {
-    return { ok: true, user: null };
-  }
-  const user = await getApiUser();
-  if (!user) {
-    return { ok: false, response: unauthorizedResponse() };
-  }
-  return { ok: true, user };
-}
-
 export async function GET() {
-  const auth = await requireManageUser();
+  const auth = await requireAdmin();
   if (!auth.ok) {
     return auth.response;
   }
@@ -42,7 +27,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireManageUser();
+  const auth = await requireAdmin();
   if (!auth.ok) {
     return auth.response;
   }

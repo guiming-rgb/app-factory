@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 const SPEC_QUALITY_WARN = 60;
 
 type SpecQualityPreview = { score: number; warnings: string[] };
@@ -14,7 +16,7 @@ type Props = {
 /**
  * Codegen 状态栏：Inngest 提示、Spec 质量、成功消息、同步进度
  */
-export function CodegenStatusBar({ inngestHint, specQuality, successMsg, syncProgress }: Props) {
+export const CodegenStatusBar = memo(function CodegenStatusBar({ inngestHint, specQuality, successMsg, syncProgress }: Props) {
   return (
     <>
       {inngestHint && (
@@ -53,4 +55,4 @@ export function CodegenStatusBar({ inngestHint, specQuality, successMsg, syncPro
       )}
     </>
   );
-}
+});

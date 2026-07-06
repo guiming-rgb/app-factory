@@ -6,7 +6,7 @@ alwaysApply: true
 
 ## 功能定位（一句话）
 
-**AI 原生软件生产平台**：用户输入 App 想法 → 8 Agent 串行方案生成 → App Spec IR 提取 → 三平台代码生成（Flutter + 微信小程序 + 鸿蒙）→ 后端 API（DDL + RLS + Edge Functions）→ 一键部署到 Vercel。
+**AI 原生软件生产平台**：用户输入 App 想法 → 9 Agent 串行方案生成 → App Spec IR 提取 → 三平台代码生成（Flutter + 微信小程序 + 鸿蒙）→ 后端 API（DDL + RLS + Edge Functions）→ 一键部署到 Vercel。
 
 ## 技术栈
 

@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
       .from("api_keys")
       .update({ last_used_at: new Date().toISOString() })
       .eq("key_hash", keyHash)
-      .then(undefined, () => {});
+      .then(undefined, (err) =>
+        console.warn("[webhook/codegen] last_used_at update failed:", err),
+      );
 
     let body: Record<string, unknown>;
     try {

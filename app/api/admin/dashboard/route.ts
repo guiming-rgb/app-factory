@@ -1,25 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getApiUser, unauthorizedResponse } from '@/lib/auth/api-user';
-import { isAuthEnabled } from '@/lib/auth-config';
+import { requireAdmin } from '@/lib/auth/require-admin';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function requireAdmin() {
-  const user = await getApiUser();
-  if (isAuthEnabled() && !user) {
-    return { ok: false as const, response: unauthorizedResponse() };
-  }
-
-  const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (adminIds.length > 0 && user && !adminIds.includes(user.id)) {
-    return {
-      ok: false as const,
-      response: NextResponse.json({ error: '无管理员权限' }, { status: 403 }),
-    };
-  }
-  return { ok: true as const, user };
+function failOnSupabaseError(label: string, error: { message: string } | null) {
+  if (!error) return null;
+  console.error(`[admin/dashboard] ${label}:`, error.message);
+  return NextResponse.json({ error: `${label} 查询失败` }, { status: 500 });
 }
 
 export async function GET() {
@@ -29,14 +18,13 @@ export async function GET() {
 
     const supabase = getSupabaseAdmin();
 
-    // Run queries in parallel
     const [
-      { count: workspaceCount },
-      { count: projectCount },
-      { count: codegenCount },
-      { count: userQuotaCount },
-      { data: subscriptions },
-      { data: recentCodegen },
+      workspacesRes,
+      projectsRes,
+      codegenRes,
+      userQuotasRes,
+      subscriptionsRes,
+      recentCodegenRes,
     ] = await Promise.all([
       supabase.from('workspaces').select('*', { count: 'exact', head: true }),
       supabase.from('projects').select('*', { count: 'exact', head: true }),
@@ -50,13 +38,26 @@ export async function GET() {
         .limit(20),
     ]);
 
-    // Calculate revenue from subscriptions
+    for (const [label, res] of [
+      ['workspaces', workspacesRes],
+      ['projects', projectsRes],
+      ['codegen_runs', codegenRes],
+      ['user_quotas', userQuotasRes],
+      ['subscriptions', subscriptionsRes],
+      ['recent_codegen', recentCodegenRes],
+    ] as const) {
+      const errResp = failOnSupabaseError(label, res.error);
+      if (errResp) return errResp;
+    }
+
+    const subscriptions = subscriptionsRes.data;
+    const recentCodegen = recentCodegenRes.data;
+
     const mrr = (subscriptions ?? []).reduce((sum, sub) => {
       const amount = (sub as Record<string, unknown>).amount ?? 0;
       return sum + (typeof amount === 'number' ? amount : 0);
     }, 0);
 
-    // Format recent activity
     const recentActivity = (recentCodegen ?? []).map((run) => {
       const r = run as Record<string, unknown>;
       return {
@@ -71,10 +72,10 @@ export async function GET() {
 
     return NextResponse.json({
       stats: {
-        workspaces: workspaceCount ?? 0,
-        activeUsers: userQuotaCount ?? 0,
-        projects: projectCount ?? 0,
-        codegenRuns: codegenCount ?? 0,
+        workspaces: workspacesRes.count ?? 0,
+        activeUsers: userQuotasRes.count ?? 0,
+        projects: projectsRes.count ?? 0,
+        codegenRuns: codegenRes.count ?? 0,
         activeSubscriptions: subscriptions?.length ?? 0,
         mrr,
       },

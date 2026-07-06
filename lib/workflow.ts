@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "./supabase";
-import { agentConfigs, filterAgentsForApp } from "./agents";
+import { filterAgentsForApp, getAgentConfig } from "./agents";
 import { callLLM } from "./llm";
 import { buildFinalMarkdownReport } from "./markdown";
 import {
@@ -45,7 +45,7 @@ function getErrorMessage(error: unknown) {
 
 /**
  * 由 HTTP API 调用：校验、清理、将项目置为 running，**不**执行 LLM。
- * 成功后由 Inngest 调用 executeProjectWorkflow。
+ * 成功后由 Inngest 按 Agent 分步调用 runProjectWorkflowAgent + finalizeProjectWorkflow。
  */
 export async function prepareProjectWorkflow(
   projectId: string,
@@ -71,6 +71,7 @@ export async function prepareProjectWorkflow(
     throw new Error(WORKFLOW_ERROR_COMPLETED_SKIP);
   }
 
+  // 清理旧的 agent_runs / usage_logs（仅失败或强制重新生成时）
   if (
     project.status === "failed" ||
     (project.status === "completed" && forceRegenerate)
@@ -87,213 +88,74 @@ export async function prepareProjectWorkflow(
     await deleteUsageLogsForProject(projectId);
   }
 
-  const { error: updateError } = await getSupabaseAdmin()
+  // ✅ TOCTOU 防竞态：使用条件 UPDATE，仅允许 pending/failed/completed 状态转换到 running
+  // 如果状态已变为 running（被并发请求抢占），affected rows 为 0
+  const allowedPreviousStatuses = ["pending", "failed", "completed"];
+  // { count: 'exact' } 必须传，否则 updatedCount 恒为 null
+  const { error: updateError, count: updatedCount } = await getSupabaseAdmin()
     .from("projects")
     .update({
       status: "running",
       final_report: null,
       error_message: null,
       updated_at: new Date().toISOString()
-    })
-    .eq("id", projectId);
+    }, { count: 'exact' })
+    .eq("id", projectId)
+    .in("status", allowedPreviousStatuses);
 
   if (updateError) {
     throw new Error(`更新项目状态失败：${updateError.message}`);
+  }
+
+  // 如果没有行被更新，说明状态被并发请求改变了
+  if (updatedCount === 0) {
+    // 重读状态，看是被谁抢了
+    const { data: recheck } = await getSupabaseAdmin()
+      .from("projects")
+      .select("status")
+      .eq("id", projectId)
+      .single();
+    if (recheck?.status === "running") {
+      throw new Error(WORKFLOW_ERROR_ALREADY_RUNNING);
+    }
+    throw new Error("项目状态已变更，请刷新后重试");
   }
 
   return { projectId };
 }
 
 /**
- * 由 Inngest 后台调用：仅当 projects.status === running 时执行 8 Agent。
- * - completed：幂等 skipped（重复/延迟事件）。
- * - pending / failed / 其它非 running：skipped 且不改库，避免过期事件被外层 catch 误标为 projects.failed。
+ * 同步执行完整工作流（测试 / 脚本用）。生产路径由 Inngest 分步调用
+ * runProjectWorkflowAgent + finalizeProjectWorkflow。
  */
 export async function executeProjectWorkflow(projectId: string) {
-  const { data: project, error: projectError } = await getSupabaseAdmin()
-    .from("projects")
-    .select("*")
-    .eq("id", projectId)
-    .single();
+  const plan = await getProjectWorkflowPlan(projectId);
 
-  if (projectError || !project) {
-    throw new Error("项目不存在");
-  }
-
-  if (project.status === "completed") {
+  if (plan.action === "skip") {
     return {
       projectId,
       status: "skipped" as const,
-      reason: "项目已完成，跳过重复执行（幂等）"
+      reason: plan.reason,
     };
   }
-
-  if (project.status !== "running") {
-    return {
-      projectId,
-      status: "skipped" as const,
-      reason: `项目当前状态为 ${project.status}，非 running，跳过后台任务（可能为延迟的过期事件）`
-    };
-  }
-
-  const contextOutputs: string[] = [];
-  const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
-  const memoryBlock = formatMemoriesForPrompt(workflowMemories);
-  const ownerId =
-    (project as { owner_id?: string | null }).owner_id ?? null;
-  const userProfile = await getUserProfileForWorkflow(ownerId);
-  const userProfileBlock = formatUserProfileForPrompt(userProfile);
-  const agentSkillBindings = await loadAgentSkillBindings();
-  const allSkillCodes = [
-    ...new Set(Object.values(agentSkillBindings).flat())
-  ];
-  const publishedSkills = await getPublishedSkillsByCodes(allSkillCodes);
-  const skillsByCode = new Map(publishedSkills.map((s) => [s.code, s]));
 
   try {
-    const agents = filterAgentsForApp(project.idea);
-    for (const agent of agents) {
-      const injection = resolveAgentSkillInjection(
-        agent.code,
-        agentSkillBindings,
-        skillsByCode
-      );
-      const agentSkills = injection.skills;
-      const skillsBlock = formatSkillsForPrompt(agentSkills);
-      const systemPrompt = skillsBlock
-        ? `${agent.systemPrompt}
-
----
-
-**已绑定技能（须在本轮输出中体现其方法论与检查项）：**
-
-${skillsBlock}`
-        : agent.systemPrompt;
-
-      const runInput = buildAgentInput({
-        projectIdea: project.idea,
-        previousOutputs: contextOutputs,
-        projectMemoriesBlock: agentReceivesProjectMemories(agent.code)
-          ? memoryBlock
-          : undefined,
-        memorySectionHint: agentReceivesProjectMemories(agent.code)
-          ? memorySectionHintForAgent(agent.code)
-          : undefined,
-        userProfileBlock: agentReceivesUserProfile(agent.code)
-          ? userProfileBlock
-          : undefined
-      });
-
-      const { data: run, error: runCreateError } = await getSupabaseAdmin()
-        .from("agent_runs")
-        .insert({
-          project_id: projectId,
-          agent_code: agent.code,
-          agent_name: agent.name,
-          input: runInput,
-          status: "running",
-          started_at: new Date().toISOString()
-        })
-        .select("*")
-        .single();
-
-      if (runCreateError || !run) {
-        throw new Error(
-          `创建 Agent 运行记录失败：${runCreateError?.message || agent.name}`
-        );
-      }
-
-      await insertSkillInjectionLog({
-        projectId,
-        agentRunId: run.id,
-        agentCode: agent.code,
-        boundCodes: injection.boundCodes,
-        injectedCodes: injection.injectedCodes,
-        missingCodes: injection.missingCodes,
-        skillNames: agentSkills.map((s) => ({
-          code: s.code,
-          name: s.name,
-          version: s.version
-        }))
-      });
-
-      try {
-        const llmStartedAt = Date.now();
-        const llmResult = await callLLM({
-          systemPrompt,
-          userPrompt: runInput,
-          temperature: 0.35
-        });
-        const durationMs = Date.now() - llmStartedAt;
-
-        await insertUsageLog({
-          projectId,
-          agentRunId: run.id,
-          agentCode: agent.code,
-          durationMs,
-          promptTokens: llmResult.usage.promptTokens,
-          completionTokens: llmResult.usage.completionTokens,
-          totalTokens: llmResult.usage.totalTokens,
-          modelName: llmResult.model
-        });
-
-        await getSupabaseAdmin()
-          .from("agent_runs")
-          .update({
-            output: llmResult.content,
-            status: "completed",
-            finished_at: new Date().toISOString()
-          })
-          .eq("id", run.id);
-
-        contextOutputs.push(`## ${agent.name}\n\n${llmResult.content}`);
-      } catch (agentError: unknown) {
-        const message = getErrorMessage(agentError);
-        await getSupabaseAdmin()
-          .from("agent_runs")
-          .update({
-            status: "failed",
-            error_message: message,
-            finished_at: new Date().toISOString()
-          })
-          .eq("id", run.id);
-
-        throw agentError;
-      }
+    for (const agentCode of plan.agentCodes) {
+      await runProjectWorkflowAgent(projectId, agentCode);
     }
 
-    const finalReport = buildFinalMarkdownReport({
-      title: project.title,
-      idea: project.idea,
-      sections: contextOutputs
-    });
-
-    const { error: completeError } = await getSupabaseAdmin()
-      .from("projects")
-      .update({
-        status: "completed",
-        final_report: finalReport,
-        error_message: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", projectId);
-
-    if (completeError) {
-      throw new Error(`更新最终报告失败：${completeError.message}`);
+    const final = await finalizeProjectWorkflow(projectId);
+    if (final.status === "skipped") {
+      return {
+        projectId,
+        status: "skipped" as const,
+        reason: final.reason,
+      };
     }
 
     return { projectId, status: "completed" as const };
   } catch (error: unknown) {
-    const message = getErrorMessage(error);
-    await getSupabaseAdmin()
-      .from("projects")
-      .update({
-        status: "failed",
-        error_message: message,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", projectId);
-
+    await markProjectFailed(projectId, getErrorMessage(error));
     throw error;
   }
 }
@@ -306,7 +168,8 @@ export async function markProjectFailed(projectId: string, message: string) {
       error_message: message,
       updated_at: new Date().toISOString()
     })
-    .eq("id", projectId);
+    .eq("id", projectId)
+    .eq("status", "running");
 }
 
 /** 断点续传：从失败项目的最后一个成功 Agent 继续 */
@@ -375,8 +238,7 @@ export async function resumeProjectWorkflow(projectId: string) {
       }
     }
 
-    const allOutputs = [...(completedRuns ?? []).map((r: Record<string, unknown>) => `## ${r.agent_code}\n\n${r.output}`), ...contextOutputs];
-    const finalReport = buildFinalMarkdownReport({ title: project.title, idea: project.idea, sections: allOutputs });
+    const finalReport = buildFinalMarkdownReport({ title: project.title, idea: project.idea, sections: contextOutputs });
     await getSupabaseAdmin().from("projects").update({ status: "completed", final_report: finalReport, error_message: null, updated_at: new Date().toISOString() }).eq("id", projectId);
 
     return { projectId, status: "completed" as const, resumed: true, skippedAgents: completedCodes.size };
@@ -444,4 +306,287 @@ ${previous}
 4. 如果有风险，必须明确说明。
 5. 不要说“作为 AI”，直接给结论和方案。
 `;
+}
+
+type WorkflowSkip = {
+  action: "skip";
+  reason: string;
+};
+
+type WorkflowRunPlan = {
+  action: "run";
+  agentCodes: string[];
+};
+
+/** Inngest W-03: 解析工作流计划（跳过已完成 / 非 running） */
+export async function getProjectWorkflowPlan(
+  projectId: string,
+): Promise<WorkflowSkip | WorkflowRunPlan> {
+  const { data: project, error: projectError } = await getSupabaseAdmin()
+    .from("projects")
+    .select("id, status, idea")
+    .eq("id", projectId)
+    .single();
+
+  if (projectError || !project) {
+    throw new Error("项目不存在");
+  }
+
+  if (project.status === "completed") {
+    return {
+      action: "skip",
+      reason: "项目已完成，跳过重复执行（幂等）",
+    };
+  }
+
+  if (project.status !== "running") {
+    return {
+      action: "skip",
+      reason: `项目当前状态为 ${project.status}，非 running，跳过后台任务`,
+    };
+  }
+
+  return {
+    action: "run",
+    agentCodes: filterAgentsForApp(project.idea ?? "").map((a) => a.code),
+  };
+}
+
+async function loadPriorAgentOutputs(
+  projectId: string,
+  agentCodes: string[],
+): Promise<string[]> {
+  const outputs: string[] = [];
+  for (const code of agentCodes) {
+    const agent = getAgentConfig(code);
+    const { data: run } = await getSupabaseAdmin()
+      .from("agent_runs")
+      .select("output, agent_name")
+      .eq("project_id", projectId)
+      .eq("agent_code", code)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (run?.output) {
+      outputs.push(
+        `## ${(run.agent_name as string) ?? agent?.name ?? code}\n\n${run.output}`,
+      );
+    }
+  }
+  return outputs;
+}
+
+/** Inngest W-03: 执行单个 Agent（幂等 — 已完成则跳过） */
+export async function runProjectWorkflowAgent(
+  projectId: string,
+  agentCode: string,
+): Promise<{ agentCode: string; status: "completed" | "skipped"; reason?: string }> {
+  const plan = await getProjectWorkflowPlan(projectId);
+  if (plan.action === "skip") {
+    return { agentCode, status: "skipped", reason: plan.reason };
+  }
+
+  const { data: project } = await getSupabaseAdmin()
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) throw new Error("项目不存在");
+
+  const agents = filterAgentsForApp(project.idea);
+  const agentIndex = agents.findIndex((a) => a.code === agentCode);
+  if (agentIndex < 0) throw new Error(`未知 Agent: ${agentCode}`);
+  const agent = agents[agentIndex];
+
+  const { data: latestDone } = await getSupabaseAdmin()
+    .from("agent_runs")
+    .select("id, output")
+    .eq("project_id", projectId)
+    .eq("agent_code", agentCode)
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestDone?.output) {
+    return { agentCode, status: "skipped", reason: "Agent 已完成" };
+  }
+
+  const priorCodes = agents.slice(0, agentIndex).map((a) => a.code);
+  const contextOutputs = await loadPriorAgentOutputs(projectId, priorCodes);
+
+  const workflowMemories = await listProjectMemoriesForWorkflow(projectId);
+  const memoryBlock = formatMemoriesForPrompt(workflowMemories);
+  const ownerId = (project as { owner_id?: string | null }).owner_id ?? null;
+  const userProfile = await getUserProfileForWorkflow(ownerId);
+  const userProfileBlock = formatUserProfileForPrompt(userProfile);
+  const agentSkillBindings = await loadAgentSkillBindings();
+  const allSkillCodes = [...new Set(Object.values(agentSkillBindings).flat())];
+  const publishedSkills = await getPublishedSkillsByCodes(allSkillCodes);
+  const skillsByCode = new Map(publishedSkills.map((s) => [s.code, s]));
+
+  const injection = resolveAgentSkillInjection(
+    agent.code,
+    agentSkillBindings,
+    skillsByCode,
+  );
+  const skillsBlock = formatSkillsForPrompt(injection.skills);
+  const systemPrompt = skillsBlock
+    ? `${agent.systemPrompt}
+
+---
+
+**已绑定技能（须在本轮输出中体现其方法论与检查项）：**
+
+${skillsBlock}`
+    : agent.systemPrompt;
+
+  const runInput = buildAgentInput({
+    projectIdea: project.idea,
+    previousOutputs: contextOutputs,
+    projectMemoriesBlock: agentReceivesProjectMemories(agent.code)
+      ? memoryBlock
+      : undefined,
+    memorySectionHint: agentReceivesProjectMemories(agent.code)
+      ? memorySectionHintForAgent(agent.code)
+      : undefined,
+    userProfileBlock: agentReceivesUserProfile(agent.code)
+      ? userProfileBlock
+      : undefined,
+  });
+
+  const { data: run, error: runCreateError } = await getSupabaseAdmin()
+    .from("agent_runs")
+    .insert({
+      project_id: projectId,
+      agent_code: agent.code,
+      agent_name: agent.name,
+      input: runInput,
+      status: "running",
+      started_at: new Date().toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (runCreateError || !run) {
+    throw new Error(
+      `创建 Agent 运行记录失败：${runCreateError?.message || agent.name}`,
+    );
+  }
+
+  await insertSkillInjectionLog({
+    projectId,
+    agentRunId: run.id,
+    agentCode: agent.code,
+    boundCodes: injection.boundCodes,
+    injectedCodes: injection.injectedCodes,
+    missingCodes: injection.missingCodes,
+    skillNames: injection.skills.map((s) => ({
+      code: s.code,
+      name: s.name,
+      version: s.version,
+    })),
+  });
+
+  const llmStartedAt = Date.now();
+  try {
+    const llmResult = await callLLM({
+      systemPrompt,
+      userPrompt: runInput,
+      temperature: 0.35,
+    });
+    const durationMs = Date.now() - llmStartedAt;
+
+    await insertUsageLog({
+      projectId,
+      agentRunId: run.id,
+      agentCode: agent.code,
+      durationMs,
+      promptTokens: llmResult.usage.promptTokens,
+      completionTokens: llmResult.usage.completionTokens,
+      totalTokens: llmResult.usage.totalTokens,
+      modelName: llmResult.model,
+    });
+
+    await getSupabaseAdmin()
+      .from("agent_runs")
+      .update({
+        output: llmResult.content,
+        status: "completed",
+        finished_at: new Date().toISOString(),
+      })
+      .eq("id", run.id);
+
+    return { agentCode, status: "completed" };
+  } catch (agentError: unknown) {
+    const message = getErrorMessage(agentError);
+    await getSupabaseAdmin()
+      .from("agent_runs")
+      .update({
+        status: "failed",
+        error_message: message,
+        finished_at: new Date().toISOString(),
+      })
+      .eq("id", run.id);
+    throw agentError;
+  }
+}
+
+/** Inngest W-03: 汇总报告并标记项目完成 */
+export async function finalizeProjectWorkflow(projectId: string) {
+  const plan = await getProjectWorkflowPlan(projectId);
+  if (plan.action === "skip") {
+    return { status: "skipped" as const, reason: plan.reason };
+  }
+
+  const { data: project } = await getSupabaseAdmin()
+    .from("projects")
+    .select("title, idea, status")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) throw new Error("项目不存在");
+  if (project.status !== "running") {
+    return {
+      status: "skipped" as const,
+      reason: `项目状态 ${project.status}，跳过 finalize`,
+    };
+  }
+
+  const agentCodes = filterAgentsForApp(project.idea ?? "").map((a) => a.code);
+  const sections = await loadPriorAgentOutputs(projectId, agentCodes);
+  const finalReport = buildFinalMarkdownReport({
+    title: project.title,
+    idea: project.idea,
+    sections,
+  });
+
+  const { data: updated, error: completeError } = await getSupabaseAdmin()
+    .from("projects")
+    .update({
+      status: "completed",
+      final_report: finalReport,
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", projectId)
+    .eq("status", "running")
+    .select("id")
+    .maybeSingle();
+
+  if (completeError) {
+    throw new Error(`更新最终报告失败：${completeError.message}`);
+  }
+
+  if (!updated) {
+    return {
+      status: "skipped" as const,
+      reason: "项目已非 running 状态，跳过 finalize",
+    };
+  }
+
+  return { status: "completed" as const };
 }

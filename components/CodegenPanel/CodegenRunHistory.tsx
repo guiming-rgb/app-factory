@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { CodegenRun } from "@/components/hooks/useCodegenRuns";
 import { CodegenRunRow } from "@/components/CodegenRunRow";
 import { TARGET_LABEL } from "./useCodegenActions";
@@ -25,7 +26,7 @@ type Props = {
 /**
  * Codegen 运行历史表格：状态、门禁、操作列
  */
-export function CodegenRunHistory({
+export const CodegenRunHistory = memo(function CodegenRunHistory({
   error,
   activeRun,
   hideFailedRuns,
@@ -100,4 +101,4 @@ export function CodegenRunHistory({
       )}
     </>
   );
-}
+});

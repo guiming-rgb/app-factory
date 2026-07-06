@@ -9,7 +9,7 @@ import {
   resolveBackendTarget
 } from "@/lib/app-spec/backend-target";
 import { isTodoAppSpec } from "@/lib/app-spec/detect-todo-app";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import { zipDirectory } from "@/lib/codegen/zip";
 import {
   emitEntityListIndexJs,
   emitEntityListIndexWxml,
@@ -35,12 +35,12 @@ import {
   wechatPagePath
 } from "./emit";
 import { resolveCodegenScreens } from "@/lib/app-spec/resolve-codegen-screens";
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
 import {
   wechatIndustryListCall,
   wechatIndustryRequireLine,
 } from "./industry-bindings";
-import { hasWidgetTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
+import { hasPlatformTemplate, renderWidgetTemplate } from "@/lib/codegen/template-renderer";
 
 const TEMPLATE_DIR = path.join(
   process.cwd(),
@@ -118,7 +118,10 @@ async function ensureGeneratedPage(
     await fs.writeFile(`${fileBase}.wxss`, wxss, "utf8");
   } else {
     // Q2-P2: Mustache 优先 — 有行业模板时走 Mustache 渲染，否则 fallback 裸字符串 emit
-    const hasMustache = industry !== "generic" && (await hasWidgetTemplate(industry));
+    const hasMustache =
+      industry !== "generic" &&
+      (await hasPlatformTemplate("wechat-wxml", industry)) &&
+      (await hasPlatformTemplate("wechat-js", industry));
     if (hasMustache) {
       const ctx = { industry, displayName: specForPage?.displayName || screen.title, tableName: screen.entity || "items", primaryColor: "#0D9488", titleField: "title", primaryKey: "id", hasImage: false };
       try {
@@ -126,12 +129,17 @@ async function ensureGeneratedPage(
           renderWidgetTemplate(`${industry}_wxml`, { ...ctx, screenTitle: screen.title } as any),
           renderWidgetTemplate(`${industry}_js`, { ...ctx, screenTitle: screen.title } as any),
         ]);
+        if (/^Page\(\{\}\);?\s*$/.test(jsRendered.trim())) {
+          throw new Error(`Mustache JS 模板渲染为空 Page({})：industry=${industry}`);
+        }
         await fs.writeFile(`${fileBase}.wxml`, wxmlRendered, "utf8");
         await fs.writeFile(`${fileBase}.js`, jsRendered, "utf8");
-      } catch {
-        // Mustache 渲染失败 → 静默 fallback 到裸字符串
-        await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
-        await fs.writeFile(`${fileBase}.js`, emitGeneratedPageJs(), "utf8");
+      } catch (err) {
+        console.warn(
+          `[wechat-codegen] Mustache 渲染失败 (industry=${industry}, screen=${screen.id}):`,
+          err
+        );
+        throw err;
       }
     } else {
       await fs.writeFile(`${fileBase}.wxml`, emitGeneratedPageWxml(screen, specForPage), "utf8");
@@ -157,7 +165,7 @@ export async function generateWechatProject(
   }
   const spec = validation.spec;
 
-  const { detectIndustry } = await import("@/lib/flutter-codegen/emit-industry");
+  const { detectIndustry } = await import("@/lib/app-spec/industry");
   const industry = detectIndustry(spec as unknown as Record<string, unknown>);
 
   const outRoot = await fs.mkdtemp(

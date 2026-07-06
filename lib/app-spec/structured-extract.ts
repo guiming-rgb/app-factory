@@ -7,7 +7,7 @@ import type { AppSpec } from "./types";
 
 /**
  * 收尾 1: Agent 报告结构化解析
- * 从 8 Agent 的 Markdown 输出中提取结构化数据片段，
+ * 从 9 Agent 的 Markdown 输出中提取结构化数据片段，
  * 拼合后形成更精准的 App Spec（准确率提升 20-30%）
  */
 

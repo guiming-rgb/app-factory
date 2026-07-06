@@ -136,7 +136,7 @@ export async function listComponents(
   const supabase = getSupabaseAdmin();
   const { offset, limit } = parsePagination(filters?.page, filters?.limit);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   let query: any = supabase
     .from("marketplace_components")
     .select("*")

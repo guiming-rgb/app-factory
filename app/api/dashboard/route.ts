@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getGlobalUsageStats } from "@/lib/usage-dashboard";
+import { requireAuth } from "@/lib/auth/require-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * GET: 全局用量仪表盘数据
- * P3: 用量仪表盘
+ * GET: 全局用量仪表盘数据（需要登录）
  */
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+
   try {
     const daysParam = req.nextUrl.searchParams.get("days");
     const days = Math.min(90, Math.max(7, Number(daysParam) || 30));

@@ -5,7 +5,7 @@ import { TEMPLATE_LIBRARY } from "@/lib/app-spec/template-library";
 
 const STEPS = [
   { title: "选择模板或自由创建", desc: "5 套预置 App 模板，一键开始" },
-  { title: "AI 团队自动生产", desc: "8 Agent 串行协作，10-30 秒完成" },
+  { title: "AI 团队自动生产", desc: "9 Agent 串行协作，10-30 秒完成" },
   { title: "下载代码或一键部署", desc: "Flutter / 微信小程序 / 鸿蒙 + 后端 API" },
 ];
 

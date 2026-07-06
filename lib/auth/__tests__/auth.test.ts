@@ -35,8 +35,10 @@ describe("require-auth", () => {
 describe("rate-limit-supabase", () => {
   it("checkSupabaseRateLimit degrades gracefully without DB", async () => {
     const { checkSupabaseRateLimit } = await import("@/lib/auth/rate-limit-supabase");
-    // 无 Supabase 连接时降级放行
-    const ok = await checkSupabaseRateLimit();
+    const req = {
+      headers: new Headers({ "x-forwarded-for": "127.0.0.1" }),
+    } as Parameters<typeof checkSupabaseRateLimit>[0];
+    const ok = await checkSupabaseRateLimit(req);
     expect(ok).toBe(true);
   });
 

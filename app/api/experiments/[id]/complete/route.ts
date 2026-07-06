@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
-import { isAuthEnabled } from "@/lib/auth-config";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { completeExperiment } from "@/lib/experiments/ab-testing";
 
 export const runtime = "nodejs";
@@ -17,10 +16,8 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = await getApiUser();
-    if (isAuthEnabled() && !user) {
-      return unauthorizedResponse();
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     await completeExperiment(params.id);
     return NextResponse.json({ success: true });

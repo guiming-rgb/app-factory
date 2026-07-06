@@ -37,7 +37,8 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (runsError) {
-      return NextResponse.json({ error: runsError.message }, { status: 500 });
+      console.error("[GET /api/projects/[id]] runs", runsError.message);
+      return NextResponse.json({ error: "查询项目记录失败，请稍后重试" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -45,8 +46,7 @@ export async function GET(
       runs: runs || []
     });
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "查询项目失败";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[GET /api/projects/[id]]", error);
+    return NextResponse.json({ error: "查询项目失败，请稍后重试" }, { status: 500 });
   }
 }

@@ -42,10 +42,23 @@ async function cleanupByStatus(options: {
 
   const cleaned: string[] = [];
   for (const row of data ?? []) {
-    await getSupabaseAdmin()
+    const { error: updateError } = await getSupabaseAdmin()
       .from("codegen_runs")
-      .update({ status: "failed", log: options.log.slice(0, 4000), updated_at: new Date().toISOString() })
-      .eq("id", row.id);
+      .update({
+        status: "failed",
+        log: options.log.slice(0, 4000),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .eq("status", options.status);
+
+    if (updateError) {
+      console.warn(
+        `[cleanupStaleCodegenRuns] update failed id=${row.id}:`,
+        updateError.message,
+      );
+      continue;
+    }
     cleaned.push(String(row.id));
   }
   return cleaned;

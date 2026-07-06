@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { CodegenRun } from "./hooks/useCodegenRuns";
 import { latestRunByTarget, qualityGateBadges, classifyCodegenFailure, failureRemediation, type CodegenTarget } from "@/lib/codegen/format-run-quality";
 
@@ -13,7 +14,7 @@ function badgeClass(tone: string) {
   return "bg-violet-100 text-violet-800";
 }
 
-export function CodegenTargetCards({ runs }: { runs: CodegenRun[] }) {
+export const CodegenTargetCards = memo(function CodegenTargetCards({ runs }: { runs: CodegenRun[] }) {
   const latestByTarget = latestRunByTarget(runs);
   const stackTargets: CodegenTarget[] = ["flutter", "wechat", "harmony"];
 
@@ -41,4 +42,4 @@ export function CodegenTargetCards({ runs }: { runs: CodegenRun[] }) {
       })}
     </div>
   );
-}
+});

@@ -3,7 +3,7 @@ import path from "path";
 
 import { writeArtifactFile } from "@/lib/codegen/artifacts";
 import { getCodegenStorageBucket } from "@/lib/codegen/storage";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import { zipDirectory } from "@/lib/codegen/zip";
 
 /**
  * P1: 将 Flutter Web 构建产物上传到 Supabase Storage

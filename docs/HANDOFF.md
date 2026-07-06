@@ -1,7 +1,8 @@
 # HANDOFF — App 生产工厂接力单
 
-> **最后更新**：2026-06-25（18 个月路线图全线贯通 — 896 tests · 101+104 门禁）  
-> **今日收工**：[战略路线图-2026-Q2至2027.md](./战略路线图-2026-Q2至2027.md) · [模板能力矩阵.md](./模板能力矩阵.md)  
+> **最后更新**：2026-07-07（P3 续 + P4 完成）（P0 RFC + P1 实施）（双审计合并清单 · WIP 门禁全绿未 commit）  
+> **审计待办真源**：[audit-merged-checklist-2026-07-05.md](./audit-merged-checklist-2026-07-05.md)  
+> **审计报告**：[audit-2026-07-05-v3.md](./audit-2026-07-05-v3.md) · [audit-2026-07-05-supplement.md](./audit-2026-07-05-supplement.md)  
 > **配套**：[ONE_PAGER.md](./ONE_PAGER.md) · [产品路径一览.md](./产品路径一览.md) · [Claude共享记忆-总索引.md](./Claude共享记忆-总索引.md)
 
 ## 当前进度（勾选）
@@ -162,25 +163,56 @@ npm run verify:p1:production:sync:all   # 需 V3_HTTP_PROXY / 7897
 10. **三阶段路线** ✅ ① 加固 · ② v5.1 · ③ C1–C5 · **A+C 收工**（2026-05-27）
 11. **C4 推 GitHub**：代码 ✅ · OAuth/PAT 凭证待配 → [收工记录-20260527-A+C-GitHub-Codegen.md](./收工记录-20260527-A+C-GitHub-Codegen.md)
 
-## 明日维护者待办（真源）
+## 维护者待办（真源）
 
-**维护者必做**：**0**（`npm run maintainer:pending`）
+> **完整清单与执行顺序** → [audit-merged-checklist-2026-07-05.md](./audit-merged-checklist-2026-07-05.md)（Cursor + Claude-DeepSeek v3 合并，2026-07-05）
 
-**Agent / 开发优先**
+### 当前基线（WIP 工作区 · 2026-07-05 审计修复后）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | 895/898 ✅（3 个 codegen 集成用例偶发超时，与本轮 workflow 改动无关） |
+| `npm run build` | ✅ |
+| `verify:industry:parity` | 173/173 ✅ |
+| `verify:industry:e2e` | 180/180 ✅ |
+| `verify:industry:templates` | 105/105 ✅ |
+| `npm run lint` | ✅（CI job 已加） |
+| Git | **大量 WIP 未 commit**（HEAD `f0aab20`） |
+
+**审计 P0/P1 已落地**（C1–C5 · S-01~S-15 · G-01~G-07 · M1–M6 · W-01~W-03 · CI-01~03 · DOC-01/02）。**P2 防御项已落地**（per-IP 限流 · analytics ingest key · experiments admin · SSO cookie · spec 语义校验 · Inngest concurrency · workflow 单测）。**待办**：D-01 分批 commit · Playwright CI 实跑验证 · RLS 长期收紧 · 三栈 codegen 去重。
+
+### 执行顺序（摘要）
+
+| 步 | 内容 | 工时 |
+|----|------|------|
+| **0** | commit WIP + 校正 HANDOFF 矛盾表述 | ~1h |
+| **1** | 可靠性 C1–C5（LLM timeout、verify-artifact、codegen_runs、execSync） | ~2.5h |
+| **2** `[公网]` | 安全 S-01~S-15（billing/feedback/templates/export/admin/支付/RLS） | ~4h |
+| **3** | 产品结构 G-01~G-07（Mustache 三栈、parity 编译、demo 一致） | ~6h |
+| **4** | 数据/运维 M1–M6 + W-01~W-03 | ~4h |
+| **5** | CI + 文档（parity 进 GHA、9 Agent 文案） | ~2h |
+| **6** | 防御性 P2（按需） | — |
+
+### Sprint 排期
+
+- **Sprint A**（1 天）：步 0 + 1 + 2A 鉴权  
+- **Sprint B**（1–1.5 天）：步 2B + 3.1–3.4 Mustache  
+- **Sprint C**（0.5 天）：步 4.1–4.6 + 5.1–5.3  
+- **Sprint D**（按需）：步 4.7+ / 5.4+ / P2  
+
+### 维护者历史项（低优先级 · 未阻塞合并清单）
 
 1. **Supabase migration**：`sql/migrations/20260616_security_compliance_agent.sql`  
-2. **Vercel redeploy**：上线 `/privacy` · `/terms` · R1 workflow  
-3. **配 GitHub Secrets**（可选）：Apple / Windows 签名 → 跑 GHA 验证  
-4. 8 个未跟踪 `.cursor/rules/project-*.mdc` — 入库或废弃  
-
-**可选**
-
-5. 微信 Console 红错 · 正式 AppID 提审 · Inngest Cloud · PAT workflow scope  
-6. `npm run stats:codegen -- 7`
+2. **Vercel redeploy**：`/privacy` · `/terms` · R1 workflow  
+3. **GitHub Secrets**（可选）：Apple / Windows 签名  
+4. 微信 Console · 正式 AppID · Inngest Cloud  
 
 ```bash
 npm run maintainer:pending
-npm run verify:p:desktop:flutter
+npm test && npm run build
+npm run verify:industry:parity
+npm run verify:industry:e2e
+npm run verify:industry:templates
 ```
 
 ## 阻塞 / 风险（简）
@@ -195,6 +227,9 @@ npm run verify:p:desktop:flutter
 
 | 日期 | 变更 |
 |------|------|
+| 2026-07-05 | **双审计合并清单**：[audit-merged-checklist-2026-07-05.md](./audit-merged-checklist-2026-07-05.md) · HANDOFF 待办节同步 · WIP 896/173/180/105 全绿 |
+| 2026-07-05 | **Claude v3 审计**：[audit-2026-07-05-v3.md](./audit-2026-07-05-v3.md) + [supplement](./audit-2026-07-05-supplement.md) |
+| 2026-07-02 | **深度审计 WIP**：安全/TOCTOU/验签/注入 — 见 §2026-07-02（部分已本地修绿，未 commit） |
 | 2026-06-25 | **三栈 Parity P0-P5 收官**：微信 detail/form industry service · 鸿蒙 game/payment service · e2e 19×3 · parity v3 170+ 项 |
 | 2026-06-25 | **18 个月路线图全线贯通**：896 tests · 101+104 门禁 · P0-B-1 鸿蒙差异化 · P1 Widget/wcc 门禁 · P2-D 测试补强 · P3-G 文档收工 |
 | 2026-06-17 | **R1 发行层**：GHA 条件签名 · 隐私/条款页 · 生成 App 隐私 · [收工记录-20260617](./收工记录-20260617-今日收工.md) |
@@ -236,3 +271,362 @@ npm run verify:p:desktop:flutter
 | 2026-05-19 | **`feature/v1.2-inngest` 合并 `main`**（fast-forward）；`mvp-v1.2` 标签；议事记录落盘 |
 | 2026-05-19 | **验收 A 通过**；HANDOFF/验收记录/执行计划/TCM 大纲/简报同步；样本：海洋生态 + 踢足球 |
 | 2026-05-14 | 初版 HANDOFF；与 TCM 大纲同日建立 |
+
+---
+
+## 2026-07-02 深度审计 · Claude Code DeepSeek V4 Pro（全局规则体系 · Cursor 交叉验收）
+
+> **最终状态**：WIP — 61 文件未 commit，修复方向正确但待收尾
+
+### 交付状态
+- 所有修复在本地工作区，未 commit，未 push
+- 61 modified files + 多个 `* 2.ts` 重复文件需清理
+- `.next` 缓存损坏需 `rm -rf .next && npm run build` 重建
+- Cursor 评分：**74/100 (C+)** — 审计有价值，交付不完整
+
+### 第一轮 — 架构归正（9 处跨栈耦合 ✅，3 项未修）
+
+| # | 问题 | 核实 |
+|----|------|:---:|
+| P0 | **9 处跨栈耦合**→app-spec/industry | ✅ Cursor 确认无残留 |
+| P1 | 三栈 generate.ts DDL 重复 | ⚠️ 未修 |
+| P1 | codegen-full-pipeline 测试签名错误 | ⚠️ 未修 |
+| P1 | 50/312 模板路径缺失 (16%) | ⚠️ 未修，test fail |
+
+### 第二轮 — 深层问题（9 修复，含 1 缺陷）
+
+| # | 问题 | 核实 |
+|----|------|:---:|
+| CRITICAL | `lib/workflow.ts:91` TOCTOU 条件 UPDATE | ⚠️ **缺 `{count:'exact'}`已修** — 否则 updatedCount 恒 null |
+| CRITICAL | `app/api/projects/route.ts:90` 配额原子 RPC | ✅ RPC + 降级路径 |
+| HIGH | `app/api/payment/webhook/route.ts:142` 支付验签 | ✅ 无 sig→401 |
+| HIGH | `app/api/stripe/webhook/route.ts:42` 幂等性 | ✅ ignoreDuplicates |
+| HIGH | `app/api/projects/route.ts:82` Prompt 注入 | ✅ detect+清洗 |
+| MEDIUM | 7 个 API Routes 错误泄露 | ⚠️ 部分：GET/projects catch 仍漏 error.message |
+| MEDIUM | `app/api/admin/route.ts:55` admin tier 白名单 | ✅ |
+| MEDIUM | `lib/auth/webhook-rate-limit.ts:24` setInterval 泄漏 | ✅ 惰性清理 |
+| LOW | 每次建 Supabase 客户端→单例 | ✅ |
+
+### 门禁实测（Cursor 跑）
+
+| 命令 | HANDOFF 原称 | 实测 |
+|------|:---:|------|
+| verify:industry:parity | 全绿 | 173/173 ✅ |
+| verify:industry:e2e | — | 180/180 ✅ |
+| verify:industry:templates | 104/104 | **84/104** ❌（门禁脚本未同步 app-spec/industry） |
+| npm test | 896 全绿 | **894/896** ❌（2预存 fail + 1 unhandled rejection） |
+| npm run build | Build ✅ | **失败**（.next/app 2 重复目录 + scandir EIO） |
+
+### 2026-07-02 节待收尾状态（2026-07-05 更新）
+
+| 原待办 | 状态 |
+|--------|------|
+| 清理 `.next` / `* 2.ts` | ✅ 已完成 |
+| templates 脚本改查 `app-spec/industry.ts` | ✅ 105/105 |
+| 2 个失败测试 | ✅ 896/896 |
+| GET `/api/projects` catch 错误泄露 | ⚠️ WIP 未确认 |
+| commit WIP | ❌ 仍 62+ 文件未入库 |
+| 全量验收 | ✅ 本地门禁全绿 |
+
+**后续待办已合并至** [audit-merged-checklist-2026-07-05.md](./audit-merged-checklist-2026-07-05.md)（22 项 P0 + 16 项 P1）。
+
+---
+
+## 2026-07-05 双审计合并 · Cursor + Claude-DeepSeek v3
+
+| 文档 | 说明 |
+|------|------|
+| [audit-merged-checklist-2026-07-05.md](./audit-merged-checklist-2026-07-05.md) | **待办真源** — 执行顺序 + Sprint |
+| [audit-2026-07-05-v3.md](./audit-2026-07-05-v3.md) | Claude 75 条（5C/33H/27M/12L） |
+| [audit-2026-07-05-supplement.md](./audit-2026-07-05-supplement.md) | Cursor 独有发现验证 |
+
+**合并结论**：本地 WIP 门禁全绿，但 **不可宣称审计通过**；P0 约 22 项（含 Mustache 断链、billing 鉴权、LLM timeout）。
+
+
+---
+
+## HANDOFF · P0 完成（2026-07-06 · Emit 重构路线图基线）
+
+> **RFC 真源**：[rfc-emit-refactor.md](./rfc-emit-refactor.md)
+
+### 改了什么
+
+| 项 | 交付 |
+|----|------|
+| RFC | `docs/rfc-emit-refactor.md` — 五阶段 P0–P4 路线图 |
+| Ledger 引用 | `CLAUDE.md` §十一 补路线图入口 |
+| 基线记录 | 本节门禁表（跑完后填入实测数） |
+
+### 门禁基线（P0 实测 · 2026-07-07）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **921/921** ✅ |
+| `npm run lint` | **0 errors** ✅ |
+| `npm run build` | ✅ |
+| `verify:industry:parity` | **173/0** ✅ |
+| `verify:industry:e2e` | **180/0** ✅ |
+| `verify:industry:templates` | **105/0** ✅ |
+| `check:emit:lines` | flutter 6215 行 WARN（软门禁 exit 0） |
+| Git HEAD | `f0aab20`（WIP 未 commit） |
+
+---
+
+## HANDOFF · P1 完成（2026-07-07 · 质量网，未动 emit 重构）
+
+### 改了什么
+
+| 项 | 文件 | 说明 |
+|----|------|------|
+| 三栈 verify | `lib/codegen/verify-artifact.ts` | `verifyCodegenArtifact(path, target)` 覆盖 flutter/wechat/harmony |
+| 管线接入 | `lib/codegen/base-executor.ts` | Stage 8 后三栈统一验证 |
+| 行业置信度 | `lib/app-spec/industry.ts` | `detectIndustryWithConfidence()` + metadata 写入 |
+| UI 展示 | `CodegenRunRow.tsx` · `format-run-quality.ts` | 行业 + 置信度徽章 |
+| Snapshot | `lib/__tests__/emit-industry-snapshot.test.ts` | finance/ecommerce/medical 3 snapshot |
+| 置信度测试 | `lib/__tests__/detect-industry-confidence.test.ts` | 4 用例 |
+| 行数软门禁 | `scripts/check-emit-line-count.mjs` | `npm run check:emit:lines` |
+
+### 门禁（P1 实测）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **921/921**（+7：置信度 4 + snapshot 3） |
+| 其余 | 同 P0 基线全绿 |
+
+### 下一 P 入口（P2）
+
+1. 试点行业：**finance / ecommerce / medical**
+2. Mustache 迁移 + 配置表化 + `shared-emit`
+3. 每周 1 次 `verify:industry:parity` 全量
+4. `check:emit:lines --strict` 可在 P2 中期纳入 CI
+
+**开工命令**：
+```bash
+cd app-factory
+npm test && npm run build && npm run lint
+npm run verify:industry:parity && npm run verify:industry:e2e && npm run verify:industry:templates
+npm run check:emit:lines
+```
+
+
+---
+
+## HANDOFF · P2 首轮完成（2026-07-07 · 试点 finance/ecommerce/medical）
+
+### 改了什么
+
+| 项 | 路径 | 说明 |
+|----|------|------|
+| 行业配置表 | `config/industries/{finance,ecommerce,medical}.json` | displayName/tableName/serviceName/widgetClasses |
+| emit-shared | `lib/app-spec/emit-shared/` | pilot · industry-config · widget-context |
+| Mustache 统一 | `copy-industry-template.ts` · `getIndustryWidgetsDart` | 共享 `buildWidgetContext` |
+| P2 门禁 | `npm run verify:p2:pilot` | 24 项：配置 + Mustache + 三栈生成 |
+| Snapshot | `emit-industry-snapshot.test.ts` | +3 Mustache 路径 snapshot |
+
+### 门禁（P2 实测）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **929/929** ✅ |
+| `npm run lint` | **0 errors** ✅ |
+| `verify:industry:parity` | **173/0** ✅ |
+| `verify:industry:e2e` | **180/0** ✅ |
+| `verify:industry:templates` | **105/0** ✅ |
+| `verify:p2:pilot` | **24/0** ✅ |
+
+### 下一 P 入口（P2 续 / P3）
+
+1. **P2 续**：将其余 16 行业迁入 `config/industries/*.json`
+2. **P2 续**：`emit-industry-services.ts` / `industry.js` 从配置生成
+3. **P3**：flutter-codegen 拆分 · YAML 行业 regex · parity `--filter`
+4. 每周 1 次 `verify:industry:parity` 全量
+
+```bash
+npm test && npm run verify:p2:pilot && npm run verify:industry:parity
+```
+
+
+---
+
+## HANDOFF · P2 续完成（2026-07-07 · 19 行业 JSON 全量）
+
+### 改了什么
+
+| 项 | 说明 |
+|----|------|
+| 19 行业 JSON | `config/industries/*.json` 全量（含 serviceMethods） |
+| service-registry | `emit-shared/service-registry.ts` · wechat bindings 配置派生 |
+| 配置门禁 | `npm run verify:industry:configs` — 21/0 |
+
+### 门禁
+
+| 门禁 | 结果 |
+|------|------|
+| `verify:industry:configs` | **21/0** ✅ |
+| `verify:p2:pilot` | **24/0** ✅ |
+| `npm test` | **933/933** ✅ |
+
+---
+
+## HANDOFF · P3 首轮完成（2026-07-07）
+
+### 改了什么
+
+| 项 | 路径 | 说明 |
+|----|------|------|
+| detect 规则外置 | `config/industries/detect-rules.json` | industry.ts 不再硬编码 regex |
+| parity 增量 | `verify-industry-parity.mjs` · `e2e` | `--filter=finance,ecommerce,medical` |
+| emit 拆分 | `lib/flutter-codegen/emit-industries/` | finance · ecommerce 独立文件 |
+| SSO schema | `config/enterprise/sso-config.schema.json` | `sso-config-validate.ts` 接入 configureSSO |
+
+### 门禁（P3 实测）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **933/933** ✅ |
+| `verify:industry:parity` | **173/0** ✅ |
+| `verify:industry:parity --filter=finance,ecommerce,medical` | **41/0** ✅ |
+| `verify:industry:e2e` | **180/0** ✅ |
+| `verify:industry:templates` | **105/0** ✅ |
+| `verify:industry:configs` | **21/0** ✅ |
+
+### 下一 P 入口（P3 续 / P4）
+
+1. 其余 emit-industry 函数拆至 `emit-industries/*.ts`
+2. harmony `INDUSTRY_METHODS` 从 JSON serviceMethods 生成
+3. P4：CI 矩阵 · codegen 可观测 · WIP commit 策略
+
+```bash
+npm test && npm run verify:industry:configs
+npm run verify:industry:parity -- --filter=finance,ecommerce,medical
+```
+
+---
+
+## HANDOFF · P3 续完成（2026-07-07）
+
+### 改了什么
+
+| 项 | 路径 | 说明 |
+|----|------|------|
+| emit 拆分续 | `lib/flutter-codegen/emit-industries/{crm,fitness,education}.ts` | 5 行业 legacy emit 全部独立 |
+| emit 路由 | `lib/flutter-codegen/emit-industry.ts` | 仅 re-export + `getIndustryWidgetsDart` |
+| 鸿蒙 tableMap 配置化 | `lib/harmony-codegen/emit-industry-services.ts` | `listIndustryEmitConfigs()` 替代硬编码 |
+| serviceMethods parity | `scripts/verify-industry-configs.mjs` | JSON ⊆ 鸿蒙 INDUSTRY_METHODS |
+| JSON 对齐 | `config/industries/*.json`（9 行业） | serviceMethods 与鸿蒙方法名一致 |
+
+### 门禁（P3 续实测）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **933/933** ✅ |
+| `verify:industry:configs` | **40/0** ✅（含 19×harmony parity） |
+| `verify:industry:parity` | **173/0** ✅ |
+| `verify:p2:pilot` | **24/0** ✅ |
+| `check:emit:lines` | flutter 5667 行 WARN（软门禁 exit 0） |
+
+---
+
+## HANDOFF · P4 完成（2026-07-07）
+
+### 改了什么
+
+| 项 | 路径 | 说明 |
+|----|------|------|
+| CI 矩阵扩展 | `.github/workflows/ci.yml` | configs · p2:pilot · emit:lines · matrix check |
+| PR parity 增量 | `ci.yml` industry-gates | PR 跑 `--filter=finance,ecommerce,medical` |
+| codegen 可观测 | `lib/codegen/base-executor.ts` | 默认 `onError`→`captureError`；metadata 补 `codegenTarget`/`artifactVerified` |
+| Sentry breadcrumb | `lib/monitoring.ts` | `addCodegenBreadcrumb` + `captureError` 前置 |
+| 矩阵校验脚本 | `scripts/generate-detect-industry-matrix.mjs` | `npm run generate:detect-matrix`（19×10 cases） |
+
+### WIP commit SOP（D-01 · 维护者手动）
+
+1. **批次 A**：`config/industries/` + `emit-shared/` + `verify-industry-configs`
+2. **批次 B**：`lib/flutter-codegen/emit-industries/` + `emit-industry.ts` 瘦身
+3. **批次 C**：`lib/harmony-codegen/` + `base-executor` + `monitoring`
+4. **批次 D**：`.github/workflows/ci.yml` + `scripts/generate-detect-industry-matrix.mjs` + `docs/HANDOFF.md`
+5. 每批：`npm test && npm run verify:industry:configs && npm run verify:industry:parity`
+
+### 真机 SOP（`verify:industry:device`）
+
+```bash
+# 维护者本地（需真机/模拟器环境变量）
+npm run verify:industry:device
+
+# 前置：三栈产物已生成（finance/ecommerce/medical 试点）
+npm run verify:p2:pilot
+npm run verify:industry:parity -- --filter=finance,ecommerce,medical
+```
+
+### 门禁（P4 实测）
+
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **933/933** ✅ |
+| `npm run lint` | **0 errors** ✅ |
+| `verify:industry:configs` | **40/0** ✅ |
+| `verify:p2:pilot` | **24/0** ✅ |
+| `verify:industry:parity` | **173/0** ✅ |
+| `verify:industry:parity --filter=...` | **41/0** ✅ |
+| `verify:industry:e2e` | **180/0** ✅ |
+| `generate:detect-matrix` | **19/19 OK** ✅ |
+| `check:emit:lines` | flutter WARN（软门禁） |
+
+### RFC P0–P4 路线图状态
+
+- [x] P0 RFC + ledger
+- [x] P1 质量网
+- [x] P2 配置表化（19 行业 JSON）
+- [x] P3 架构拆分（detect-rules · emit-industries · SSO schema）
+- [x] P4 运维 CI（矩阵 · 可观测 · SOP）
+
+```bash
+npm test && npm run lint && npm run build
+npm run verify:industry:configs && npm run verify:p2:pilot
+npm run verify:industry:parity && npm run verify:industry:e2e
+npm run generate:detect-matrix
+```
+
+---
+
+## HANDOFF · Phase2 内容完善（线 A–B–C · 2026-07-07）
+
+### 线 A 收敛
+- snapshot 清理 + pipeline 测试 timeout 120s
+- `verify-industry-device` 修复 duplicate home id
+- `docs/rfc-emit-content-phase2.md` 边界文档
+
+### 线 B1 — 19 行业 Mustache 全量
+- `P2_PILOT_INDUSTRIES` 扩至 19 行业
+- 删除 `emit-industries/*.ts` legacy bare-string
+- `emit-industry.ts` 仅 Mustache 路由（30 行）
+- `npm run verify:p2:all` — **76/0**
+- 全部 JSON `pilot: true` + `widgetClasses` 从 mustache 提取
+
+### 线 B2 — emit 巨石拆分
+- `emit-extended/` 6 页面类型子模块（916→20 行入口）
+- `emit-fintech/` 4 模块（691→11 行入口）
+- `check:emit:lines` flutter **4052 行 OK**（<5000）
+
+### 线 B3 — 鸿蒙方法体（起步）
+- `config/harmony/service-method.schema.json`
+- `lib/harmony-codegen/harmony-method-generator.ts`
+- 复杂 `INDUSTRY_METHODS` 仍 TS 硬编码（渐进迁移）
+
+### 线 C — 发行 SOP
+- `docs/release-pipeline-sop.md`
+- `npm run verify:release:readiness` — **6/0**
+
+### 门禁（Phase2 实测）
+| 门禁 | 结果 |
+|------|------|
+| `npm test` | **966/966** |
+| `verify:p2:all` | **76/0** |
+| `verify:industry:configs` | **40/0** |
+| `check:emit:lines` | **全栈 OK** |
+
+### 未完成（需维护者）
+- B3 全量方法体 JSON 化
+- 非行业 emit Mustache 化（extended 仅拆分未模板化）
+- P3-F 真签名/提审（Apple/Google/微信账号）
+

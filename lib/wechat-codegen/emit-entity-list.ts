@@ -1,5 +1,5 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
 import {
   buildEntityListRows,
   entityTableName,
@@ -237,7 +237,7 @@ export async function writeEntityDetailPage(
   entity: import("@/lib/app-spec/entity-scaffold").AppSpecEntity,
   fs: typeof import("fs/promises"),
   pathMod: typeof import("path"),
-  industry: import("@/lib/flutter-codegen/emit-industry").IndustryCategory = "generic"
+  industry: import("@/lib/app-spec/industry").IndustryCategory = "generic"
 ): Promise<void> {
   const {
     emitEntityDetailJson,

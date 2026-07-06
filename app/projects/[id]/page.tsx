@@ -12,7 +12,7 @@ import { ProjectMemoriesPanel } from "@/components/ProjectMemoriesPanel";
 import { RefreshProjectButton } from "@/components/RefreshProjectButton";
 import { RegenerateCompletedButton } from "@/components/RegenerateCompletedButton";
 import { SpecEditorPanel } from "@/components/SpecEditorPanel";
-import { AGENT_PIPELINE_COUNT } from "@/lib/agents";
+import { filterAgentsForApp } from "@/lib/agents";
 import { APP_FEATURES } from "@/lib/app-features";
 import { getProjectDetailForPage } from "@/lib/projects-server";
 import { getServerUser } from "@/lib/supabase/server";
@@ -43,10 +43,11 @@ export default async function ProjectPage({
 
   const { project, runs, usage, codegenRuns } = data;
 
+  const expectedAgentCount = filterAgentsForApp(project.idea ?? "").length;
   const completedAgentCount = runs.filter((r) => r.status === "completed")
     .length;
   const progressPercent = Math.min(
-    Math.round((completedAgentCount / AGENT_PIPELINE_COUNT) * 100),
+    Math.round((completedAgentCount / Math.max(expectedAgentCount, 1)) * 100),
     100
   );
 
@@ -158,7 +159,7 @@ export default async function ProjectPage({
                   <div className="mb-1 flex items-center justify-between text-xs text-gray-600">
                     <span>Agent 进度</span>
                     <span>
-                      {completedAgentCount}/{AGENT_PIPELINE_COUNT} 已完成
+                      {completedAgentCount}/{expectedAgentCount} 已完成
                     </span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">

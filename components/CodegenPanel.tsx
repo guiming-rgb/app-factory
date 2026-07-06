@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CodegenTargetCards } from "@/components/CodegenTargetCard";
 import { useCodegenRuns, type CodegenRun } from "@/components/hooks/useCodegenRuns";
 import { useCodegenActions } from "./CodegenPanel/useCodegenActions";
@@ -28,15 +28,18 @@ export function CodegenPanel({ projectId, initialRuns = [], embedded = false }: 
 
   const activeRun = runs.find((r) => r.status === "queued" || r.status === "running");
   const failedRunCount = runs.filter((r) => r.status === "failed").length;
-  const visibleRuns = hideFailedRuns ? runs.filter((r) => r.status !== "failed") : runs;
+  const visibleRuns = useMemo(
+    () => hideFailedRuns ? runs.filter((r) => r.status !== "failed") : runs,
+    [hideFailedRuns, runs]
+  );
   const shellClass = embedded ? "mt-4" : "mt-4 rounded-xl border border-violet-200 bg-violet-50/60 p-4";
 
-  const doGenerate = (t: string) => { void handleGenerate(t as "flutter" | "wechat" | "harmony", fetchSingleRun, fetchRuns, startPolling, setError); };
-  const doPush = (id: string) => { void handlePush(id, fetchRuns, setError); };
-  const doCancel = (id: string) => { void handleCancel(id, fetchRuns, setError); };
-  const doPushAll = () => { void handlePushAll(fetchRuns, setError); };
-  const doCopyRepo = (id: string, u: string) => { void handleCopyRepo(id, u, setError); };
-  const doGenerateAll = () => { void handleGenerateAll(["flutter", "wechat", "harmony"], fetchRuns, setError); };
+  const doGenerate = useCallback((t: string) => { void handleGenerate(t as "flutter" | "wechat" | "harmony", fetchSingleRun, fetchRuns, startPolling, setError); }, [handleGenerate, fetchSingleRun, fetchRuns, startPolling, setError]);
+  const doPush = useCallback((id: string) => { void handlePush(id, fetchRuns, setError); }, [handlePush, fetchRuns, setError]);
+  const doCancel = useCallback((id: string) => { void handleCancel(id, fetchRuns, setError); }, [handleCancel, fetchRuns, setError]);
+  const doPushAll = useCallback(() => { void handlePushAll(fetchRuns, setError); }, [handlePushAll, fetchRuns, setError]);
+  const doCopyRepo = useCallback((id: string, u: string) => { void handleCopyRepo(id, u, setError); }, [handleCopyRepo, setError]);
+  const doGenerateAll = useCallback(() => { void handleGenerateAll(["flutter", "wechat", "harmony"], fetchRuns, setError); }, [handleGenerateAll, fetchRuns, setError]);
 
   return (
     <div className={shellClass}>

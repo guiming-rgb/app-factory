@@ -1,0 +1,94 @@
+{
+  "agent": "D4",
+  "dimension": "资源生命周期",
+  "project": "app-factory",
+  "date": "2026-07-06",
+  "audit_version": "v3",
+  "model": "deepseek-v4-pro",
+  "summary": {
+    "total_findings": 10,
+    "critical": 0,
+    "high": 0,
+    "medium": 3,
+    "low": 3,
+    "previously_reported_fixed": 4,
+    "previously_reported_unfixed": 0
+  },
+  "coverage": {
+    "filesTouched": [
+      "lib/llm.ts",
+      "lib/sandbox/flutter.ts",
+      "lib/sandbox/docker-analyze.ts",
+      "lib/codegen/base-executor.ts",
+      "lib/codegen/template-renderer.ts",
+      "lib/codegen/zip.ts",
+      "lib/codegen/artifacts-cleanup.ts",
+      "lib/codegen/cache.ts",
+      "lib/inngest/client.ts",
+      "lib/inngest/functions.ts",
+      "lib/inngest/codegen-functions.ts",
+      "lib/supabase.ts",
+      "lib/supabase/browser.ts",
+      "lib/github/connections-server.ts",
+      "lib/security/rate-limiter.ts",
+      "lib/auth/rate-limit.ts",
+      "app/api/stripe/webhook/route.ts",
+      "middleware.ts",
+      "lib/codegen/enqueue.ts",
+      "lib/codegen/execute-flutter.ts"
+    ],
+    "filesSkipped": [
+      "templates/ (模板文件，非运行时资源代码)",
+      "components/ (UI 组件，非资源管理)",
+      "lib/__tests__/ (测试文件)",
+      "scripts/ (构建脚本)"
+    ],
+    "blindSpots": [
+      "lib/codegen/storage.ts - Supabase Storage 上传/下载未审查",
+      "lib/flutter-codegen/build-web.ts - Web 构建子进程管理",
+      "lib/codegen/desktop-gha-orchestrator.ts - GHA 调度资源管理",
+      "lib/warmup.ts - 缓存预热未审查",
+      "Stripe SDK 连接池内部行为"
+    ]
+  },
+  "previously_reported_status": [
+    {
+      "finding_id": "C1",
+      "description": "OpenAI/DeepSeek 客户端无 timeout 配置",
+      "location": "lib/llm.ts:55-62",
+      "status": "FIXED",
+      "evidence": "lib/llm.ts:53 LLM_TIMEOUT_MS=120000, lib/llm.ts:62 timeout: LLM_TIMEOUT_MS"
+    },
+    {
+      "finding_id": "C2",
+      "description": "callLLM 无 AbortController / 请求取消机制",
+      "location": "lib/llm.ts:214-227",
+      "status": "FIXED",
+      "evidence": "lib/llm.ts:95 signal?: AbortSignal, lib/llm.ts:224 检查 signal?.aborted, lib/llm.ts:239 传递 signal 给 API"
+    },
+    {
+      "finding_id": "C5",
+      "description": "多 execSync/spawnSync 无 timeout",
+      "location": "lib/sandbox/flutter.ts:25,33,56,64,79",
+      "status": "FIXED",
+      "evidence": "lib/sandbox/flutter.ts:24 SANDBOX_CMD_TIMEOUT_MS=120000, 所有 execSync/spawnSync 均已添加 timeout"
+    },
+    {
+      "finding_id": "M5",
+      "description": "execSync('flutter pub get') 无 timeout",
+      "location": "lib/sandbox/flutter.ts:31",
+      "status": "FIXED",
+      "evidence": "lib/sandbox/flutter.ts:39 timeout: SANDBOX_CMD_TIMEOUT_MS"
+    }
+  ],
+  "key_positive_findings": [
+    "BaseCodegenExecutor 的 finally 块正确清理临时目录 (lib/codegen/base-executor.ts:287-291)",
+    "LLM 客户端有 120s timeout + AbortSignal 支持 + 熔断器 + 指数退避重试 (lib/llm.ts)",
+    "docker-analyze 有可配置 timeout + 重试 + 区分可重试/不可重试错误 (lib/sandbox/docker-analyze.ts)",
+    "有 artifacts-cleanup 模块 (lib/codegen/artifacts-cleanup.ts) 清理本地和远端过期产物",
+    "middleware 有 API 限流 (lib/auth/rate-limit-supabase.ts)",
+    "codegen 有 per-IP 限流器 (lib/security/rate-limiter.ts:150)",
+    "Stripe webhook 有签名验证 + 幂等处理 (app/api/stripe/webhook/route.ts:33,44-54)",
+    "Supabase 客户端惰性初始化单例复用连接 (lib/supabase.ts:10-51)"
+  ]
+}

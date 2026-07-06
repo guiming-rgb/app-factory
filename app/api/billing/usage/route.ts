@@ -16,6 +16,7 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireWorkspaceMember } from "@/lib/auth/require-workspace-member";
 import {
   getUsageReport,
   recordUsage,
@@ -45,6 +46,9 @@ export async function GET(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const auth = await requireWorkspaceMember(workspaceId);
+    if (!auth.ok) return auth.response;
 
     const [report, subscription] = await Promise.all([
       getUsageReport(workspaceId, month),
@@ -112,6 +116,9 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const auth = await requireWorkspaceMember(body.workspaceId);
+    if (!auth.ok) return auth.response;
 
     // ── 记录用量 ──
     await recordUsage(body.workspaceId, body.metric, amount);

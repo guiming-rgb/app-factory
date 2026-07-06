@@ -4,10 +4,10 @@
 import {
   DEFAULT_HOST_OUT,
   hasFlutter,
-  prepareSandboxOutput,
   runFlutterApkDebugBuild,
   runFlutterPubGetAndAnalyze
 } from "../lib/sandbox/flutter";
+import { prepareSandboxOutput } from "../lib/flutter-codegen/generate";
 
 async function main() {
   const noBuild = process.argv.includes("--no-build");

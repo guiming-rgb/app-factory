@@ -10,7 +10,7 @@ export interface Column<T> {
   width?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 interface DataTableProps<T extends Record<string, any>> {
   columns: Column<T>[];
   data: T[];
@@ -23,7 +23,7 @@ interface DataTableProps<T extends Record<string, any>> {
   loading?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line
 export function DataTable<T extends Record<string, any>>({
   columns,
   data,

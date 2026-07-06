@@ -16,7 +16,8 @@ export async function GET(
     const versions = await listSpecVersions(params.id);
     return NextResponse.json({ versions });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error("[spec/versions]", err);
+    return NextResponse.json({ error: "操作失败，请稍后重试" }, { status: 500 });
   }
 }
 
@@ -37,6 +38,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, spec });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    console.error("[spec/versions]", err);
+    return NextResponse.json({ error: "操作失败，请稍后重试" }, { status: 500 });
   }
 }

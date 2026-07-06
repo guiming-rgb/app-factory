@@ -22,7 +22,7 @@ export default function LandingPage() {
         <h2 className="text-center text-3xl font-bold">核心能力</h2>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {[
-            { icon: "🤖", title: "8 Agent 团队", desc: "CEO → PM → 架构师 → 设计师 → 开发 → 测试 → 商业，全流程覆盖" },
+            { icon: "🤖", title: "9 Agent 团队", desc: "CEO → PM → 架构师 → 设计师 → 开发 → 测试 → 安全 → 商业，全流程覆盖" },
             { icon: "📱", title: "三平台代码", desc: "Flutter + 微信小程序 + 鸿蒙 ArkTS，同步生成可运行源码" },
             { icon: "🗄️", title: "后端一条龙", desc: "Supabase DDL + RLS + Express API + Edge Functions 自动生成" },
             { icon: "⚡", title: "一键部署", desc: "GitHub Push + GHA 桌面包 + Vercel Web 部署" },

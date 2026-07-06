@@ -21,8 +21,8 @@ hero:
 
 features:
   - icon: 🧠
-    title: 8 Agent 协同流水线
-    details: CEO → 产品经理 → 架构师 → 设计师 → 开发负责人 → 测试负责人 → 安全合规 → 商业顾问，8 个 AI Agent 串行协作生成完整项目方案、技术文档和可运行代码
+    title: 9 Agent 协同流水线
+    details: CEO → 产品经理 → 项目经理 → 架构师 → 安全合规 → UI 设计师 → 开发负责人 → 测试负责人 → 商业顾问，9 个 AI Agent 串行协作生成完整项目方案、技术文档和可运行代码
   - icon: 📱
     title: 三平台同步生成
     details: Flutter (iOS/Android/Web/Desktop) + 微信小程序 + 鸿蒙 ArkTS，同一份 App Spec 定义自动生成三套原生源码，逻辑一致、风格统一

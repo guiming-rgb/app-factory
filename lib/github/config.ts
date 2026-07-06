@@ -41,9 +41,12 @@ export function getGitHubOAuthCallbackUrl(): string {
 }
 
 export function getGitHubOAuthStateSecret(): string {
-  return (
-    process.env.GITHUB_OAUTH_STATE_SECRET?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    "dev-github-oauth-state-secret"
-  );
+  const secret = process.env.GITHUB_OAUTH_STATE_SECRET?.trim();
+  if (!secret) {
+    throw new Error(
+      "Missing GITHUB_OAUTH_STATE_SECRET — set a random 32+ char string in .env.local. " +
+      "This secret signs OAuth state parameters to prevent CSRF."
+    );
+  }
+  return secret;
 }

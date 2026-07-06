@@ -2,7 +2,20 @@
 
 > **用途**：把本仓库内 **所有 AI 记忆、Cursor 规则、重要资料** 一次性交给 Claude（Projects / 上传 / Git 克隆均可）。  
 > **维护者**：事实变更时先改对应专题文档，再在本文件 **§二** 核对链接是否仍有效。  
-> **最后更新**：2026-06-05
+> **最后更新**：2026-06-25（项目级 CLAUDE.md 四大支柱 + docs/memory/）
+
+---
+
+## 〇、Claude Code 自动入口（优先）
+
+| 文件 | 作用 |
+|------|------|
+| **[../CLAUDE.md](../CLAUDE.md)** | **项目根自动加载** — 术语表 · 架构红线 · 代码规范 · Skill 触发 · 多 Agent · 反模式 |
+| [memory/code-review-checklist.md](./memory/code-review-checklist.md) | PR 前检查清单（踩坑追加） |
+| [memory/architecture-decisions.md](./memory/architecture-decisions.md) | ADR 架构决策日志 |
+| [memory/app-factory-tech-stack.md](./memory/app-factory-tech-stack.md) | 技术栈 · 环境 · 踩坑 |
+
+Claude Code 在 `app-factory/` 下启动时**无需手动 @**，根目录 `CLAUDE.md` 已含四大支柱；深查时再读下方 Tier-1。
 
 ---
 
@@ -55,6 +68,7 @@
 
 | # | 文档 | 内容 |
 |---|------|------|
+| 0 | [../CLAUDE.md](../CLAUDE.md) | **四大支柱协作规范**（自动加载） |
 | 1 | [ONE_PAGER.md](./ONE_PAGER.md) | 1 分钟事实：生产 URL、门禁、枪战 ID |
 | 2 | [产品路径一览.md](./产品路径一览.md) | 全 URL、工程名、下载链、GHA |
 | 3 | [运行环境与真机调试-重启备忘.md](./运行环境与真机调试-重启备忘.md) | 本地/生产环境、E1–E5、重启恢复、战略 |
@@ -154,7 +168,9 @@
 ```markdown
 你是 App 生产工厂（app-factory）的协作 AI。仓库：https://github.com/guiming-rgb/app-factory
 
-必读顺序：ONE_PAGER → 产品路径一览 → 运行环境与真机调试-重启备忘 → HANDOFF → CONTINUOUS_DELIVERY_OUTLINE §2–§3。
+**自动规范**：仓库根 CLAUDE.md（术语表·架构红线·反模式·验收命令）— Claude Code 已加载则跳过重复。
+
+必读顺序：CLAUDE.md → ONE_PAGER → 产品路径一览 → 运行环境与真机调试-重启备忘 → HANDOFF → CONTINUOUS_DELIVERY_OUTLINE §2–§3。
 
 行为章程（与 Cursor 规则一致）：
 1. 真相源 = Git + docs/，不臆测 URL/路径/环境。
@@ -217,8 +233,10 @@
 
 | Cursor | Claude |
 |--------|--------|
-| `.cursor/rules/*.mdc` | Project Instructions + 上传同文件 |
+| **[../CLAUDE.md](../CLAUDE.md)** | Claude Code **自动加载**（四大支柱） |
+| `.cursor/rules/*.mdc` | 与 CLAUDE.md §十 等价 |
+| `docs/memory/*.md` | 踩坑 / ADR / CR 清单（会话间累积） |
 | Tier-1 docs | Project Knowledge |
-| 本总索引 | Claude 入口 bookmark |
+| 本总索引 | 二级 bookmark |
 
 更新记忆时：**改专题 doc → 改 HANDOFF 变更记录 → 必要时改 §六速查 → git commit**。

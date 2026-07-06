@@ -1,0 +1,278 @@
+{
+  "agent": "D2",
+  "dimension": "数据完整性 / 持久化 / 序列化",
+  "date": "2026-07-06",
+  "audit_version": "v3",
+  "summary": {
+    "total_findings": 13,
+    "by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 6,
+      "MEDIUM": 5,
+      "LOW": 2
+    },
+    "previous_findings_verified": {
+      "M1_admin_queries": "UNFIXED",
+      "M4_spec_columns": "UNFIXED_LOW",
+      "C3_verify_artifact": "PARTIALLY_FIXED",
+      "C4_runs_status_guard": "FIXED"
+    }
+  },
+  "coverage": {
+    "filesTouched": [
+      "app/api/admin/dashboard/route.ts",
+      "app/api/admin/workspaces-all/route.ts",
+      "app/api/stripe/webhook/route.ts",
+      "app/api/payment/webhook/route.ts",
+      "lib/codegen/base-executor.ts",
+      "lib/codegen/runs.ts",
+      "lib/codegen/verify-artifact.ts",
+      "lib/codegen/zip.ts",
+      "lib/codegen/template-renderer.ts",
+      "lib/codegen/artifacts.ts",
+      "lib/codegen/sandbox/flutter.ts",
+      "lib/app-spec/validate.ts",
+      "lib/app-spec/types.ts",
+      "lib/app-spec/emit-spec.ts",
+      "lib/app-spec/spec-versions.ts",
+      "lib/app-spec/diagnose.ts",
+      "lib/versioning/version-service.ts",
+      "lib/llm.ts",
+      "lib/supabase.ts",
+      "lib/payment/payment-state-machine.ts",
+      "lib/workflow/task-executor.ts",
+      "app/api/projects/[id]/provision/route.ts",
+      "app/api/projects/route.ts",
+      "supabase/migrations/20260625_q5_versioning.sql",
+      "sql/migrations/20260601_spec_versions.sql",
+      "supabase/migrations/20260705_audit_rls_fixes.sql"
+    ],
+    "filesSkipped": [
+      "lib/__tests__/* (test files)",
+      "docs/* (documentation)",
+      "templates/* (static templates)"
+    ],
+    "blindSpots": [
+      "lib/workflow/agents.ts — 未深入审查 9 个 agent 实现",
+      "lib/flutter-codegen/emit-*.ts — 未审查 Flutter 代码生成 emit 函数",
+      "lib/wechat-codegen/emit-*.ts — 未审查微信小程序代码生成 emit 函数",
+      "lib/harmony-codegen/emit-*.ts — 未审查鸿蒙代码生成 emit 函数",
+      "app/api/inngest/ — 未审查 Inngest 路由处理"
+    ]
+  },
+  "findings": [
+    {
+      "id": "D2-M1",
+      "level": "HIGH",
+      "location": "app/api/admin/dashboard/route.ts:16-34",
+      "summary": "6 个 Supabase 查询在 Promise.all 中不解构 error，查询失败时静默返回 falsy 数据，admin 控制台显示全零",
+      "reproduction": [
+        "Step 1: 临时修改任意查询的 RLS policy 使其拒绝访问（如仅允许 authenticated 但 admin 调用走 service_role）",
+        "Step 2: 请求 GET /api/admin/dashboard — 观察 200 OK 返回 workspaceCount:0 / projectCount:0 / codegenCount:0 等全零数据，无报错"
+      ],
+      "rootCause": "Promise.all 解构 `{ count: workspaceCount }` 直接丢弃 error 字段，PostgREST 返回 `{ data: null, error: {...} }` 但 count 被解构为 undefined，后续 Number(undefined ?? 0) = 0",
+      "suggestion": "每行查询独立执行，逐一检查 `if (error) console.error(...)` 并返回部分可用的结果或明确的 500 错误。或包装 `safeCount(query)` 辅助函数",
+      "defectType": "missing_error_check",
+      "triggerProbability": "medium",
+      "existingMitigation": "无。查询失败不抛异常，不 log，静默显示全零",
+      "status": "unfixed",
+      "v3_previous_id": "M1"
+    },
+    {
+      "id": "D2-D1",
+      "level": "HIGH",
+      "location": "lib/versioning/version-service.ts:119-123",
+      "summary": "getCurrentProjectSpec 只解构 { data }，忽略 Supabase query error，查询失败时返回 null 等同于 '项目有 spec_override=null'",
+      "reproduction": [
+        "Step 1: 对 projects 表加 RLS 限制或临时改名 spec_override 列",
+        "Step 2: 调用 saveSpecVersion(projectId, spec) — getCurrentProjectSpec 静默返回 null，spec diff 功能失效但无报错"
+      ],
+      "rootCause": "const { data } = await supabase.from('projects').select('spec_override')... 不解构 error，Supabase 查询出错时 data 为 null，与 '项目存在但 spec_override IS NULL' 无法区分",
+      "suggestion": "解构 { data, error }，error 时 throw 或至少 console.error + 返回 null 让调用方处理异常路径",
+      "defectType": "missing_error_check",
+      "triggerProbability": "low",
+      "existingMitigation": "无。只有 service_role 调用 supabase admin client，通常不受 RLS 干扰，但网络/DB 异常仍可能导致静默丢失",
+      "status": "new"
+    },
+    {
+      "id": "D2-D2",
+      "level": "HIGH",
+      "location": "app/api/payment/webhook/route.ts:33-37",
+      "summary": "findByPaymentIntent 只解构 { data }，忽略 Supabase query error，查询失败时静默返回 null 导致重复订单处理或遗漏 payment intent",
+      "reproduction": [
+        "Step 1: orders 表临时加 RLS 拒绝访问",
+        "Step 2: Stripe 发送 payment_intent.succeeded webhook — findByPaymentIntent 静默返回 null，webhook 将已存在的 payment 当作新订单处理"
+      ],
+      "rootCause": "const { data } = await getSupabaseAdmin().from('orders').select('*').eq(...).single() 不解构 error",
+      "suggestion": "const { data, error } = ...; if (error) { console.error(...); throw error; }",
+      "defectType": "missing_error_check",
+      "triggerProbability": "very_low",
+      "existingMitigation": "Stripe webhook 最外层有 try-catch（route.ts:169-172），捕获后返回 500 让 Stripe 重试。但函数内部不区分 '不存在' 与 '查询失败'",
+      "status": "new"
+    },
+    {
+      "id": "D2-D3",
+      "level": "HIGH",
+      "location": "app/api/admin/workspaces-all/route.ts:76-116",
+      "summary": "PATCH 路由中 6 处 Supabase 写操作（update/delete/insert/upsert）均不检查返回的 error，写入失败静默放行返回 { ok: true }",
+      "reproduction": [
+        "Step 1: 对 workspaces 表加 RLS 限制",
+        "Step 2: POST /api/admin/workspaces-all { workspaceId, action: 'suspend' } — 返回 { ok: true, action: 'suspended' } 但数据库实际未更新"
+      ],
+      "rootCause": "所有 Supabase 调用都是 fire-and-forget 模式 (await supabase.from(...).update(...).eq(...) 但不解构返回值)，全部不检查 error",
+      "suggestion": "每处加 const { error } = ...; if (error) return NextResponse.json({ error: error.message }, { status: 500 })",
+      "defectType": "missing_error_check",
+      "triggerProbability": "low",
+      "existingMitigation": "仅 service_role admin client 调用，通常不受 RLS 影响",
+      "status": "new"
+    },
+    {
+      "id": "D2-D5",
+      "level": "HIGH",
+      "location": "lib/codegen/base-executor.ts:258-265",
+      "summary": "verifyGeneratedArtifact 仅对 Flutter 目标调用，微信小程序和鸿蒙产物跳过验证，与 C3 修复不完全",
+      "reproduction": [
+        "Step 1: 生成微信小程序 codegen 输出",
+        "Step 2: 生成的 ZIP 包含损坏文件或无效项目结构 — 无人检测，直接标记 completed"
+      ],
+      "rootCause": "if (this.target === 'flutter' && state.artifactPath) 硬编码只检查 Flutter",
+      "suggestion": "为 WeChat 和 Harmony 分别实现对应的验证逻辑（wechat: 检查 app.json/project.config.json 及 miniprogram 目录结构；harmony: 检查 build-profile.json5 及 ets/ 目录结构），或至少做通用 ZIP 非空 + 文件数 > 0 检查",
+      "defectType": "incomplete_fix",
+      "triggerProbability": "medium",
+      "existingMitigation": "无。WeChat/Harmony 产物不做任何结构验证",
+      "status": "new",
+      "v3_previous_id": "C3"
+    },
+    {
+      "id": "D2-D8",
+      "level": "HIGH",
+      "location": "lib/codegen/base-executor.ts:340",
+      "summary": "validateAndAssess 中的 markCodegenRunFailed 是 fire-and-forget（不 await + .catch 吞错），可能与同步 throw new Error 产生竞态",
+      "reproduction": [
+        "Step 1: 提交无效 App Spec 触发校验失败",
+        "Step 2: markCodegenRunFailed(runId, msg) 被调用但不 await；紧接着 throw new Error(msg) 可能先传播到调用栈，导致 Supabase 更新尚未完成时 execute() 已抛出异常"
+      ],
+      "rootCause": "fire-and-forget: markCodegenRunFailed(runId, msg).catch((err) => console.warn(...)) — 不 await，不等待 DB 写入完成",
+      "suggestion": "改为 await markCodegenRunFailed(runId, msg); throw new Error(msg); 或至少加 return await",
+      "defectType": "race_condition",
+      "triggerProbability": "very_low",
+      "existingMitigation": "数据库写入通常比 JS 抛出异常更快，但理论上存在窗口期",
+      "status": "new"
+    },
+    {
+      "id": "D2-C3",
+      "level": "MEDIUM",
+      "location": "lib/codegen/base-executor.ts:258-265",
+      "summary": "verifyGeneratedArtifact 已接入 BaseCodegenExecutor pipeline（仅 Flutter），C3 部分修复",
+      "reproduction": [
+        "Step 1: 生成 Flutter codegen 产物",
+        "Step 2: 若产物验证失败 → markCodegenRunFailed + throw Error — 管道正常终止"
+      ],
+      "rootCause": "C3 原始发现：verify-artifact.ts 定义了验证函数但未被调用。现已接入 Flutter 管道，但 WeChat/Harmony 仍缺失",
+      "suggestion": "见 D2-D5",
+      "defectType": "partially_fixed",
+      "triggerProbability": "low",
+      "existingMitigation": "Flutter 已覆盖。WeChat/Harmony 无",
+      "status": "partially_fixed",
+      "v3_previous_id": "C3"
+    },
+    {
+      "id": "D2-D4",
+      "level": "MEDIUM",
+      "location": "lib/app-spec/validate.ts:16",
+      "summary": "getValidator 用 fs.readFileSync + JSON.parse 无 try-catch，schema 文件缺失/损坏导致启动时同步崩溃",
+      "reproduction": [
+        "Step 1: 删除或损坏 docs/schemas/app-spec-v0.1.schema.json",
+        "Step 2: 任何调用 validateAppSpec 的路径 → 同步 throw，整个请求崩溃"
+      ],
+      "rootCause": "const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) — readFileSync 在文件不存在时抛 ENOENT，JSON.parse 在 JSON 不合法时抛 SyntaxError，均未捕获",
+      "suggestion": "try { const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')); ... } catch (e) { throw new Error(`App Spec schema 文件读取失败: ${schemaPath} - ${e.message}`) } 提供有意义的错误信息",
+      "defectType": "missing_try_catch",
+      "triggerProbability": "very_low",
+      "existingMitigation": "schema 文件是 git 追踪的静态文件，不会在生产环境被意外删除。但在本地开发/CI 环境可能因工作目录错误触发",
+      "status": "new"
+    },
+    {
+      "id": "D2-D6",
+      "level": "MEDIUM",
+      "location": "app/api/stripe/webhook/route.ts:87-102",
+      "summary": "Stripe checkout.session.completed 处理中，subscriptions upsert 和 user_quotas upsert 不解构 error",
+      "reproduction": [
+        "Step 1: subscriptions 或 user_quotas 表临时加约束导致写入失败",
+        "Step 2: Stripe 发送 checkout.session.completed webhook — upsert 静默失败，用户付了钱但订阅未激活"
+      ],
+      "rootCause": "await supabase.from('subscriptions').upsert({...}) 不解构返回值，不检查 error",
+      "suggestion": "const { error } = await supabase.from('subscriptions').upsert(...); if (error) { console.error('[stripe/webhook] 订阅写入失败:', error); throw error; }",
+      "defectType": "missing_error_check",
+      "triggerProbability": "very_low",
+      "existingMitigation": "最外层 try-catch 捕获异常后返回 500，Stripe 会重试 webhook",
+      "status": "new"
+    },
+    {
+      "id": "D2-D7",
+      "level": "MEDIUM",
+      "location": "lib/codegen/runs.ts:149-151",
+      "summary": "markCodegenRunFailed 内 catch {} 空块吞噬异常，重复标记失败时静默忽略",
+      "reproduction": [
+        "Step 1: 调用 markCodegenRunFailed(runId) 两次对同一 run",
+        "Step 2: 第二次调用因 fromStatus guard 失败 → 抛 Error → 被空 catch 吞噬，调用方不知状态转换被拒绝"
+      ],
+      "rootCause": "catch {} 空块，违反编码最小约束第 1 条（禁止空 catch）。注释说 '终态 run 重复标记失败 — 幂等忽略' 但实际行为是静默丢弃所有异常包括非重复标记的 DB 错误",
+      "suggestion": "catch (err) { console.warn('[runs] markCodegenRunFailed 忽略:', err instanceof Error ? err.message : err); } — 至少记录失败原因",
+      "defectType": "empty_catch",
+      "triggerProbability": "low",
+      "existingMitigation": "无。注释说幂等但实际 catch 了所有异常类型",
+      "status": "new"
+    },
+    {
+      "id": "D2-D11",
+      "level": "MEDIUM",
+      "location": "lib/codegen/template-renderer.ts:156-158",
+      "summary": "precompilePlatformTemplates 中 catch {} 空块吞噬目录读取错误",
+      "reproduction": [
+        "Step 1: 删除某个平台的模板目录或修改权限使其不可读",
+        "Step 2: precompileAllTemplates() 静默失败，后续模板渲染走按需加载路径，开发者不知模板缓存未填充"
+      ],
+      "rootCause": "catch {} 空块，目录不存在时静默回退到按需加载，但权限错误/磁盘错误也被同化",
+      "suggestion": "catch (err) { if ((err as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('[template-renderer] 模板预编译失败:', err); } — 仅目录不存在时静默，其他错误记录",
+      "defectType": "empty_catch",
+      "triggerProbability": "very_low",
+      "existingMitigation": "有 per-template 按需加载作为降级路径，但掩盖了真实错误",
+      "status": "new"
+    },
+    {
+      "id": "D2-M4",
+      "level": "LOW",
+      "location": "sql/migrations/20260601_spec_versions.sql:5 vs supabase/migrations/20260625_q5_versioning.sql:15",
+      "summary": "两处 migration 对 spec_versions 表使用不同列名（version vs version_number），代码均使用 version_number 无运行时影响",
+      "reproduction": [
+        "Step 1: 查看 sql/migrations/20260601_spec_versions.sql:5 — column `version int not null`",
+        "Step 2: 查看 supabase/migrations/20260625_q5_versioning.sql:15 — column `version_number INT NOT NULL`",
+        "Step 3: 查看 lib/app-spec/spec-versions.ts:22-24 — 代码 insert 使用 `spec` 字段无显式 version_number，依赖 DB trigger"
+      ],
+      "rootCause": "两个 migration 在不同时间创建，列名不一致。新 migration（supabase/migrations/）是权威版本，代码与其一致",
+      "suggestion": "统一旧 migration 或将旧 migration 标记为 deprecated。若生产 DB 已通过新 migration 执行，旧 migration 的 version 列不存在于实际表结构中",
+      "defectType": "stale_migration",
+      "triggerProbability": "none",
+      "existingMitigation": "Supabase migrations 按时间戳顺序执行，新 migration 覆盖旧定义。运行时无影响",
+      "status": "unfixed_low",
+      "v3_previous_id": "M4"
+    },
+    {
+      "id": "D2-D10",
+      "level": "LOW",
+      "location": "lib/app-spec/spec-versions.ts:22-53",
+      "summary": "saveSpecVersion 的 insert + select + delete 三步不在 DB 事务中，理论上有中间态",
+      "reproduction": [
+        "Step 1: Insert 新 spec_versions 行成功",
+        "Step 2: 后续 select（line 31-36）执行期间，另一个并发请求同时插入该项目的新版本 → cleanup 可能误删或保留不一致数量的版本"
+      ],
+      "rootCause": "三个独立的 Supabase 查询（insert/select/delete）不在 DB transaction 中包装",
+      "suggestion": "考虑用 Supabase RPC 函数包装整个操作在 PL/pgSQL 事务中。当前风险很小因为 version_number 由 DB trigger 自动递增且 UNIQUE 约束保护",
+      "defectType": "non_atomic_operation",
+      "triggerProbability": "very_low",
+      "existingMitigation": "UNIQUE(project_id, version_number) 约束 + DB trigger 自动递增保护版本号唯一性",
+      "status": "new"
+    }
+  ]
+}

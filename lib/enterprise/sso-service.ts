@@ -11,6 +11,7 @@
  */
 
 import crypto from "crypto";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -104,7 +105,12 @@ function decrypt(ciphertext: string): string {
 // ── Token signing (standalone, not Supabase Auth) ─────────────────
 
 function signSSOToken(payload: Record<string, unknown>): string {
-  const secret = process.env.ENTERPRISE_ENCRYPTION_KEY?.trim() || "default-dev-key-not-for-prod";
+  const secret = process.env.ENTERPRISE_ENCRYPTION_KEY?.trim();
+  if (!secret) {
+    throw new Error(
+      "Missing ENTERPRISE_ENCRYPTION_KEY — required for SSO token signing. Set a 32-byte hex string in .env.local"
+    );
+  }
   const header = { alg: "HS256", typ: "JWT" };
   const body = {
     ...payload,
@@ -154,6 +160,9 @@ export async function configureSSO(
   workspaceId: string,
   config: ConfigureSSOInput
 ): Promise<void> {
+  const { assertValidConfigureSSOInput } = await import("./sso-config-validate");
+  assertValidConfigureSSOInput(config);
+
   const supabase = getSupabaseAdmin();
 
   const row: Record<string, unknown> = {
@@ -328,15 +337,11 @@ export async function handleSSOCallback(
     email = additionalClaims.email;
     name = additionalClaims.name || null;
   } else {
-    // Try to decode 'code' as a JWT from a trusted IdP
-    try {
-      const payload = decodeJWTUnsafe(code);
-      email = String(payload.email || "");
-      name = String(payload.name || payload.preferred_username || "");
-    } catch {
-      // Fallback: use the raw code as a session identifier (dev mode)
-      email = `sso-${code.slice(0, 8)}@${config.domain}`;
-    }
+    throw new Error(
+      "SSO callback: additionalClaims with verified email is required. " +
+      "The caller must exchange the authorization code for tokens and " +
+      "verify the ID token before calling handleSSOCallback."
+    );
   }
 
   if (!email || !email.includes("@")) {
@@ -440,11 +445,64 @@ async function upsertSSOUser(
   return userId;
 }
 
-function decodeJWTUnsafe(token: string): Record<string, unknown> {
-  const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Invalid JWT");
-  const payload = JSON.parse(
-    Buffer.from(parts[1], "base64url").toString("utf8")
-  );
+/**
+ * Verify and decode a JWT ID token from an OIDC provider.
+ *
+ * Uses the jose library for proper cryptographic signature verification.
+ * Supports RS256/ES256 (via JWKS) and HS256 (via client_secret).
+ *
+ * @param token - The raw JWT token string
+ * @param config - SSO configuration with client secret and metadata URL
+ * @returns Verified claims from the token
+ */
+export async function verifyAndDecodeIdToken(
+  token: string,
+  config: SSOConfig
+): Promise<Record<string, unknown>> {
+  if (config.provider === "oidc" && config.clientSecret) {
+    // OIDC: try JWKS first, fall back to client_secret for HS256
+    try {
+      const jwksUrl = config.metadataUrl.replace(
+        "/.well-known/openid-configuration",
+        "/jwks"
+      );
+      const JWKS = createRemoteJWKSet(new URL(jwksUrl));
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: config.metadataUrl,
+        audience: config.clientId || undefined,
+      });
+      return payload as Record<string, unknown>;
+    } catch (jwksError) {
+      // Fallback: try HS256 with client_secret
+      const secretBytes = new TextEncoder().encode(config.clientSecret);
+      const { payload } = await jwtVerify(token, secretBytes, {
+        algorithms: ["HS256"],
+      });
+      return payload as Record<string, unknown>;
+    }
+  }
+
+  // For SAML or providers without OIDC, use the ENTERPRISE_ENCRYPTION_KEY
+  const secret = process.env.ENTERPRISE_ENCRYPTION_KEY?.trim();
+  if (!secret) {
+    throw new Error(
+      "Cannot verify JWT: ENTERPRISE_ENCRYPTION_KEY is not configured"
+    );
+  }
+  const secretBytes = new TextEncoder().encode(secret);
+  const { payload } = await jwtVerify(token, secretBytes, {
+    algorithms: ["HS256"],
+  });
   return payload as Record<string, unknown>;
+}
+
+// ── DEPRECATED — removed in P0 security fix ─────────────────────────
+// decodeJWTUnsafe was replaced by verifyAndDecodeIdToken above.
+// This stub exists so existing imports don't break; it always throws.
+/** @deprecated Use verifyAndDecodeIdToken instead */
+function decodeJWTUnsafe(_token: string): Record<string, unknown> {
+  throw new Error(
+    "decodeJWTUnsafe has been removed for security reasons. " +
+    "Use verifyAndDecodeIdToken(token, config) instead."
+  );
 }

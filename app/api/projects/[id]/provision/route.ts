@@ -59,8 +59,9 @@ export async function POST(
         : "DDL 已生成。请复制 sqlPreview 到 Supabase SQL Editor 中手动执行。",
     });
   } catch (err) {
+    console.error("[POST /api/projects/[id]/provision]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "部署失败" },
+      { error: "部署失败，请稍后重试" },
       { status: 500 }
     );
   }

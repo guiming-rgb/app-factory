@@ -1,0 +1,63 @@
+{
+  "agent": "D3",
+  "dimension": "concurrency_safety_race_conditions",
+  "phase": 1,
+  "timestamp": "2026-07-06T13:30:00Z",
+  "model": "deepseek",
+  "summary": "并发安全 & 竞态条件审计 — 发现 8 条问题 (3 HIGH, 4 MEDIUM, 1 LOW)",
+  "coverage": {
+    "filesTouched": [
+      "lib/codegen/runs.ts",
+      "lib/codegen/base-executor.ts",
+      "lib/codegen/enqueue.ts",
+      "lib/codegen/stale-runs.ts",
+      "lib/codegen/artifacts.ts",
+      "lib/codegen/storage.ts",
+      "lib/codegen/zip.ts",
+      "lib/codegen/merge-run-metadata.ts",
+      "lib/inngest/codegen-functions.ts",
+      "lib/inngest/client.ts",
+      "lib/sandbox/flutter.ts",
+      "lib/auth/rate-limit.ts",
+      "lib/workflow.ts",
+      "lib/codegen/execute-flutter.ts",
+      "lib/github/push-codegen-run.ts",
+      "lib/supabase.ts",
+      "app/api/projects/[id]/generate/route.ts",
+      "sql/migrations/20260520_codegen_runs.sql",
+      "sql/migrations/20260528_codegen_harmony_target.sql"
+    ],
+    "filesSkipped": [
+      "templates/ (Dart/ArkTS 模板，非工厂运行时竞态面)",
+      "lib/__tests__/ (测试文件)",
+      "lib/flutter-codegen/generate.ts (纯生成逻辑，无共享状态)",
+      "lib/wechat-codegen/generate.ts (纯生成逻辑，无共享状态)",
+      "lib/harmony-codegen/generate.ts (纯生成逻辑，无共享状态)",
+      "app/landing/ (纯 UI)",
+      "components/ (纯 UI)",
+      "docs/",
+      "docs-site/"
+    ],
+    "blindSpots": [
+      "Inngest Dev Server 行为与生产 Inngest Cloud 可能有差异（本地测试覆盖不足）",
+      "Supabase Realtime 订阅的并发安全性（模板代码，非工厂运行时）",
+      "Vercel serverless 冷启动 + Inngest 重试的交互模式"
+    ]
+  },
+  "findingsCount": {
+    "HIGH": 3,
+    "MEDIUM": 4,
+    "LOW": 1
+  },
+  "mitigationsLedgerUpdate": {
+    "resolved": ["C4", "C5", "M5"],
+    "new": ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
+    "notes": "C4 (codegen_runs 状态转换无守卫) 已通过 updateCodegenRun 的 fromStatus 参数修复。C5 (execSync/spawnSync 无 timeout) 已统一添加 SANDBOX_CMD_TIMEOUT_MS=120000。M5 已合并入 C5。"
+  },
+  "crossDimensionHints": [
+    "D1+D3 与数据完整性维度交叉: codegen_runs 表缺少 UNIQUE 约束",
+    "D2 与数据完整性维度交叉: metadata 字段的 read-modify-write 丢失更新",
+    "D5 与 Inngest/workflow 维度交叉: Inngest 重试的幂等性需确认",
+    "D7 与资源生命周期维度交叉: 临时目录清理的范围可能影响并发任务"
+  ]
+}

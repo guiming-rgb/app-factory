@@ -8,9 +8,9 @@ import {
   DEFAULT_DOCKER_OUT,
   ensureDockerImage,
   hasDocker,
-  prepareSandboxOutput,
   runDockerFlutterGate
 } from "../lib/sandbox/flutter";
+import { prepareSandboxOutput } from "../lib/flutter-codegen/generate";
 
 async function main() {
   const noBuild = process.argv.includes("--no-build");

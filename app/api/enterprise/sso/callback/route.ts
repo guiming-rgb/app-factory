@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { handleSSOCallback } from "@/lib/enterprise/sso-service";
+import { buildSsoRedirectResponse } from "@/lib/enterprise/sso-cookie";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,13 +79,10 @@ export async function POST(req: NextRequest) {
       name,
     });
 
-    // Redirect with token for browser-based SSO flows
     const wantsRedirect = req.headers.get("accept")?.includes("text/html");
     if (wantsRedirect) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const redirectUrl = new URL("/enterprise/sso/complete", appUrl);
-      redirectUrl.searchParams.set("token", result.token);
-      return NextResponse.redirect(redirectUrl.toString());
+      return buildSsoRedirectResponse(result.token, appUrl);
     }
 
     return NextResponse.json({
@@ -133,11 +131,8 @@ export async function GET(req: NextRequest) {
 
     const result = await handleSSOCallback(workspaceId, code);
 
-    // Redirect browser to SSO completion page with token
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const redirectUrl = new URL("/enterprise/sso/complete", appUrl);
-    redirectUrl.searchParams.set("token", result.token);
-    return NextResponse.redirect(redirectUrl.toString());
+    return buildSsoRedirectResponse(result.token, appUrl);
   } catch (e) {
     const message = e instanceof Error ? e.message : "SSO 登录失败";
     console.error("[enterprise:sso:callback] GET error:", message);

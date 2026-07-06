@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { GitHubConnectButton } from "@/components/GitHubConnectButton";
 import { TARGET_LABEL } from "./useCodegenActions";
 
@@ -23,7 +24,7 @@ type Props = {
 /**
  * Codegen 生成按钮组：三栈目标按钮 + 一键三栈 + 推 GitHub + 刷新/折叠
  */
-export function CodegenGenerateButtons({
+export const CodegenGenerateButtons = memo(function CodegenGenerateButtons({
   projectId,
   loadingTarget,
   activeRun,
@@ -103,4 +104,4 @@ export function CodegenGenerateButtons({
       </div>
     </>
   );
-}
+});

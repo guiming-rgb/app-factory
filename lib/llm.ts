@@ -50,6 +50,8 @@ function getRetryConfig() {
 // 惰性初始化 — OpenAI 客户端
 // ============================================================
 
+const LLM_TIMEOUT_MS = 120_000;
+
 let _defaultClient: OpenAI | null = null;
 
 function getDefaultClient(): OpenAI {
@@ -57,6 +59,8 @@ function getDefaultClient(): OpenAI {
     _defaultClient = new OpenAI({
       apiKey: getApiKey(),
       baseURL: getBaseURL(),
+      timeout: LLM_TIMEOUT_MS,
+      maxRetries: 1,
     });
   }
   return _defaultClient;
@@ -87,6 +91,8 @@ export interface LlmCallParams {
   maxTokens?: number;
   /** 请求级日志上下文 */
   logContext?: LogContext;
+  /** 外部取消信号（workflow 超时等） */
+  signal?: AbortSignal;
 }
 
 // ============================================================
@@ -162,7 +168,12 @@ function resolveClient(): {
 
   const client =
     usingFallback
-      ? new OpenAI({ apiKey: effectiveKey, baseURL: effectiveBaseURL })
+      ? new OpenAI({
+          apiKey: effectiveKey,
+          baseURL: effectiveBaseURL,
+          timeout: LLM_TIMEOUT_MS,
+          maxRetries: 1,
+        })
       : getDefaultClient();
 
   return { client, effectiveModel, effectiveBaseURL, usingFallback };
@@ -210,16 +221,23 @@ export async function callLLM(
       );
 
       // 核心调用 — 带性能计时
+      if (params.signal?.aborted) {
+        throw new Error("LLM 请求已取消");
+      }
+
       const completion = await measureTiming("llm.call", () =>
-        client.chat.completions.create({
-          model: effectiveModel,
-          temperature: params.temperature ?? 0.4,
-          max_tokens: maxTokens,
-          messages: [
-            { role: "system", content: params.systemPrompt },
-            { role: "user", content: params.userPrompt },
-          ],
-        }),
+        client.chat.completions.create(
+          {
+            model: effectiveModel,
+            temperature: params.temperature ?? 0.4,
+            max_tokens: maxTokens,
+            messages: [
+              { role: "system", content: params.systemPrompt },
+              { role: "user", content: params.userPrompt },
+            ],
+          },
+          params.signal ? { signal: params.signal } : undefined,
+        ),
       );
 
       const choice = completion.choices[0];

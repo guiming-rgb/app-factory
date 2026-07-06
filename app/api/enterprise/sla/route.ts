@@ -157,6 +157,24 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const { getSupabaseAdmin } = await import("@/lib/supabase");
+      const supabase = getSupabaseAdmin();
+      const { data: incidentRow } = await supabase
+        .from("sla_incidents")
+        .select("workspace_id")
+        .eq("id", String(body.incidentId))
+        .maybeSingle();
+
+      if (!incidentRow?.workspace_id) {
+        return NextResponse.json({ error: "事件不存在" }, { status: 404 });
+      }
+
+      const auth = await requireWorkspaceAccess(
+        String(incidentRow.workspace_id),
+        true,
+      );
+      if (!auth.ok) return auth.response;
+
       const incident = await resolveIncident(String(body.incidentId));
       return NextResponse.json({ ok: true, incident });
     }

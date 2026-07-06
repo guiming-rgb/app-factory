@@ -1,7 +1,7 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
 import { resolveEntityForScreen, entityTableName } from "@/lib/app-spec/entity-scaffold";
-import { detectIndustry } from "@/lib/flutter-codegen/emit-industry";
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import { detectIndustry } from "@/lib/app-spec/industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
 
 /**
  * 微信小程序 Form 页面生成 — P2-2: 接入 industry service

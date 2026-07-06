@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count += 1;
+  return true;
+}
+
 /**
  * POST /api/generated-privacy
  * 根据 AppSpec.complianceFlags 生成可下载的隐私政策文档
@@ -9,13 +34,21 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   try {
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json({ error: "请求过于频繁" }, { status: 429 });
+    }
+
     const body = await req.json().catch(() => null) as Record<string, unknown> | null;
     if (!body) {
       return NextResponse.json({ error: "缺少请求体" }, { status: 400 });
     }
 
-    const appName = (body.appName as string) ?? "未命名应用";
-    const displayName = (body.displayName as string) ?? appName;
+    const appName = escapeHtml((body.appName as string) ?? "未命名应用");
+    const displayName = escapeHtml((body.displayName as string) ?? appName);
     const flags = (body.complianceFlags as Record<string, unknown>) ?? {};
     const format = (req.nextUrl.searchParams.get("format") ?? "html") as "html" | "md";
 
@@ -29,7 +62,9 @@ export async function POST(req: NextRequest) {
     const hasAudit = flags.requiresAuditLog === true;
     const hasDataDel = flags.requiresDataDeletionAPI === true;
     const hasDataLocal = flags.requiresDataLocalization === true;
-    const checklist = Array.isArray(flags.checklist) ? flags.checklist as string[] : [];
+    const checklist = Array.isArray(flags.checklist)
+      ? (flags.checklist as string[]).map((c) => escapeHtml(String(c)))
+      : [];
 
     // 根据行业生成特定合规条款
     const industryClauses: string[] = [];

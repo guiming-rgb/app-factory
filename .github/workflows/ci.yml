@@ -48,9 +48,39 @@ jobs:
       - run: npm ci
       - run: npm run codegen:flutter -- --spec docs/schemas/examples/valid-minimal.json --out /tmp/codegen-ci
 
+  industry-gates:
+    name: 行业模板门禁
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - run: npm ci
+      - run: npm run verify:industry:configs
+      - run: npm run verify:p2:pilot
+      - run: npm run check:emit:lines
+      - run: node scripts/generate-detect-industry-matrix.mjs --check
+      - name: parity 全量（main push）
+        if: github.event_name == 'push'
+        run: npm run verify:industry:parity
+      - name: parity 增量（PR）
+        if: github.event_name == 'pull_request'
+        run: npx tsx scripts/verify-industry-parity.mjs --filter=finance,ecommerce,medical
+      - run: npm run verify:industry:templates
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - run: npm ci
+      - run: npm run lint
+
   build:
     name: Next.js 构建
-    needs: [typecheck, test, validate-spec]
+    needs: [typecheck, test, validate-spec, industry-gates]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,3 +88,18 @@ jobs:
         with: { node-version: "20", cache: "npm" }
       - run: npm ci
       - run: npm run build
+
+  e2e-smoke:
+    name: Playwright E2E 冒烟
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: "npm" }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CI: "true"

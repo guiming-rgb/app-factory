@@ -17,6 +17,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireWorkspaceMember } from "@/lib/auth/require-workspace-member";
+import { validateBillingRedirectUrl } from "@/lib/billing/validate-billing-url";
 import { createSubscription } from "@/lib/billing/subscription-service";
 import { createComponentLogger } from "@/lib/logger";
 
@@ -67,14 +69,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const auth = await requireWorkspaceMember(body.workspaceId);
+    if (!auth.ok) return auth.response;
+
+    let successUrl: string | undefined;
+    if (body.successUrl !== undefined) {
+      const validated = validateBillingRedirectUrl(body.successUrl, "successUrl");
+      if (!validated.ok) {
+        return NextResponse.json({ error: validated.error }, { status: 400 });
+      }
+      successUrl = validated.url;
+    }
+
+    let cancelUrl: string | undefined;
+    if (body.cancelUrl !== undefined) {
+      const validated = validateBillingRedirectUrl(body.cancelUrl, "cancelUrl");
+      if (!validated.ok) {
+        return NextResponse.json({ error: validated.error }, { status: 400 });
+      }
+      cancelUrl = validated.url;
+    }
+
     // ── 创建订阅 ──
     const result = await createSubscription(
       body.workspaceId,
       body.planId,
       interval,
       {
-        successUrl: body.successUrl,
-        cancelUrl: body.cancelUrl,
+        successUrl,
+        cancelUrl,
       },
     );
 

@@ -32,7 +32,7 @@ export function SpecEditorPanel({ projectId, embedded = false }: {
       {error && <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
       {successMsg && <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{successMsg}</p>}
       {!spec ? (
-        <p className="mt-3 text-xs text-violet-500">请先完成 8 Agent 生成后查看 Spec</p>
+        <p className="mt-3 text-xs text-violet-500">请先完成 9 Agent 生成后查看 Spec</p>
       ) : (
         <>
           <SpecBasicInfo spec={spec} />

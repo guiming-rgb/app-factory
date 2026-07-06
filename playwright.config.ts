@@ -8,10 +8,10 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     screenshot: "only-on-failure",
   },
-  webServer: process.env.CI ? undefined : {
-    command: "npm run dev:3000",
+  webServer: {
+    command: "npm run start -- -p 3000",
     port: 3000,
-    reuseExistingServer: true,
-    timeout: 30000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 });

@@ -32,62 +32,48 @@ export async function enrichCodegenRun(
     desktopMacGithubUrl?: string;
     desktopGha?: { workflowRunId?: number; desktopMacGithubUrl?: string };
   };
-  const hasArtifact =
-    run.status === "completed" &&
-    !!run.artifact_path &&
-    (await artifactExists(run.artifact_path));
 
-  const macPath =
-    typeof meta.desktopMacArtifactPath === "string"
-      ? meta.desktopMacArtifactPath
-      : null;
-  const winPath =
-    typeof meta.desktopWinArtifactPath === "string"
-      ? meta.desktopWinArtifactPath
-      : null;
+  // ── P2 优化：并行检查所有 artifact（替代 6 次串行 I/O）──
+  const isDone = run.status === "completed";
+  const macPath = typeof meta.desktopMacArtifactPath === "string" ? meta.desktopMacArtifactPath : null;
+  const winPath = typeof meta.desktopWinArtifactPath === "string" ? meta.desktopWinArtifactPath : null;
+  const previewPath = typeof meta.previewPath === "string" ? meta.previewPath : null;
+  const sqlPath = `${run.id}/supabase_migration.sql`;
+  const webPath = `${run.id}/flutter-web.zip`;
+
+  const pathsToCheck: Array<{ key: string; path: string | null }> = [
+    { key: "artifact", path: run.artifact_path },
+    { key: "mac", path: macPath },
+    { key: "win", path: winPath },
+    { key: "preview", path: previewPath },
+    { key: "sql", path: sqlPath },
+    { key: "web", path: isDone && run.target === "flutter" ? webPath : null },
+  ];
+
+  const results = await Promise.all(
+    pathsToCheck.map(async ({ key, path }) => ({
+      key,
+      exists: isDone && !!path && (await artifactExists(path)),
+    }))
+  );
+  const exists = Object.fromEntries(results.map((r) => [r.key, r.exists]));
+
   const macGithubUrl = resolveMacGithubUrl(meta);
   const macUseGithub = shouldUseMacGithubDownload(meta) || !!macGithubUrl;
-  const hasMacStored =
-    run.status === "completed" && !!macPath && (await artifactExists(macPath));
-  const hasMac = hasMacStored && !macUseGithub;
-  const hasWin =
-    run.status === "completed" && !!winPath && (await artifactExists(winPath));
-
-  const previewPath =
-    typeof meta.previewPath === "string" ? meta.previewPath : null;
-  const hasPreview =
-    run.status === "completed" &&
-    !!previewPath &&
-    (await artifactExists(previewPath));
+  const hasMac = exists.mac && !macUseGithub;
 
   const base = `/api/projects/${projectId}/codegen/runs/${run.id}/download`;
-
-  const showMacGithub =
-    run.target === "flutter" &&
-    run.status === "completed" &&
-    !!macGithubUrl;
-
-  const sqlPath = `${run.id}/supabase_migration.sql`;
-  const hasSql = run.status === "completed" && (await artifactExists(sqlPath));
-  const sqlDownloadUrl = hasSql
-    ? `/api/projects/${projectId}/codegen/runs/${run.id}/sql`
-    : null;
-
-  const webPath = `${run.id}/flutter-web.zip`;
-  const hasWeb = run.target === "flutter" && run.status === "completed" && (await artifactExists(webPath));
-  const flutterWebUrl = hasWeb
-    ? `${base}?kind=flutter-web`
-    : null;
+  const showMacGithub = run.target === "flutter" && isDone && !!macGithubUrl;
 
   return {
     ...run,
-    downloadUrl: hasArtifact ? base : null,
+    downloadUrl: exists.artifact ? base : null,
     downloadMacUrl: hasMac ? `${base}?kind=macos` : null,
     downloadMacGithubUrl: showMacGithub ? macGithubUrl : null,
-    downloadWinUrl: hasWin ? `${base}?kind=windows` : null,
-    sqlDownloadUrl,
-    flutterWebUrl,
-    previewUrl: hasPreview
+    downloadWinUrl: exists.win ? `${base}?kind=windows` : null,
+    sqlDownloadUrl: exists.sql ? `/api/projects/${projectId}/codegen/runs/${run.id}/sql` : null,
+    flutterWebUrl: exists.web ? `${base}?kind=flutter-web` : null,
+    previewUrl: exists.preview
       ? `/api/projects/${projectId}/codegen/runs/${run.id}/preview`
       : null
   };

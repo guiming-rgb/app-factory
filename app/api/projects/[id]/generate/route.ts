@@ -29,7 +29,7 @@ async function parseJsonBody(req: NextRequest) {
 }
 
 /**
- * v1.2：仅做 prepare + 投递 Inngest 事件，立即返回；实际 8 Agent 在后台执行。
+ * v1.2：仅做 prepare + 投递 Inngest 事件，立即返回；实际 9 Agent 在后台分步执行。
  */
 export async function POST(
   req: NextRequest,

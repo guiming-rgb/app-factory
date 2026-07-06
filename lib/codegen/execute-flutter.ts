@@ -247,12 +247,12 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
         }
         await fs.writeFile(path.join(backendDir, "EDGE_FUNCTIONS.md"), generateEdgeFunctionIndex(spec), "utf8");
         await fs.writeFile(path.join(edgeDir, ".gitkeep"), "", "utf8");
-      } catch {
-        // Edge Functions 可选
+      } catch (err) {
+        console.warn("[FlutterExecutor] Edge Functions optional step failed:", err);
       }
 
       // 打包 API ZIP
-      const { zipDirectory } = await import("@/lib/flutter-codegen/zip");
+      const { zipDirectory } = await import("@/lib/codegen/zip");
       const apiZip = await zipDirectory(backendDir);
       const { writeArtifactFile } = await import("@/lib/codegen/artifacts");
       await writeArtifactFile(runId, `${codegen.appName}-backend-api.zip`, apiZip);
@@ -332,8 +332,8 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
           targets: ["flutter"],
         }),
       ]);
-    } catch {
-      // best-effort
+    } catch (err) {
+      console.warn("[FlutterExecutor] best-effort step failed:", err);
     }
   }
 
@@ -358,7 +358,7 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
       await mergeCodegenRunNestedMetadata(runId, "desktopGha", {
         status: "failed",
         message: (err instanceof Error ? err.message : String(err)).slice(0, 400),
-      }).catch(() => {});
+      }).catch((err) => console.warn("[FlutterExecutor] status update failed:", err));
     }
   }
 
@@ -369,8 +369,8 @@ export class FlutterExecutor extends BaseCodegenExecutor<FlutterGateResult> {
         component: "FlutterExecutor",
         target: "flutter",
       });
-    } catch {
-      // 上报失败不阻塞
+    } catch (err) {
+      console.warn("[FlutterExecutor] telemetry report failed:", err);
     }
   }
 

@@ -3,19 +3,26 @@ import { assertInngestProjectOwner } from "@/lib/auth/inngest-project-auth";
 import { codegenInngestFunctions } from "@/lib/inngest/codegen-functions";
 
 /**
- * 整段流水线放在一个 step 内，避免 Inngest 默认「函数级重试」导致 agent_runs 重复插入。
- * 失败时由用户在前端对 failed 项目重试（prepare 会清理旧 runs）。
- *
- * 注意：`executeProjectWorkflow` 使用动态 import，避免本文件被 `/api/inngest` 加载时
- * 立刻拉取 `workflow` → `supabase` / `llm`（二者在缺环境变量时会顶层 throw），导致
- * Inngest Dev「同步 App」收到 internal_server_error。
+ * P2-15 / W-03: 每个 Agent 独立 Inngest step，避免单 step 超时。
+ * retries=1 + runProjectWorkflowAgent 幂等（已完成 Agent 跳过）。
  */
 export const generateProjectReport = inngest.createFunction(
   {
     id: "generate-project-report",
     name: "Generate Project Report",
-    retries: 0,
-    triggers: [{ event: "project/generate.requested" }]
+    retries: 1,
+    concurrency: { limit: 3 },
+    triggers: [{ event: "project/generate.requested" }],
+    onFailure: async ({ event, error }) => {
+      const original = event.data.event?.data as
+        | { projectId?: string }
+        | undefined;
+      const projectId = original?.projectId;
+      if (!projectId) return;
+
+      const { markProjectFailed } = await import("@/lib/workflow");
+      await markProjectFailed(projectId, error.message);
+    },
   },
   async ({ event, step }) => {
     const projectId = event.data.projectId as string;
@@ -27,16 +34,36 @@ export const generateProjectReport = inngest.createFunction(
 
     await assertInngestProjectOwner(projectId, userId);
 
-    const result = await step.run("execute-project-workflow", async () => {
-      const { executeProjectWorkflow } = await import("@/lib/workflow");
-      return executeProjectWorkflow(projectId);
+    const plan = await step.run("workflow-plan", async () => {
+      const { getProjectWorkflowPlan } = await import("@/lib/workflow");
+      return getProjectWorkflowPlan(projectId);
+    });
+
+    if (plan.action === "skip") {
+      return {
+        projectId,
+        status: "skipped" as const,
+        reason: plan.reason,
+      };
+    }
+
+    for (const agentCode of plan.agentCodes) {
+      await step.run(`agent-${agentCode}`, async () => {
+        const { runProjectWorkflowAgent } = await import("@/lib/workflow");
+        return runProjectWorkflowAgent(projectId, agentCode);
+      });
+    }
+
+    const result = await step.run("workflow-finalize", async () => {
+      const { finalizeProjectWorkflow } = await import("@/lib/workflow");
+      return finalizeProjectWorkflow(projectId);
     });
 
     return { ...result, projectId };
-  }
+  },
 );
 
 export const inngestFunctions = [
   generateProjectReport,
-  ...codegenInngestFunctions
+  ...codegenInngestFunctions,
 ];

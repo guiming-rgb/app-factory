@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSpecScreens } from "./useSpecScreens";
+import { useSpecEntities } from "./useSpecEntities";
 
 // ---- Types (shared across SpecEditorPanel components) ----
 
-type SpecScreen = {
+export type SpecScreen = {
   id: string;
   title: string;
   type: string;
@@ -109,75 +111,10 @@ export function useSpecEditor(projectId: string) {
     }
   }
 
-  function updateScreen(index: number, field: keyof SpecScreen, value: string) {
-    if (!editSpec) return;
-    const screens = [...editSpec.screens];
-    screens[index] = { ...screens[index], [field]: value };
-    setEditSpec({ ...editSpec, screens });
-  }
-
-  function addScreen() {
-    if (!editSpec) return;
-    const newId = `screen_${editSpec.screens.length + 1}`;
-    setEditSpec({
-      ...editSpec,
-      screens: [...editSpec.screens, { id: newId, title: `新页面 ${editSpec.screens.length + 1}`, type: "placeholder" }]
-    });
-  }
-
-  function removeScreen(index: number) {
-    if (!editSpec || editSpec.screens.length <= 1) return;
-    setEditSpec({ ...editSpec, screens: editSpec.screens.filter((_, i) => i !== index) });
-  }
-
-  function addEntity() {
-    if (!editSpec) return;
-    const entities = editSpec.entities ?? [];
-    setEditSpec({ ...editSpec, entities: [...entities, { name: `entity_${entities.length + 1}`, fields: [{ name: "id", type: "uuid", primary: true }] }] });
-  }
-
-  function removeEntity(index: number) {
-    if (!editSpec) return;
-    setEditSpec({ ...editSpec, entities: (editSpec.entities ?? []).filter((_, i) => i !== index) });
-  }
-
-  function updateEntityName(index: number, name: string) {
-    if (!editSpec) return;
-    const entities = [...(editSpec.entities ?? [])];
-    entities[index] = { ...entities[index], name };
-    setEditSpec({ ...editSpec, entities });
-  }
-
-  function addEntityField(entityIndex: number) {
-    if (!editSpec) return;
-    const entities = [...(editSpec.entities ?? [])];
-    const fields = [...entities[entityIndex].fields];
-    fields.push({ name: `field_${fields.length + 1}`, type: "string" });
-    entities[entityIndex] = { ...entities[entityIndex], fields };
-    setEditSpec({ ...editSpec, entities });
-  }
-
-  function updateEntityField(entityIndex: number, fieldIndex: number, field: string, value: string) {
-    if (!editSpec) return;
-    const entities = [...(editSpec.entities ?? [])];
-    const fields = [...entities[entityIndex].fields];
-    if (field === "primary") {
-      fields[fieldIndex] = { ...fields[fieldIndex], primary: !fields[fieldIndex].primary };
-    } else {
-      fields[fieldIndex] = { ...fields[fieldIndex], [field]: value };
-    }
-    entities[entityIndex] = { ...entities[entityIndex], fields };
-    setEditSpec({ ...editSpec, entities });
-  }
-
-  function removeEntityField(entityIndex: number, fieldIndex: number) {
-    if (!editSpec) return;
-    const entities = [...(editSpec.entities ?? [])];
-    const fields = entities[entityIndex].fields.filter((_, i) => i !== fieldIndex);
-    if (fields.length === 0) return;
-    entities[entityIndex] = { ...entities[entityIndex], fields };
-    setEditSpec({ ...editSpec, entities });
-  }
+  // ── P2-14: 领域 hooks 替代内联 CRUD ──
+  const setEditSpecWrapper = (s: AppSpec) => setEditSpec(s);
+  const { updateScreen, addScreen, removeScreen } = useSpecScreens(editSpec, setEditSpecWrapper);
+  const { addEntity, removeEntity, updateEntityName, addEntityField, updateEntityField, removeEntityField } = useSpecEntities(editSpec, setEditSpecWrapper);
 
   function updateTab(index: number, value: string) {
     if (!editSpec) return;

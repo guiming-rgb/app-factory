@@ -15,6 +15,8 @@
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireWorkspaceMember } from "@/lib/auth/require-workspace-member";
+import { validateBillingRedirectUrl } from "@/lib/billing/validate-billing-url";
 import { createPortalSession } from "@/lib/billing/subscription-service";
 import { createComponentLogger } from "@/lib/logger";
 
@@ -39,29 +41,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!body.returnUrl || typeof body.returnUrl !== "string") {
-      return NextResponse.json(
-        { error: "returnUrl is required" },
-        { status: 400 },
-      );
-    }
+    const auth = await requireWorkspaceMember(body.workspaceId);
+    if (!auth.ok) return auth.response;
 
-    // 验证 returnUrl 是安全的（仅允许相对路径或本站 URL）
-    try {
-      const parsed = new URL(body.returnUrl, process.env.NEXT_PUBLIC_APP_URL);
-      const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
-      if (parsed.origin !== appUrl.origin) {
-        return NextResponse.json(
-          { error: "returnUrl must be on the same origin as the application" },
-          { status: 400 },
-        );
-      }
-    } catch {
-      // 如果 URL 解析失败，可能是一个相对路径，可以接受
+    const returnUrlResult = validateBillingRedirectUrl(body.returnUrl, "returnUrl");
+    if (!returnUrlResult.ok) {
+      return NextResponse.json({ error: returnUrlResult.error }, { status: 400 });
     }
 
     // ── 创建 Portal Session ──
-    const portalUrl = await createPortalSession(body.workspaceId, body.returnUrl);
+    const portalUrl = await createPortalSession(
+      body.workspaceId,
+      returnUrlResult.url,
+    );
 
     log.info(
       { workspaceId: body.workspaceId },

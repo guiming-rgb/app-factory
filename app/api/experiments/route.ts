@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiUser, unauthorizedResponse } from "@/lib/auth/api-user";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { isAuthEnabled } from "@/lib/auth-config";
 
 import {
@@ -57,10 +58,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await getApiUser();
-    if (isAuthEnabled() && !user) {
-      return unauthorizedResponse();
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const body: Record<string, unknown> = await request.json();
 

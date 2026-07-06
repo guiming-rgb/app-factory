@@ -33,7 +33,7 @@ export async function createCodegenRun(input: {
     .insert({
       project_id: input.projectId,
       target: input.target,
-      status: "queued"
+      status: "queued",
     })
     .select("*")
     .single();
@@ -45,7 +45,7 @@ export async function createCodegenRun(input: {
 }
 
 export async function getCodegenRun(
-  runId: string
+  runId: string,
 ): Promise<CodegenRunRow | null> {
   const { data, error } = await getSupabaseAdmin()
     .from("codegen_runs")
@@ -60,7 +60,7 @@ export async function getCodegenRun(
 export async function listCodegenRuns(
   projectId: string,
   limit = 20,
-  client?: SupabaseClient
+  client?: SupabaseClient,
 ): Promise<CodegenRunRow[]> {
   const db = client ?? getSupabaseAdmin();
   const { data, error } = await db
@@ -82,18 +82,38 @@ export async function updateCodegenRun(
     log: string | null;
     spec_source: string | null;
     metadata: Record<string, unknown>;
-  }>
+  }>,
+  options?: { fromStatus?: CodegenRunStatus | CodegenRunStatus[] },
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
+  let query = getSupabaseAdmin()
     .from("codegen_runs")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", runId);
 
+  if (options?.fromStatus) {
+    const statuses = Array.isArray(options.fromStatus)
+      ? options.fromStatus
+      : [options.fromStatus];
+    query = query.in("status", statuses);
+  }
+
+  const { data, error } = await query.select("id").maybeSingle();
+
   if (error) throw new Error(error.message);
+  if (options?.fromStatus && !data) {
+    const expected = Array.isArray(options.fromStatus)
+      ? options.fromStatus.join("|")
+      : options.fromStatus;
+    throw new Error(`codegen run 状态转换无效（期望 from ${expected}）`);
+  }
 }
 
 export async function markCodegenRunRunning(runId: string): Promise<void> {
-  await updateCodegenRun(runId, { status: "running" });
+  const existing = await getCodegenRun(runId);
+  if (existing?.status === "running") {
+    return;
+  }
+  await updateCodegenRun(runId, { status: "running" }, { fromStatus: "queued" });
 }
 
 export async function markCodegenRunCompleted(
@@ -102,23 +122,38 @@ export async function markCodegenRunCompleted(
     artifact_path: string;
     spec_source: string;
     metadata?: Record<string, unknown>;
-  }
+  },
 ): Promise<void> {
-  await updateCodegenRun(runId, {
-    status: "completed",
-    artifact_path: result.artifact_path,
-    spec_source: result.spec_source,
-    log: null,
-    metadata: result.metadata
-  });
+  await updateCodegenRun(
+    runId,
+    {
+      status: "completed",
+      artifact_path: result.artifact_path,
+      spec_source: result.spec_source,
+      log: null,
+      metadata: result.metadata,
+    },
+    { fromStatus: "running" },
+  );
 }
 
 export async function markCodegenRunFailed(
   runId: string,
-  message: string
+  message: string,
 ): Promise<void> {
-  await updateCodegenRun(runId, {
-    status: "failed",
-    log: message.slice(0, 4000)
-  });
+  try {
+    await updateCodegenRun(
+      runId,
+      {
+        status: "failed",
+        log: message.slice(0, 4000),
+      },
+      { fromStatus: ["queued", "running"] },
+    );
+  } catch (err) {
+    console.warn(
+      `[codegen/runs] markCodegenRunFailed skipped (runId=${runId}):`,
+      err instanceof Error ? err.message : err,
+    );
+  }
 }

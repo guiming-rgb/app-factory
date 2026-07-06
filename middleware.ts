@@ -74,12 +74,12 @@ export async function middleware(request: NextRequest) {
   // 生成 per-request nonce（CSP）
   const nonce = generateNonce();
 
-  // API 限流（Supabase 持久化，Vercel serverless 冷启动安全）
+  // API 限流（Supabase 持久化，按 IP 分桶 — P2-H6）
   if (pathname.startsWith("/api")) {
     const { checkSupabaseRateLimit } = await import(
       "@/lib/auth/rate-limit-supabase"
     );
-    if (!(await checkSupabaseRateLimit())) {
+    if (!(await checkSupabaseRateLimit(request))) {
       return new NextResponse("Too Many Requests", {
         status: 429,
         headers: { "Retry-After": "60" },

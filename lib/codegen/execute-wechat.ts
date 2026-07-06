@@ -105,6 +105,18 @@ export class WechatExecutor extends BaseCodegenExecutor<WechatGateResult> {
       build: input.gate,
     };
   }
+
+  protected async onError(err: unknown): Promise<void> {
+    try {
+      const { captureError } = await import("@/lib/monitoring");
+      await captureError(err, {
+        component: "WechatExecutor",
+        target: "wechat",
+      });
+    } catch (reportErr) {
+      console.warn("[WechatExecutor] telemetry report failed:", reportErr);
+    }
+  }
 }
 
 export type WechatCodegenExecuteResult = {

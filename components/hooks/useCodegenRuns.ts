@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type CodegenTarget = "flutter" | "wechat" | "harmony";
 
@@ -30,6 +31,8 @@ export function useCodegenRuns(projectId: string) {
   const [error, setError] = useState("");
   const [inngestHint, setInngestHint] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createSupabaseBrowserClient>["channel"]> | null>(null);
+  const realtimeClientRef = useRef<ReturnType<typeof createSupabaseBrowserClient> | null>(null);
 
   const fetchRuns = useCallback(async () => {
     const res = await fetch(`/api/projects/${projectId}/codegen/runs`, { cache: "no-store" });
@@ -50,20 +53,47 @@ export function useCodegenRuns(projectId: string) {
     return updated;
   }, [projectId]);
 
+  // ── P2 优化：Supabase Realtime 替代 3 秒 HTTP 轮询 ──
   const startPolling = useCallback((runId: string, onComplete?: (run: CodegenRun) => void) => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      try {
-        const run = await fetchSingleRun(runId);
-        if (run.status === "completed" || run.status === "failed") {
-          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-          onComplete?.(run);
-        }
-      } catch { /* 静默重试 */ }
-    }, POLL_INTERVAL);
-  }, [fetchSingleRun]);
+    // Clean up previous subscription
+    if (channelRef.current && realtimeClientRef.current) {
+      realtimeClientRef.current.removeChannel(channelRef.current);
+      channelRef.current = null;
+      realtimeClientRef.current = null;
+    }
 
-  // Desktop GHA polling
+    const supabase = createSupabaseBrowserClient();
+    realtimeClientRef.current = supabase;
+
+    const channel = supabase
+      .channel(`codegen-progress:${projectId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "usage_logs",
+          filter: `project_id=eq.${projectId}`,
+        },
+        async (payload) => {
+          const meta = payload.new as { metadata?: { run_id?: string; status?: string } };
+          if (meta?.metadata?.run_id !== runId) return;
+          try {
+            const run = await fetchSingleRun(runId);
+            if (run.status === "completed" || run.status === "failed") {
+              supabase.removeChannel(channel);
+              channelRef.current = null;
+              onComplete?.(run);
+            }
+          } catch { /* retry on next INSERT event */ }
+        },
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+  }, [projectId, fetchSingleRun]);
+
+  // Desktop GHA polling (kept — GHA metadata not in usage_logs)
   useEffect(() => {
     const hasGhaPending = runs.some((r) => {
       if (r.target !== "flutter" || r.status !== "completed") return false;
@@ -77,7 +107,11 @@ export function useCodegenRuns(projectId: string) {
 
   // Cleanup
   useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => {
+      if (channelRef.current && realtimeClientRef.current) {
+        realtimeClientRef.current.removeChannel(channelRef.current);
+      }
+    };
   }, []);
 
   return { runs, setRuns, error, setError, inngestHint, fetchRuns, fetchSingleRun, startPolling, pollRef };
