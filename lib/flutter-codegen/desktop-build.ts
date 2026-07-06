@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 
 import { hasFlutter } from "@/lib/utils/has-flutter";
-import { zipDirectory } from "@/lib/flutter-codegen/zip";
+import { zipDirectory } from "@/lib/codegen/zip";
 import type { DesktopBuildTarget, DesktopBuildItem, DesktopBuildSummary } from "@/lib/sandbox/desktop-types";
 
 function desktopBuildMode(): "off" | "on" | "auto" {

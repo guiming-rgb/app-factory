@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import type { IndustryCategory } from "./emit-industry";
 import { renderWidgetTemplate, hasWidgetTemplate } from "../codegen/template-renderer";
+import { getIndustryEmitConfig, buildWidgetContext } from "@/lib/app-spec/emit-shared";
 
 const ROOT = process.cwd();
 const INDUSTRY_TEMPLATE_DIR = path.join(ROOT, "templates");
@@ -74,17 +75,16 @@ async function renderAndWriteWidget(
   await fs.mkdir(widgetDir, { recursive: true });
   const outPath = path.join(widgetDir, "industry_widgets.dart");
 
-  // 构建渲染上下文
-  const context = {
-    industry,
-    displayName: industryDisplayName(industry),
-    tableName: industryTableName(industry),
-    titleField: "title",
-    primaryKey: "id",
-    hasImage: industryHasImage(industry),
-    primaryColor: "Color(0xFF0D9488)", // teal-600 default
-    extra: {},
-  };
+  // P2: 共享配置表 + Mustache 上下文
+  const config = getIndustryEmitConfig(industry);
+  const context = buildWidgetContext(industry, {
+    specVersion: "0.1.0",
+    appName: industry,
+    displayName: config?.displayName ?? industry,
+    screens: [],
+    navigation: { tabs: [] },
+    entities: config ? [{ name: config.tableName, fields: [{ name: "title", type: "string" }] }] : undefined,
+  } as import("@/lib/app-spec/types").AppSpec);
 
   try {
     const templateName = `${industry}_widgets`;
@@ -153,36 +153,4 @@ class FeatureCard extends StatelessWidget {
   return { copied: 0, skipped: 0 };
 }
 
-// ─── 辅助函数 ────────────────────────────────────
-
-function industryDisplayName(industry: IndustryCategory): string {
-  const map: Record<string, string> = {
-    finance: "记账理财", crm: "客户管理", fitness: "健身助手",
-    ecommerce: "电商商城", education: "课程助手", social: "社交社区",
-    food: "外卖点餐", hotel: "酒店预订", recruitment: "招聘求职",
-    property: "智慧物业", video: "影音娱乐", weather: "天气预报",
-    sports: "体育赛事", photo: "照片社区", dating: "交友匹配",
-    medical: "在线问诊", blog: "博客阅读", game: "游戏中心",
-    payment: "收银支付",
-  };
-  return map[industry] ?? "通用";
-}
-
-function industryTableName(industry: IndustryCategory): string {
-  const map: Record<string, string> = {
-    finance: "transactions", crm: "contacts", fitness: "workouts",
-    ecommerce: "products", education: "courses", social: "posts",
-    food: "restaurants", hotel: "hotels", recruitment: "jobs",
-    property: "repairs", video: "videos", weather: "cities",
-    sports: "matches", photo: "photos", dating: "user_profiles",
-    medical: "doctors", blog: "articles", game: "game_scores",
-    payment: "orders",
-  };
-  return map[industry] ?? "items";
-}
-
-function industryHasImage(industry: IndustryCategory): boolean {
-  // 以下行业以图片为核心
-  const withImages = ["ecommerce", "social", "food", "photo", "dating", "video", "blog"];
-  return withImages.includes(industry);
-}
+// P2: displayName/tableName/hasImage 已迁至 config/industries/*.json + emit-shared/industry-config.ts

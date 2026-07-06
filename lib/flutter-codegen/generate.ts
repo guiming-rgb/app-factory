@@ -134,7 +134,7 @@ export async function generateFlutterProject(
     if (copied > 0) console.log(`[generateFlutterProject] 注入 ${industry} 行业模板 (${copied} 文件)`);
 
     const { getIndustryWidgetsDart } = await import("./emit-industry");
-    const widgetsDart = getIndustryWidgetsDart(industry);
+    const widgetsDart = await getIndustryWidgetsDart(industry, spec);
     if (widgetsDart) {
       const widgetDir = path.join(appDir, "lib", "features", industry, "widgets");
       await fs.mkdir(widgetDir, { recursive: true });
@@ -290,105 +290,79 @@ export async function generateFlutterProject(
   const generatedPagesDir = path.join(appDir, "lib", "generated", "pages");
   await fs.mkdir(generatedPagesDir, { recursive: true });
 
-  // 生成所有页面（Tab + 非 Tab）
+  // 生成所有页面（Tab + 非 Tab）— 策略映射替代 if/else 链
   const allScreens = spec.screens;
+
+  // ── 屏幕类型 → 发射函数 + 文件后缀 ──
+  type ScreenDispatch = () => Promise<{ content: string; fileName: string }>;
+
+  const dispatchMap: Record<string, (s: typeof allScreens[0]) => ScreenDispatch> = {
+    detail: (s) => async () => ({ content: emitFlutterEntityDetailPage(s, spec), fileName: `${s.id}_detail_page.dart` }),
+    form: (s) => async () => ({ content: emitFlutterFormPlaceholder(s, spec), fileName: `${s.id}_form_page.dart` }),
+    map: (s) => async () => ({ content: emitFlutterMapPage(s, spec), fileName: `${s.id}_map_page.dart` }),
+    chat: (s) => async () => ({ content: emitFlutterChatListPage(spec.displayName), fileName: `${s.id}_chat_page.dart` }),
+    call: (s) => async () => ({ content: emitFlutterWebRTCCallPage(), fileName: `${s.id}_call_page.dart` }),
+    iot: (s) => async () => ({ content: emitFlutterBLEScannerPage(), fileName: `${s.id}_iot_page.dart` }),
+    ar: (s) => async () => ({ content: emitFlutterARPage(), fileName: `${s.id}_ar_page.dart` }),
+    medical: (s) => async () => ({ content: emitFlutterHealthDashboard(spec.displayName), fileName: `${s.id}_medical_page.dart` }),
+    automotive: (s) => async () => ({ content: emitFlutterCarDashboard(), fileName: `${s.id}_auto_page.dart` }),
+    banking: (s) => async () => ({ content: emitFlutterBankingPayment(), fileName: `${s.id}_banking_page.dart` }),
+    insurance: (s) => async () => ({ content: emitFlutterInsuranceClaims(), fileName: `${s.id}_insurance_page.dart` }),
+    kyc: (s) => async () => ({ content: emitFlutterKYCVerification(), fileName: `${s.id}_kyc_page.dart` }),
+    list: (s) => async () => ({ content: emitGeneratedListPage(s, spec), fileName: `${s.id}_page.dart` }),
+    payment: (s) => async () => {
+      if (industry === "payment") {
+        const { emitFlutterIndustryPaymentPage } = await import("./emit-industry-pages");
+        return { content: emitFlutterIndustryPaymentPage(s, spec), fileName: `${s.id}_payment_page.dart` };
+      }
+      return { content: emitFlutterPaymentPage(), fileName: `${s.id}_payment_page.dart` };
+    },
+    game: (s) => async () => {
+      if (industry === "game") {
+        const { emitFlutterIndustryGamePage } = await import("./emit-industry-pages");
+        return { content: emitFlutterIndustryGamePage(s, spec), fileName: `${s.id}_game_page.dart` };
+      }
+      return { content: emitFlutterGamePage(spec.displayName), fileName: `${s.id}_game_page.dart` };
+    },
+  };
+
+  // Extended types (dashboard/card_grid/calendar/chart/kanban/onboarding) — lazy load
+  const extendedTypes = new Set(["dashboard", "card_grid", "calendar", "chart", "kanban", "onboarding"]);
+  let extendedModule: any = null;
+  async function loadExtended() {
+    if (!extendedModule) extendedModule = await import("./emit-extended");
+    return extendedModule;
+  }
+
   for (const screen of allScreens) {
     const ref = pageWidgetRef(screen, { spec, industry });
     if (!ref.needsGenerated) continue;
 
     let content: string;
     let fileName: string;
-    if (screen.type === "detail") {
-      content = emitFlutterEntityDetailPage(screen, spec);
-      fileName = `${screen.id}_detail_page.dart`;
-    } else if (screen.type === "form") {
-      content = emitFlutterFormPlaceholder(screen, spec);
-      fileName = `${screen.id}_form_page.dart`;
-    } else if (screen.type === "map") {
-      content = emitFlutterMapPage(screen, spec);
-      fileName = `${screen.id}_map_page.dart`;
-    } else if (screen.type === "chat") {
-      content = emitFlutterChatListPage(spec.displayName);
-      fileName = `${screen.id}_chat_page.dart`;
-    } else if (screen.type === "call") {
-      content = emitFlutterWebRTCCallPage();
-      fileName = `${screen.id}_call_page.dart`;
-    } else if (screen.type === "payment") {
-      if (industry === "payment") {
-        const { emitFlutterIndustryPaymentPage } = await import("./emit-industry-pages");
-        content = emitFlutterIndustryPaymentPage(screen, spec);
-        fileName = `${screen.id}_payment_page.dart`;
-      } else {
-        content = emitFlutterPaymentPage();
-        fileName = `${screen.id}_payment_page.dart`;
-      }
-    } else if (screen.type === "iot") {
-      content = emitFlutterBLEScannerPage();
-      fileName = `${screen.id}_iot_page.dart`;
-    } else if (screen.type === "game") {
-      if (industry === "game") {
-        const { emitFlutterIndustryGamePage } = await import("./emit-industry-pages");
-        content = emitFlutterIndustryGamePage(screen, spec);
-        fileName = `${screen.id}_game_page.dart`;
-      } else {
-        content = emitFlutterGamePage(spec.displayName);
-        fileName = `${screen.id}_game_page.dart`;
-      }
-    } else if (screen.type === "ar") {
-      content = emitFlutterARPage();
-      fileName = `${screen.id}_ar_page.dart`;
-    } else if (screen.type === "medical") {
-      content = emitFlutterHealthDashboard(spec.displayName);
-      fileName = `${screen.id}_medical_page.dart`;
-    } else if (screen.type === "automotive") {
-      content = emitFlutterCarDashboard();
-      fileName = `${screen.id}_auto_page.dart`;
-    } else if (screen.type === "banking") {
-      content = emitFlutterBankingPayment();
-      fileName = `${screen.id}_banking_page.dart`;
-    } else if (screen.type === "insurance") {
-      content = emitFlutterInsuranceClaims();
-      fileName = `${screen.id}_insurance_page.dart`;
-    } else if (screen.type === "kyc") {
-      content = emitFlutterKYCVerification();
-      fileName = `${screen.id}_kyc_page.dart`;
-    } else if (screen.type === "dashboard") {
-      const { emitFlutterDashboardPage } = await import("./emit-extended");
-      content = emitFlutterDashboardPage(screen, spec);
-      fileName = `${screen.id}_dashboard_page.dart`;
-    } else if (screen.type === "card_grid") {
-      const { emitFlutterCardGridPage } = await import("./emit-extended");
-      content = emitFlutterCardGridPage(screen, spec);
-      fileName = `${screen.id}_grid_page.dart`;
-    } else if (screen.type === "calendar") {
-      const { emitFlutterCalendarPage } = await import("./emit-extended");
-      content = emitFlutterCalendarPage(screen, spec);
-      fileName = `${screen.id}_calendar_page.dart`;
-    } else if (screen.type === "chart") {
-      const { emitFlutterChartPage } = await import("./emit-extended");
-      content = emitFlutterChartPage(screen, spec);
-      fileName = `${screen.id}_chart_page.dart`;
-    } else if (screen.type === "kanban") {
-      const { emitFlutterKanbanPage } = await import("./emit-extended");
-      content = emitFlutterKanbanPage(screen, spec);
-      fileName = `${screen.id}_kanban_page.dart`;
-    } else if (screen.type === "onboarding") {
-      const { emitFlutterOnboardingPage } = await import("./emit-extended");
-      content = emitFlutterOnboardingPage(screen, spec);
-      fileName = `${screen.id}_onboarding_page.dart`;
-    } else if (screen.type === "list") {
-      content = emitGeneratedListPage(screen, spec);
-      fileName = `${screen.id}_page.dart`;
+
+    if (extendedTypes.has(screen.type)) {
+      const mod = await loadExtended();
+      const fnMap: Record<string, Function> = {
+        dashboard: mod.emitFlutterDashboardPage,
+        card_grid: mod.emitFlutterCardGridPage,
+        calendar: mod.emitFlutterCalendarPage,
+        chart: mod.emitFlutterChartPage,
+        kanban: mod.emitFlutterKanbanPage,
+        onboarding: mod.emitFlutterOnboardingPage,
+      };
+      content = fnMap[screen.type](screen, spec);
+      fileName = `${screen.id}_${screen.type === "card_grid" ? "grid" : screen.type}_page.dart`;
+    } else if (dispatchMap[screen.type]) {
+      const result = await dispatchMap[screen.type](screen)();
+      content = result.content;
+      fileName = result.fileName;
     } else {
       content = emitGeneratedPlaceholderPage(screen, spec);
       fileName = `${screen.id}_page.dart`;
     }
 
-    await fs.writeFile(
-      path.join(generatedPagesDir, fileName),
-      content,
-      "utf8"
-    );
+    await fs.writeFile(path.join(generatedPagesDir, fileName), content, "utf8");
   }
 
   // Auth 页面
@@ -605,4 +579,38 @@ class PrivacyPage extends StatelessWidget {
   }
 }
 `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Sandbox helpers (moved from lib/sandbox/flutter.ts to break cycle)
+// ═══════════════════════════════════════════════════════════════════
+
+export async function loadSpecFromFile(
+  specPath: string = "docs/schemas/examples/valid-minimal.json"
+): Promise<import("@/lib/app-spec/types").AppSpec> {
+  const fs = await import("fs/promises");
+  const pathModule = await import("path");
+  const { validateAppSpec } = await import("@/lib/app-spec/validate");
+  const fullPath = pathModule.join(process.cwd(), specPath);
+  const spec = JSON.parse(await fs.readFile(fullPath, "utf8"));
+  const validation = validateAppSpec(spec);
+  if (!validation.ok) {
+    throw new Error(`Spec invalid: ${validation.errors.join("; ")}`);
+  }
+  return validation.spec;
+}
+
+export async function prepareSandboxOutput(options: {
+  specPath?: string;
+  outDir: string;
+}): Promise<{ outDir: string; appName: string }> {
+  const spec = await loadSpecFromFile(options.specPath);
+  const outDir = options.outDir;
+  const fs = await import("fs/promises");
+  const pathModule = await import("path");
+  await fs.rm(outDir, { recursive: true, force: true }).catch((err) => console.warn("[generate] sandbox cleanup failed:", err));
+  const { outputDir, appName } = await generateFlutterProject(spec);
+  await fs.cp(outputDir, outDir, { recursive: true });
+  await fs.rm(pathModule.dirname(outputDir), { recursive: true, force: true });
+  return { outDir, appName };
 }

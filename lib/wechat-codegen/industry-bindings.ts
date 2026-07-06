@@ -1,30 +1,11 @@
-import type { IndustryCategory } from "@/lib/flutter-codegen/emit-industry";
+import type { IndustryCategory } from "@/lib/app-spec/industry";
+import { buildWechatServiceMap } from "@/lib/app-spec/emit-shared/service-registry";
 
-/** 与 templates/wechat-miniprogram-minimal/services/industry.js 导出一致 */
+/** 与 templates/wechat-miniprogram-minimal/services/industry.js 导出一致（P2 续：由 JSON 配置派生） */
 export const WECHAT_INDUSTRY_SERVICES: Record<
   Exclude<IndustryCategory, "generic">,
   string
-> = {
-  finance: "financeService",
-  crm: "crmService",
-  fitness: "fitnessService",
-  ecommerce: "ecommerceService",
-  education: "educationService",
-  social: "socialService",
-  food: "foodService",
-  hotel: "hotelService",
-  recruitment: "recruitmentService",
-  property: "propertyService",
-  video: "videoService",
-  weather: "weatherService",
-  sports: "sportsService",
-  photo: "photoService",
-  dating: "datingService",
-  medical: "medicalService",
-  blog: "blogService",
-  game: "gameService",
-  payment: "paymentService",
-};
+> = buildWechatServiceMap();
 
 export function wechatIndustryServiceName(
   industry: IndustryCategory
