@@ -17,5 +17,9 @@
     "getCurrentCity",
     "getDaily",
     "getAqi"
+  ],
+  "harmonyMethods": [
+    { "name": "getCities", "table": "cities", "verb": "GET", "path": "?order=name" },
+    { "name": "getForecasts", "table": "forecasts", "verb": "GET", "path": "?order=date&limit=30" }
   ]
 }

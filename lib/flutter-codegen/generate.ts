@@ -310,7 +310,10 @@ export async function generateFlutterProject(
       const content = await emitFlutterBankingPayment();
       return { content, fileName: `${s.id}_banking_page.dart` };
     },
-    insurance: (s) => async () => ({ content: emitFlutterInsuranceClaims(), fileName: `${s.id}_insurance_page.dart` }),
+    insurance: (s) => async () => {
+      const content = await emitFlutterInsuranceClaims();
+      return { content, fileName: `${s.id}_insurance_page.dart` };
+    },
     kyc: (s) => async () => ({ content: await emitFlutterKYCVerification(), fileName: `${s.id}_kyc_page.dart` }),
     list: (s) => async () => ({ content: emitGeneratedListPage(s, spec), fileName: `${s.id}_page.dart` }),
     payment: (s) => async () => {

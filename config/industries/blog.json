@@ -17,5 +17,9 @@
     "getFeed",
     "getByCategory",
     "search"
+  ],
+  "harmonyMethods": [
+    { "name": "getFeed", "table": "articles", "verb": "GET", "path": "?order=created_at.desc&limit=15" },
+    { "name": "getCategories", "table": "categories", "verb": "GET", "path": "?order=sort_order" }
   ]
 }

@@ -35,4 +35,21 @@ describe("harmony-method-generator (B3)", () => {
     expect(ets).toContain("addBodyStat:");
     expect(ets).toContain("getWorkoutLog:");
   });
+
+  it("blog harmonyMethods 应生成 getFeed 与 getCategories", () => {
+    const ets = emitHarmonyIndustryServicesEts("blog");
+    expect(ets).toContain("getFeed:");
+    expect(ets).toContain("getCategories:");
+    expect(ets).toContain("getByCategory:");
+    expect(ets).toContain("search:");
+  });
+
+  it("weather harmonyMethods 应生成 getCities 与 getForecasts", () => {
+    const ets = emitHarmonyIndustryServicesEts("weather");
+    expect(ets).toContain("getCities:");
+    expect(ets).toContain("getForecasts:");
+    expect(ets).toContain("getCurrentCity:");
+    expect(ets).toContain("getDaily:");
+    expect(ets).toContain("getAqi:");
+  });
 });

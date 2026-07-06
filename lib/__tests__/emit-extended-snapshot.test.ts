@@ -6,6 +6,7 @@ import { emitFlutterKanbanPage } from "@/lib/flutter-codegen/emit-extended/kanba
 import { emitFlutterCardGridPage } from "@/lib/flutter-codegen/emit-extended/card-grid";
 import { emitFlutterChartPage } from "@/lib/flutter-codegen/emit-extended/chart";
 import { emitFlutterKYCVerification } from "@/lib/flutter-codegen/emit-fintech/kyc";
+import { emitFlutterInsuranceClaims } from "@/lib/flutter-codegen/emit-fintech/insurance";
 
 describe("emit extended/fintech Mustache (B2)", () => {
   const baseSpec = {
@@ -80,5 +81,11 @@ describe("emit extended/fintech Mustache (B2)", () => {
   it("kyc Mustache 应含 KYCVerificationPage", async () => {
     const dart = await emitFlutterKYCVerification();
     expect(dart).toContain("KYCVerificationPage");
+  });
+
+  it("insurance Mustache 应含 InsurancePage", async () => {
+    const dart = await emitFlutterInsuranceClaims();
+    expect(dart).toContain("InsurancePage");
+    expect(dart).toContain("_TabButton");
   });
 });

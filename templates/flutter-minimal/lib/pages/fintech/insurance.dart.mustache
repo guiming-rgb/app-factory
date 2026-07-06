@@ -1,0 +1,265 @@
+import "package:flutter/material.dart";
+
+/// 保险产品浏览 + 理赔申请
+class InsurancePage extends StatefulWidget {
+  const InsurancePage({super.key});
+
+  @override
+  State<InsurancePage> createState() => _InsurancePageState();
+}
+
+class _Policy {
+  final String id;
+  final String type;
+  final String name;
+  final String coverage;
+  final String premium;
+  final String status;
+  final IconData icon;
+  const _Policy({required this.id, required this.type, required this.name, required this.coverage, required this.premium, required this.status, required this.icon});
+}
+
+class _Claim {
+  final String id;
+  final String policyName;
+  final String amount;
+  final String status;
+  final DateTime date;
+  final String description;
+  const _Claim({required this.id, required this.policyName, required this.amount, required this.status, required this.date, required this.description});
+}
+
+class _InsurancePageState extends State<InsurancePage> {
+  int _tabIndex = 0;
+
+  final _policies = [
+    const _Policy(id: "p1", type: "健康险", name: "百万医疗险", coverage: "¥2,000,000", premium: "¥368/年", status: "生效中", icon: Icons.health_and_safety),
+    const _Policy(id: "p2", type: "车险", name: "机动车综合险", coverage: "¥500,000", premium: "¥3,200/年", status: "生效中", icon: Icons.directions_car),
+    const _Policy(id: "p3", type: "寿险", name: "定期寿险", coverage: "¥1,000,000", premium: "¥1,800/年", status: "生效中", icon: Icons.favorite),
+    const _Policy(id: "p4", type: "意外险", name: "综合意外险", coverage: "¥300,000", premium: "¥198/年", status: "待续费", icon: Icons.shield),
+  ];
+
+  final _claims = [
+    const _Claim(id: "c1", policyName: "百万医疗险", amount: "¥8,500", status: "已赔付", date: null, description: "住院治疗 — 阑尾炎手术"),
+    const _Claim(id: "c2", policyName: "机动车综合险", amount: "¥12,000", status: "审核中", date: null, description: "追尾事故 — 后保险杠更换"),
+  ].map((c) => _Claim(id: c.id, policyName: c.policyName, amount: c.amount, status: c.status, date: DateTime.now().subtract(Duration(days: 30)), description: c.description)).toList();
+
+  double _deductible = 500;
+  bool _agreeTerms = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("保险")),
+      body: Column(
+        children: [
+          // Tab 切换
+          Row(
+            children: [
+              _TabButton("我的保单", 0, _tabIndex, () => setState(() => _tabIndex = 0)),
+              _TabButton("理赔中心", 1, _tabIndex, () => setState(() => _tabIndex = 1)),
+              _TabButton("产品市场", 2, _tabIndex, () => setState(() => _tabIndex = 2)),
+            ],
+          ),
+          const Divider(height: 1),
+          Expanded(child: _tabIndex == 0 ? _buildPolicies() : _tabIndex == 1 ? _buildClaims() : _buildMarket()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPolicies() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _policies.length,
+      itemBuilder: (_, i) {
+        final p = _policies[i];
+        return Card(
+          child: ListTile(
+            leading: CircleAvatar(backgroundColor: Colors.teal.shade100, child: Icon(p.icon, color: Colors.teal)),
+            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text("${p.type} · 保额 ${p.coverage} · 保费 ${p.premium}"),
+            trailing: Chip(label: Text(p.status, style: TextStyle(fontSize: 11, color: p.status == "生效中" ? Colors.green : Colors.orange))),
+            onTap: () => _showPolicyDetail(p),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildClaims() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _claims.length,
+            itemBuilder: (_, i) {
+              final c = _claims[i];
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.receipt_long, color: Colors.orange),
+                  title: Text(c.policyName),
+                  subtitle: Text("${c.amount} · ${c.status} · ${c.description}"),
+                  trailing: Text("${c.date.month}/${c.date.day}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _fileNewClaim,
+                icon: const Icon(Icons.add),
+                label: const Text("发起理赔"),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMarket() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _ProductCard("健康险", "百万医疗险", "最高 ¥6,000,000 保额，覆盖住院/手术/门诊", "¥368/年起"),
+        _ProductCard("车险", "机动车综合险", "交强险 + 三者 + 车损 + 不计免赔", "¥3,200/年起"),
+        _ProductCard("旅行险", "全球旅行险", "医疗/行李/航班延误/紧急救援", "¥58/年起"),
+        _ProductCard("寿险", "定期寿险", "给家人的保障，最高 ¥5,000,000", "¥1,200/年起"),
+        _ProductCard("宠物险", "宠物医疗险", "猫狗疾病/意外/手术/第三方责任", "¥198/年起"),
+      ],
+    );
+  }
+
+  void _showPolicyDetail(_Policy p) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(p.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _detailRow("保险类型", p.type),
+            _detailRow("保额", p.coverage),
+            _detailRow("年保费", p.premium),
+            _detailRow("状态", p.status),
+            _detailRow("免赔额", "¥$_deductible"),
+            const SizedBox(height: 16),
+            const Text("⚠ 本模板为保险业务演示。实际保险产品需：保险公司牌照 + 精算定价 + 监管报备 + 理赔调查系统。", style: TextStyle(color: Colors.orange, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [Text(label, style: const TextStyle(color: Colors.grey)), Text(value, style: const TextStyle(fontWeight: FontWeight.w600))],
+      ),
+    );
+  }
+
+  void _fileNewClaim() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("理赔申请"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("选择保单"), const SizedBox(height: 8),
+            ..._policies.take(3).map((p) => ListTile(title: Text(p.name), dense: true, onTap: () => Navigator.pop(ctx))),
+            const SizedBox(height: 12),
+            const Text("理赔金额"), TextField(keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: "¥ 0.00", border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            const Text("事故说明"), TextField(maxLines: 3, decoration: const InputDecoration(hintText: "请描述事故经过…", border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            const Text("免责额"), Slider(value: _deductible, min: 0, max: 2000, divisions: 20, label: "\\u00a5" + _deductible.toInt().toString(), onChanged: (v) {}),
+            CheckboxListTile(title: const Text("我确认以上信息真实有效"), value: _agreeTerms, onChanged: (v) {}),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("取消")),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("理赔申请需要保险公司后端审核系统"), backgroundColor: Colors.orange));
+            },
+            child: const Text("提交申请"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final String category;
+  final String name;
+  final String desc;
+  final String price;
+  const _ProductCard(this.category, this.name, this.desc, this.price);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Chip(label: Text(category, style: const TextStyle(fontSize: 11))),
+                const Spacer(),
+                Text(price, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  final String label;
+  final int index;
+  final int current;
+  final VoidCallback onTap;
+  const _TabButton(this.label, this.index, this.current, this.onTap);
+
+  @override
+  Widget build(BuildContext context) {
+    final active = index == current;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: active ? Colors.teal : Colors.transparent, width: 2))),
+          child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: active ? Colors.teal : Colors.grey, fontWeight: active ? FontWeight.bold : FontWeight.normal)),
+        ),
+      ),
+    );
+  }
+}

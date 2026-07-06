@@ -237,11 +237,8 @@ const INDUSTRY_METHODS: Record<string, string> = {
   getMedicalRecords: (): Promise<Array<Record<string, Object>> | null> => restFetch("medical_records?order=date.desc"),`,
 
   blog: `
-  getFeed: (page: number = 0): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("articles?order=created_at.desc&limit=15&offset=" + (page * 15)),
   getByCategory: (categoryId: string, page: number = 0): Promise<Array<Record<string, Object>> | null> =>
     restFetch("articles?category_id=eq." + categoryId + "&order=created_at.desc&limit=15&offset=" + (page * 15)),
-  getCategories: (): Promise<Array<Record<string, Object>> | null> => restFetch("categories?order=sort_order"),
   search: (q: string): Promise<Array<Record<string, Object>> | null> =>
     restFetch("articles?or=(title.ilike.%25" + q + "%25,content.ilike.%25" + q + "%25,tags.ilike.%25" + q + "%25)&order=created_at.desc&limit=20"),
   getByAuthor: (authorId: string, page: number = 0): Promise<Array<Record<string, Object>> | null> =>
