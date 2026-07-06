@@ -57,7 +57,7 @@ jobs:
         with: { node-version: "20", cache: "npm" }
       - run: npm ci
       - run: npm run verify:industry:configs
-      - run: npm run verify:p2:pilot
+      - run: npm run verify:p2:all
       - run: npm run check:emit:lines
       - run: node scripts/generate-detect-industry-matrix.mjs --check
       - name: parity 全量（main push）

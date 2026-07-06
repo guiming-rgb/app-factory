@@ -13,6 +13,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import type { AppSpec } from "@/lib/app-spec/types";
 
 // 环境变量
 process.env.OPENAI_API_KEY = "sk-test-pipeline";
@@ -56,7 +57,7 @@ vi.mock("@/lib/app-spec/resolve-spec", () => ({
       screens: [{ id: "home", title: "首页", type: "list" }],
       navigation: { tabs: ["home"] },
     };
-    return Promise.resolve({ spec, source: "report-llm", warning: null });
+    return Promise.resolve({ spec, source: "report-llm", warning: undefined });
   }),
 }));
 
@@ -340,10 +341,9 @@ vi.mock("@/lib/logger", () => {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    child: vi.fn(function () {
-      return this;
-    }),
+    child: vi.fn(),
   };
+  silent.child.mockImplementation(() => silent);
   return { llmLogger: silent, createComponentLogger: vi.fn() };
 });
 
@@ -726,7 +726,7 @@ const ALL_INDUSTRIES: IndustrySpecConfig[] = [
 ];
 
 /** 将行业配置转换为完整 AppSpec */
-function toFullSpec(cfg: IndustrySpecConfig): Record<string, unknown> {
+function toFullSpec(cfg: IndustrySpecConfig): AppSpec {
   return {
     specVersion: "0.1.0",
     appName: cfg.appName,
@@ -782,7 +782,7 @@ describe("1. 全行业多平台生成", () => {
       ).mockResolvedValueOnce({
         spec,
         source: "report-llm",
-        warning: null,
+        warning: undefined,
       });
 
       const executor = new FlutterExecutor();
@@ -808,7 +808,7 @@ describe("1. 全行业多平台生成", () => {
       ).mockResolvedValueOnce({
         spec,
         source: "report-llm",
-        warning: null,
+        warning: undefined,
       });
 
       const executor = new WechatExecutor();
@@ -834,7 +834,7 @@ describe("1. 全行业多平台生成", () => {
       ).mockResolvedValueOnce({
         spec,
         source: "report-llm",
-        warning: null,
+        warning: undefined,
       });
 
       const executor = new HarmonyExecutor();
@@ -862,27 +862,22 @@ describe("1. 全行业多平台生成", () => {
 // ============================================================
 
 describe("2. Flutter dart analyze 门禁", () => {
-  let da: { runDockerFlutterAnalyze: ReturnType<typeof vi.fn>; shouldFailCodegenOnAnalyze: ReturnType<typeof vi.fn> };
+  let dockerAnalyze: typeof import("@/lib/sandbox/docker-analyze");
 
   beforeEach(async () => {
-    // 使用动态导入访问已 mock 的模块
-    const mod = await import("@/lib/sandbox/docker-analyze");
-    da = {
-      runDockerFlutterAnalyze: vi.mocked(mod.runDockerFlutterAnalyze),
-      shouldFailCodegenOnAnalyze: vi.mocked(mod.shouldFailCodegenOnAnalyze),
-    };
-    da.runDockerFlutterAnalyze.mockReturnValue({
+    dockerAnalyze = await import("@/lib/sandbox/docker-analyze");
+    vi.mocked(dockerAnalyze.runDockerFlutterAnalyze).mockReturnValue({
       status: "passed",
       reason: undefined,
       output: "No issues found",
     } as never);
-    da.shouldFailCodegenOnAnalyze.mockReturnValue(false as never);
+    vi.mocked(dockerAnalyze.shouldFailCodegenOnAnalyze).mockReturnValue(false as never);
   });
 
   it("analyze 通过时应返回 passed", async () => {
-    const result = da.runDockerFlutterAnalyze({ outDir: "/tmp/test" });
+    const result = vi.mocked(dockerAnalyze.runDockerFlutterAnalyze)({ outDir: "/tmp/test" });
     expect(result.status).toBe("passed");
-    expect(da.shouldFailCodegenOnAnalyze(result)).toBe(false);
+    expect(vi.mocked(dockerAnalyze.shouldFailCodegenOnAnalyze)(result)).toBe(false);
   });
 
   it("analyze 失败时通过自动修复应可恢复", async () => {
@@ -891,12 +886,12 @@ describe("2. Flutter dart analyze 门禁", () => {
     );
 
     // 模拟 gate 失败但 auto-fix 能修复
-    da.runDockerFlutterAnalyze.mockReturnValueOnce({
+    vi.mocked(dockerAnalyze.runDockerFlutterAnalyze).mockReturnValueOnce({
       status: "failed",
       reason: "analyze error",
       output: "Error: Expected ;",
     } as never);
-    da.shouldFailCodegenOnAnalyze.mockReturnValueOnce(true as never);
+    vi.mocked(dockerAnalyze.shouldFailCodegenOnAnalyze).mockReturnValueOnce(true as never);
     vi.mocked(runAutoFixAnalyzeLoop).mockResolvedValueOnce({
       analyze: { status: "passed", reason: undefined, output: "fixed" },
       rounds: 1,
@@ -904,7 +899,7 @@ describe("2. Flutter dart analyze 门禁", () => {
     } as never);
 
     // 手动模拟 beforeGate 行为
-    const gate = da.runDockerFlutterAnalyze({ outDir: "/tmp/test" });
+    const gate = vi.mocked(dockerAnalyze.runDockerFlutterAnalyze)({ outDir: "/tmp/test" });
     expect(gate.status).toBe("failed");
 
     const autoFix = await runAutoFixAnalyzeLoop({
@@ -921,12 +916,12 @@ describe("2. Flutter dart analyze 门禁", () => {
       "@/lib/codegen/auto-fix-flutter"
     );
 
-    da.runDockerFlutterAnalyze.mockReturnValueOnce({
+    vi.mocked(dockerAnalyze.runDockerFlutterAnalyze).mockReturnValueOnce({
       status: "failed",
       reason: "fatal error",
       output: "Error: Unhandled exception",
     } as never);
-    da.shouldFailCodegenOnAnalyze.mockReturnValueOnce(true as never);
+    vi.mocked(dockerAnalyze.shouldFailCodegenOnAnalyze).mockReturnValueOnce(true as never);
     vi.mocked(runAutoFixAnalyzeLoop).mockResolvedValueOnce({
       analyze: {
         status: "failed",
@@ -958,24 +953,20 @@ describe("2. Flutter dart analyze 门禁", () => {
 // ============================================================
 
 describe("3. WeChat 小程序结构门禁", () => {
-  let wb: { runWechatFullBuildValidate: ReturnType<typeof vi.fn>; shouldFailCodegenOnWechatBuild: ReturnType<typeof vi.fn> };
+  let wechatBuild: typeof import("@/lib/sandbox/wechat-build");
 
   beforeEach(async () => {
-    const mod = await import("@/lib/sandbox/wechat-build");
-    wb = {
-      runWechatFullBuildValidate: vi.mocked(mod.runWechatFullBuildValidate),
-      shouldFailCodegenOnWechatBuild: vi.mocked(mod.shouldFailCodegenOnWechatBuild),
-    };
-    wb.runWechatFullBuildValidate.mockReturnValue({
+    wechatBuild = await import("@/lib/sandbox/wechat-build");
+    vi.mocked(wechatBuild.runWechatFullBuildValidate).mockReturnValue({
       status: "passed",
       structure: { status: "passed" },
       compile: { status: "passed", wxmlFiles: 5, wxssFiles: 3 },
     } as never);
-    wb.shouldFailCodegenOnWechatBuild.mockReturnValue(false as never);
+    vi.mocked(wechatBuild.shouldFailCodegenOnWechatBuild).mockReturnValue(false as never);
   });
 
   it("结构校验通过时 status 应为 passed", async () => {
-    const result = wb.runWechatFullBuildValidate({ appDir: "/tmp/wechat" });
+    const result = vi.mocked(wechatBuild.runWechatFullBuildValidate)({ appDir: "/tmp/wechat" });
 
     expect(result.status).toBe("passed");
     expect(result.structure.status).toBe("passed");
@@ -1007,19 +998,19 @@ describe("3. WeChat 小程序结构门禁", () => {
   });
 
   it("结构校验失败时应标记 failed", async () => {
-    wb.runWechatFullBuildValidate.mockReturnValueOnce({
+    vi.mocked(wechatBuild.runWechatFullBuildValidate).mockReturnValueOnce({
       status: "failed",
       reason: "缺少 app.json",
       output: "Structure validation failed",
       structure: { status: "failed", output: "app.json 缺失" },
       compile: { status: "skipped", reason: "结构门禁未通过" },
     } as never);
-    wb.shouldFailCodegenOnWechatBuild.mockReturnValueOnce(true as never);
+    vi.mocked(wechatBuild.shouldFailCodegenOnWechatBuild).mockReturnValueOnce(true as never);
 
-    const result = wb.runWechatFullBuildValidate({ appDir: "/tmp/bad" });
+    const result = vi.mocked(wechatBuild.runWechatFullBuildValidate)({ appDir: "/tmp/bad" });
     expect(result.status).toBe("failed");
     expect(result.structure.status).toBe("failed");
-    expect(wb.shouldFailCodegenOnWechatBuild(result)).toBe(true);
+    expect(vi.mocked(wechatBuild.shouldFailCodegenOnWechatBuild)(result)).toBe(true);
   });
 });
 
@@ -1028,50 +1019,46 @@ describe("3. WeChat 小程序结构门禁", () => {
 // ============================================================
 
 describe("4. Harmony 结构门禁", () => {
-  let hs: { runHarmonyStructureValidate: ReturnType<typeof vi.fn>; shouldFailCodegenOnHarmonyStructure: ReturnType<typeof vi.fn> };
+  let harmonyStructure: typeof import("@/lib/sandbox/harmony-structure");
 
   beforeEach(async () => {
-    const mod = await import("@/lib/sandbox/harmony-structure");
-    hs = {
-      runHarmonyStructureValidate: vi.mocked(mod.runHarmonyStructureValidate),
-      shouldFailCodegenOnHarmonyStructure: vi.mocked(mod.shouldFailCodegenOnHarmonyStructure),
-    };
-    hs.runHarmonyStructureValidate.mockReturnValue({
+    harmonyStructure = await import("@/lib/sandbox/harmony-structure");
+    vi.mocked(harmonyStructure.runHarmonyStructureValidate).mockReturnValue({
       status: "passed",
       reason: undefined,
       filesChecked: 10,
     } as never);
-    hs.shouldFailCodegenOnHarmonyStructure.mockReturnValue(false as never);
+    vi.mocked(harmonyStructure.shouldFailCodegenOnHarmonyStructure).mockReturnValue(false as never);
   });
 
   it("结构校验通过时应包含 main_pages.json 和 IndustryServices.ets 引用", async () => {
     // 模拟完整结构：含 main_pages.json 验证通过
-    const result = hs.runHarmonyStructureValidate({ appDir: "/tmp/harmony" });
+    const result = vi.mocked(harmonyStructure.runHarmonyStructureValidate)({ appDir: "/tmp/harmony" });
     expect(result.status).toBe("passed");
     expect(result.filesChecked).toBeGreaterThanOrEqual(6);
   });
 
   it("缺少必需文件时应失败", async () => {
-    hs.runHarmonyStructureValidate.mockReturnValueOnce({
+    vi.mocked(harmonyStructure.runHarmonyStructureValidate).mockReturnValueOnce({
       status: "failed",
       reason: "缺少 entry/src/main/module.json5",
       filesChecked: 3,
     } as never);
-    hs.shouldFailCodegenOnHarmonyStructure.mockReturnValueOnce(true as never);
+    vi.mocked(harmonyStructure.shouldFailCodegenOnHarmonyStructure).mockReturnValueOnce(true as never);
 
-    const result = hs.runHarmonyStructureValidate({ appDir: "/tmp/incomplete" });
+    const result = vi.mocked(harmonyStructure.runHarmonyStructureValidate)({ appDir: "/tmp/incomplete" });
     expect(result.status).toBe("failed");
-    expect(hs.shouldFailCodegenOnHarmonyStructure(result)).toBe(true);
+    expect(vi.mocked(harmonyStructure.shouldFailCodegenOnHarmonyStructure)(result)).toBe(true);
   });
 
   it("main_pages 引用缺失时应失败", async () => {
-    hs.runHarmonyStructureValidate.mockReturnValueOnce({
+    vi.mocked(harmonyStructure.runHarmonyStructureValidate).mockReturnValueOnce({
       status: "failed",
       reason: "main_pages 引用缺失 DetailPage.ets",
       filesChecked: 5,
     } as never);
 
-    const result = hs.runHarmonyStructureValidate({ appDir: "/tmp/bad-pages" });
+    const result = vi.mocked(harmonyStructure.runHarmonyStructureValidate)({ appDir: "/tmp/bad-pages" });
     expect(result.status).toBe("failed");
     expect(result.reason).toContain("main_pages");
   });
@@ -1296,9 +1283,11 @@ describe("6. 所有页面类型生成", () => {
       "@/lib/flutter-codegen/emit-industry"
     );
 
-    const widgetSpec = {
+    const widgetSpec: AppSpec = {
+      specVersion: "0.1.0",
       displayName: "测试应用",
       appName: "test_app",
+      screens: [{ id: "home", title: "首页", type: "list" }],
       entities: [
         {
           name: "Item",
@@ -1321,7 +1310,7 @@ describe("6. 所有页面类型生成", () => {
     for (const ind of withWidgets) {
       const widgets = await getIndustryWidgetsDart(
         ind,
-        widgetSpec as Parameters<typeof getIndustryWidgetsDart>[1]
+        widgetSpec
       );
       expect(widgets, `行业 ${ind} 应有 Widget 文件`).not.toBeNull();
       expect(widgets!.length).toBeGreaterThan(100);
@@ -1571,7 +1560,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: BASE_SPEC,
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec1 = new FlutterExecutor();
     const result1 = await exec1.execute({
@@ -1583,7 +1572,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: BASE_SPEC,
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec2 = new FlutterExecutor();
     const result2 = await exec2.execute({
@@ -1617,7 +1606,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: BASE_SPEC,
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec1 = new WechatExecutor();
     const result1 = await exec1.execute({
@@ -1629,7 +1618,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: { ...BASE_SPEC },
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec2 = new WechatExecutor();
     const result2 = await exec2.execute({
@@ -1669,7 +1658,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: BASE_SPEC,
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec1 = new HarmonyExecutor();
     const result1 = await exec1.execute({
@@ -1681,7 +1670,7 @@ describe("8. 幂等性", () => {
     vi.mocked(resolveSpecForCodegen).mockResolvedValueOnce({
       spec: { ...BASE_SPEC },
       source: "report-llm",
-      warning: null,
+      warning: undefined,
     });
     const exec2 = new HarmonyExecutor();
     const result2 = await exec2.execute({

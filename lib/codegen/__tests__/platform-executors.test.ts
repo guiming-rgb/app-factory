@@ -8,7 +8,10 @@
 //   - 各平台 gate 失败和重试行为
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
+import type { FlutterExecutor as FlutterExecutorClass } from "@/lib/codegen/execute-flutter";
+import type { WechatExecutor as WechatExecutorClass } from "@/lib/codegen/execute-wechat";
+import type { HarmonyExecutor as HarmonyExecutorClass } from "@/lib/codegen/execute-harmony";
 
 // ============================================================
 // Mock 基础设施
@@ -266,14 +269,14 @@ vi.mock("@/lib/codegen/upload-web-preview", () => ({
 // ============================================================
 
 describe("FlutterExecutor", () => {
-  let FlutterExecutor: { FlutterExecutor: new () => { execute: (i: Record<string, string>) => Promise<unknown> } };
+  let FlutterExecutorCtor: typeof FlutterExecutorClass;
 
   beforeAll(async () => {
-    FlutterExecutor = await import("@/lib/codegen/execute-flutter") as typeof FlutterExecutor;
+    ({ FlutterExecutor: FlutterExecutorCtor } = await import("@/lib/codegen/execute-flutter"));
   });
 
   it("应成功执行完整管线", async () => {
-    const executor = new FlutterExecutor.FlutterExecutor();
+    const executor = new FlutterExecutorCtor();
     const result = (await executor.execute({
       projectId: "proj-1",
       runId: "run-1",
@@ -284,7 +287,7 @@ describe("FlutterExecutor", () => {
   });
 
   it("目标应为 flutter", async () => {
-    const executor = new FlutterExecutor.FlutterExecutor();
+    const executor = new FlutterExecutorCtor();
     expect(executor.target).toBe("flutter");
   });
 
@@ -312,7 +315,7 @@ describe("FlutterExecutor", () => {
       log: ["round 1 failed", "round 2 failed", "round 3 failed"],
     } as never);
 
-    const executor = new FlutterExecutor.FlutterExecutor();
+    const executor = new FlutterExecutorCtor();
     await expect(
       executor.execute({ projectId: "proj-1", runId: "run-1" }),
     ).rejects.toThrow(/analyze/);
@@ -329,14 +332,14 @@ describe("FlutterExecutor", () => {
 });
 
 describe("WechatExecutor", () => {
-  let WechatExecutor: { WechatExecutor: new () => { execute: (i: Record<string, string>) => Promise<unknown> } };
+  let WechatExecutorCtor: typeof WechatExecutorClass;
 
   beforeAll(async () => {
-    WechatExecutor = await import("@/lib/codegen/execute-wechat") as typeof WechatExecutor;
+    ({ WechatExecutor: WechatExecutorCtor } = await import("@/lib/codegen/execute-wechat"));
   });
 
   it("应成功执行完整管线", async () => {
-    const executor = new WechatExecutor.WechatExecutor();
+    const executor = new WechatExecutorCtor();
     const result = (await executor.execute({
       projectId: "proj-1",
       runId: "run-1",
@@ -348,7 +351,7 @@ describe("WechatExecutor", () => {
   });
 
   it("目标应为 wechat", async () => {
-    const executor = new WechatExecutor.WechatExecutor();
+    const executor = new WechatExecutorCtor();
     expect(executor.target).toBe("wechat");
   });
 
@@ -369,7 +372,7 @@ describe("WechatExecutor", () => {
     } as never);
     vi.mocked(shouldFailCodegenOnWechatBuild).mockReturnValueOnce(true as never);
 
-    const executor = new WechatExecutor.WechatExecutor();
+    const executor = new WechatExecutorCtor();
     await expect(
       executor.execute({ projectId: "proj-1", runId: "run-1" }),
     ).rejects.toThrow(/编译门禁/);
@@ -384,14 +387,14 @@ describe("WechatExecutor", () => {
 });
 
 describe("HarmonyExecutor", () => {
-  let HarmonyExecutor: { HarmonyExecutor: new () => { execute: (i: Record<string, string>) => Promise<unknown> } };
+  let HarmonyExecutorCtor: typeof HarmonyExecutorClass;
 
   beforeAll(async () => {
-    HarmonyExecutor = await import("@/lib/codegen/execute-harmony") as typeof HarmonyExecutor;
+    ({ HarmonyExecutor: HarmonyExecutorCtor } = await import("@/lib/codegen/execute-harmony"));
   });
 
   it("应成功执行完整管线", async () => {
-    const executor = new HarmonyExecutor.HarmonyExecutor();
+    const executor = new HarmonyExecutorCtor();
     const result = (await executor.execute({
       projectId: "proj-1",
       runId: "run-1",
@@ -402,7 +405,7 @@ describe("HarmonyExecutor", () => {
   });
 
   it("目标应为 harmony", async () => {
-    const executor = new HarmonyExecutor.HarmonyExecutor();
+    const executor = new HarmonyExecutorCtor();
     expect(executor.target).toBe("harmony");
   });
 
@@ -420,7 +423,7 @@ describe("HarmonyExecutor", () => {
     } as never);
     vi.mocked(shouldFailCodegenOnHarmonyStructure).mockReturnValueOnce(true as never);
 
-    const executor = new HarmonyExecutor.HarmonyExecutor();
+    const executor = new HarmonyExecutorCtor();
     await expect(
       executor.execute({ projectId: "proj-1", runId: "run-1" }),
     ).rejects.toThrow(/结构门禁/);
@@ -443,7 +446,7 @@ describe("HarmonyExecutor", () => {
       screenCount: 1,
     } as never);
 
-    const executor = new HarmonyExecutor.HarmonyExecutor();
+    const executor = new HarmonyExecutorCtor();
     const result = (await executor.execute({
       projectId: "proj-1",
       runId: "run-1",

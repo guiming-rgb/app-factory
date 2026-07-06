@@ -10,7 +10,7 @@
 //   - 敏感信息脱敏（pino redact）
 // ============================================================
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 import OpenAI from "openai";
 
 // ============================================================
@@ -379,10 +379,8 @@ describe("LLM 优化模块", () => {
 
     it("缺少 API key 环境变量时应抛出描述性错误", async () => {
       delete process.env.OPENAI_API_KEY;
-      const { getApiKey } = await import("@/lib/llm");
-      // 内部惰性求值，仅在实际调用时抛错
-      // 此处验证调用 callLLM 时的错误传播
-      setEnv("OPENAI_API_KEY", "sk-test"); // 恢复
+      await expect(callLLM({ systemPrompt: "s", userPrompt: "u" })).rejects.toThrow();
+      setEnv("OPENAI_API_KEY", "sk-test");
     });
   });
 

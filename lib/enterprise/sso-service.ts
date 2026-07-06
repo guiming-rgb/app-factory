@@ -13,6 +13,7 @@
 import crypto from "crypto";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { assertValidConfigureSSOInput } from "./sso-config-validate";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -160,7 +161,6 @@ export async function configureSSO(
   workspaceId: string,
   config: ConfigureSSOInput
 ): Promise<void> {
-  const { assertValidConfigureSSOInput } = await import("./sso-config-validate");
   assertValidConfigureSSOInput(config);
 
   const supabase = getSupabaseAdmin();

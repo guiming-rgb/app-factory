@@ -11,7 +11,7 @@
 //   7. subscription webhook idempotency — 幂等处理
 // ============================================================
 
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, type MockedFunction } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
 // ============================================================
@@ -383,7 +383,7 @@ describe("GET /api/billing/plans", () => {
 
 describe("POST /api/workspaces", () => {
   let handler: typeof import("@/app/api/projects/route").POST;
-  let getApiUser: ReturnType<typeof vi.fn>;
+  let getApiUser: MockedFunction<typeof import("@/lib/auth/api-user").getApiUser>;
   let isAuthEnabled: ReturnType<typeof vi.fn>;
   let getSupabaseForUserRequest: ReturnType<typeof vi.fn>;
 
@@ -396,9 +396,7 @@ describe("POST /api/workspaces", () => {
     vi.clearAllMocks();
 
     // 解构 mock 引用以便重新赋值
-    getApiUser = (await import("@/lib/auth/api-user")).getApiUser as ReturnType<
-      typeof vi.fn
-    >;
+    getApiUser = vi.mocked((await import("@/lib/auth/api-user")).getApiUser);
     isAuthEnabled = (await import("@/lib/auth-config"))
       .isAuthEnabled as ReturnType<typeof vi.fn>;
     getSupabaseForUserRequest = (
@@ -514,16 +512,14 @@ describe("POST /api/workspaces", () => {
 // ============================================================
 
 describe("workspace member RBAC enforcement", () => {
-  let getApiUser: ReturnType<typeof vi.fn>;
+  let getApiUser: MockedFunction<typeof import("@/lib/auth/api-user").getApiUser>;
   let isAuthEnabled: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     isAuthEnabled = (await import("@/lib/auth-config"))
       .isAuthEnabled as ReturnType<typeof vi.fn>;
-    getApiUser = (await import("@/lib/auth/api-user")).getApiUser as ReturnType<
-      typeof vi.fn
-    >;
+    getApiUser = vi.mocked((await import("@/lib/auth/api-user")).getApiUser);
     isAuthEnabled.mockReturnValue(true);
   });
 
@@ -607,10 +603,10 @@ describe("workspace member RBAC enforcement", () => {
       .maybeSingle();
 
     expect(membership).toBeDefined();
-    expect(membership.role).toBe("admin");
+    expect(membership!.role).toBe("admin");
 
     // Admin 可以添加成员
-    const canAddMember = requireAdmin(membership.role);
+    const canAddMember = requireAdmin(membership!.role);
     expect(canAddMember).toBe(true);
   });
 
@@ -639,8 +635,9 @@ describe("workspace member RBAC enforcement", () => {
       .eq("user_id", MOCK_USER.id)
       .maybeSingle();
 
-    expect(membership.role).toBe("member");
-    const canAddMember = requireAdmin(membership.role);
+    expect(membership).toBeDefined();
+    expect(membership!.role).toBe("member");
+    const canAddMember = requireAdmin(membership!.role);
     expect(canAddMember).toBe(false);
   });
 });
@@ -696,8 +693,8 @@ describe("marketplace component CRUD", () => {
       .order("downloads", { ascending: false });
 
     expect(data).toHaveLength(2);
-    expect(data[0].name).toBe("LoginForm");
-    expect(data[1].category).toBe("data-display");
+    expect(data![0].name).toBe("LoginForm");
+    expect(data![1].category).toBe("data-display");
     expect(mockSelect).toHaveBeenCalledWith("*");
   });
 

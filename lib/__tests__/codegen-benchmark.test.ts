@@ -13,6 +13,7 @@
 // ============================================================
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import type { FlutterExecutor } from "@/lib/codegen/execute-flutter";
 
 // 所有测试都需要的环境变量
 process.env.OPENAI_API_KEY = "sk-test-benchmark";
@@ -168,7 +169,7 @@ const BENCH_SPEC = {
 };
 
 describe("管线性能基准 — 功能验证", () => {
-  let executor: { execute: (i: Record<string, string>) => Promise<unknown> };
+  let executor: FlutterExecutor;
 
   beforeAll(async () => {
     const { FlutterExecutor } = await import("@/lib/codegen/execute-flutter");

@@ -4,6 +4,7 @@
 // ============================================================
 
 import { bench, describe, vi, beforeAll } from "vitest";
+import type { FlutterExecutor } from "@/lib/codegen/execute-flutter";
 
 process.env.OPENAI_API_KEY = "sk-test-benchmark";
 
@@ -74,7 +75,7 @@ vi.mock("@/lib/app-spec/generate-edge-functions", () => ({ generateEdgeFunctions
 // ============================================================
 
 describe("Codegen Pipeline Benchmarks", () => {
-  let executor: { execute: (i: Record<string, string>) => Promise<unknown> };
+  let executor: FlutterExecutor;
 
   beforeAll(async () => {
     const { FlutterExecutor } = await import("@/lib/codegen/execute-flutter");

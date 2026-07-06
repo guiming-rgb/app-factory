@@ -12,6 +12,7 @@
 // ============================================================
 
 import { bench, describe, vi, beforeAll } from "vitest";
+import type { FlutterExecutor } from "@/lib/codegen/execute-flutter";
 
 process.env.OPENAI_API_KEY = "sk-test-bench";
 process.env.LLM_MAX_RETRIES = "2";
@@ -103,7 +104,7 @@ describe("LLM 调用: 旧版 vs 新版", () => {
 
 describe("管线: 旧版 vs 新版", () => {
   let oldExecutor: { executeFlutterCodegen: (i: Record<string, string>) => Promise<unknown> };
-  let newExecutor: { execute: (i: Record<string, string>) => Promise<unknown> };
+  let newExecutor: FlutterExecutor;
 
   beforeAll(async () => {
     newExecutor = new (await import("@/lib/codegen/execute-flutter")).FlutterExecutor();
@@ -151,16 +152,16 @@ describe("批量调用: 串行 vs 并发", () => {
 // ============================================================
 
 describe("内存占用对比", () => {
-  let executor: new () => { execute: (i: Record<string, string>) => Promise<unknown> };
+  let ExecutorClass: typeof FlutterExecutor;
 
   beforeAll(async () => {
     const mod = await import("@/lib/codegen/execute-flutter");
-    executor = mod.FlutterExecutor;
+    ExecutorClass = mod.FlutterExecutor;
   });
 
   describe("新版 模板方法", () => {
     bench("内存稳定性（5 次迭代）", async () => {
-      const e = new executor();
+      const e = new ExecutorClass();
       for (let i = 0; i < 5; i++) {
         await e.execute({ projectId: `b${i}`, runId: `r${i}` });
       }
@@ -169,7 +170,7 @@ describe("内存占用对比", () => {
 
   describe("旧版 God Function", () => {
     bench("内存稳定性（5 次迭代）", async () => {
-      const e = new executor();
+      const e = new ExecutorClass();
       for (let i = 0; i < 5; i++) {
         await e.execute({ projectId: `b${i}`, runId: `r${i}` });
       }
