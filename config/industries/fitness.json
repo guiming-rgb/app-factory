@@ -17,5 +17,9 @@
     "getBodyStats",
     "addBodyStat",
     "getWorkoutLog"
+  ],
+  "harmonyMethods": [
+    { "name": "getBodyStats", "table": "body_stats", "verb": "GET", "path": "?order=recorded_at.desc&limit=30" },
+    { "name": "addBodyStat", "table": "body_stats", "verb": "POST" }
   ]
 }

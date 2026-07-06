@@ -8,6 +8,13 @@ export {
 export { buildWidgetContext } from "./widget-context";
 export { buildDashboardPageContext } from "./extended-context";
 export {
+  buildOnboardingPageContext,
+  buildCalendarPageContext,
+  buildKanbanPageContext,
+  buildCardGridPageContext,
+  buildChartPageContext,
+} from "./extended-context";
+export {
   buildWechatServiceMap,
   getIndustryServiceName,
   getIndustryServiceMethods,

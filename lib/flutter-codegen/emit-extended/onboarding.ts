@@ -1,131 +1,16 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import { buildOnboardingPageContext } from "@/lib/app-spec/emit-shared/extended-context";
+import { emitExtendedMustachePage } from "./mustache-route";
 
-import { escapeDartString, pascalCase } from "./shared";
-
-export function emitFlutterOnboardingPage(
+export async function emitFlutterOnboardingPage(
   screen: AppSpecScreen,
-  _spec: AppSpec
-): string {
-  const className = `${pascalCase(screen.id)}Page`;
-  const title = escapeDartString(screen.title);
-
-  return `import "package:flutter/material.dart";
-import "package:shared_preferences/shared_preferences.dart";
-
-import "../../../core/theme/app_theme.dart";
-
-class ${className} extends StatefulWidget {
-  const ${className}({super.key});
-
-  static Future<bool> shouldShow() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool("onboarding_done") ?? false);
-  }
-
-  @override
-  State<${className}> createState() => _${className}State();
-}
-
-class _${className}State extends State<${className}> {
-  final _pageController = PageController();
-  int _currentPage = 0;
-
-  static const _pages = [
-    _OnboardingPageData(
-      icon: Icons.rocket_launch,
-      title: "欢迎使用 ${title}",
-      description: "快速上手，体验流畅的操作流程。",
-      color: Color(0xFF0D9488),
-    ),
-    _OnboardingPageData(
-      icon: Icons.cloud_sync,
-      title: "数据同步",
-      description: "所有数据安全存储在云端，随时随地访问。",
-      color: Color(0xFF2563EB),
-    ),
-    _OnboardingPageData(
-      icon: Icons.shield,
-      title: "隐私安全",
-      description: "采用行业标准加密，保护你的数据安全。",
-      color: Color(0xFF7C3AED),
-    ),
-  ];
-
-  void _onDone() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("onboarding_done", true);
-    if (mounted) Navigator.of(context).pushReplacementNamed("/home");
-  }
-
-  @override
-  void dispose() { _pageController.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _pages.length,
-              onPageChanged: (i) => setState(() => _currentPage = i),
-              itemBuilder: (_, i) {
-                final p = _pages[i];
-                return Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Container(
-                      width: 120, height: 120,
-                      decoration: BoxDecoration(color: p.color.withValues(alpha: 0.1), shape: BoxShape.circle),
-                      child: Icon(p.icon, size: 56, color: p.color),
-                    ),
-                    const SizedBox(height: 40),
-                    Text(p.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    Text(p.description, textAlign: TextAlign.center, style: AppTheme.bodyText(theme.textTheme)),
-                  ]),
-                );
-              },
-            ),
-          ),
-          // 指示器
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(_pages.length, (i) => Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: _currentPage == i ? 24 : 8, height: 8,
-            decoration: BoxDecoration(
-              color: _currentPage == i ? _pages[i].color : Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ))),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _currentPage == _pages.length - 1 ? _onDone : () => _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
-                child: Text(_currentPage == _pages.length - 1 ? "开始使用" : "下一步", style: const TextStyle(fontSize: 16)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (_currentPage < _pages.length - 1)
-            TextButton(onPressed: _onDone, child: const Text("跳过")),
-          const SizedBox(height: 32),
-        ]),
-      ),
-    );
-  }
-}
-
-class _OnboardingPageData {
-  final IconData icon;
-  final String title, description;
-  final Color color;
-  const _OnboardingPageData({required this.icon, required this.title, required this.description, required this.color});
-}
-`;
+  spec: AppSpec,
+): Promise<string> {
+  return emitExtendedMustachePage(
+    "onboarding",
+    screen,
+    spec,
+    buildOnboardingPageContext,
+    () => `// onboarding legacy fallback`,
+  );
 }

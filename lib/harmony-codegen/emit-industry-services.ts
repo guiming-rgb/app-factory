@@ -16,16 +16,10 @@ const INDUSTRY_METHODS: Record<string, string> = {
   },`,
 
   crm: `
-  getPipeline: (): Promise<Array<Record<string, Object>> | null> => restFetch("contacts?order=stage"),
   getActivities: (contactId: string): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("activities?contact_id=eq." + contactId + "&order=created_at.desc"),
-  addActivity: (data: Record<string, Object>): Promise<Record<string, Object> | null> =>
-    restFetch("activities", { method: "POST", extraData: data }),`,
+    restFetch("activities?contact_id=eq." + contactId + "&order=created_at.desc"),`,
 
   fitness: `
-  getBodyStats: (): Promise<Array<Record<string, Object>> | null> => restFetch("body_stats?order=recorded_at.desc&limit=30"),
-  addBodyStat: (data: Record<string, Object>): Promise<Record<string, Object> | null> =>
-    restFetch("body_stats", { method: "POST", extraData: data }),
   getWorkoutLog: (courseId: string): Promise<Array<Record<string, Object>> | null> =>
     restFetch("workout_log?course_id=eq." + courseId + "&order=date.desc"),`,
 

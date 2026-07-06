@@ -17,5 +17,9 @@
     "getPipeline",
     "getActivities",
     "addActivity"
+  ],
+  "harmonyMethods": [
+    { "name": "getPipeline", "table": "contacts", "verb": "GET", "path": "?order=stage" },
+    { "name": "addActivity", "table": "activities", "verb": "POST" }
   ]
 }

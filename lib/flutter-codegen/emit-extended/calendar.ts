@@ -1,121 +1,16 @@
 import type { AppSpec, AppSpecScreen } from "@/lib/app-spec/types";
+import { buildCalendarPageContext } from "@/lib/app-spec/emit-shared/extended-context";
+import { emitExtendedMustachePage } from "./mustache-route";
 
-import { entityOrFirst, escapeDartString, pascalCase, tableName } from "./shared";
-
-export function emitFlutterCalendarPage(
+export async function emitFlutterCalendarPage(
   screen: AppSpecScreen,
-  spec: AppSpec
-): string {
-  const className = `${pascalCase(screen.id)}Page`;
-  const title = escapeDartString(screen.title);
-  const entity = entityOrFirst(spec, screen);
-  const table = tableName(entity);
-  const dateField = escapeDartString(
-    entity.fields.find((f) => f.type === "datetime" || f.name.includes("date") || f.name.includes("time"))?.name ?? "created_at"
+  spec: AppSpec,
+): Promise<string> {
+  return emitExtendedMustachePage(
+    "calendar",
+    screen,
+    spec,
+    buildCalendarPageContext,
+    () => `// calendar legacy fallback`,
   );
-  const titleField = escapeDartString(
-    entity.fields.find((f) => f.name.includes("title") || f.name.includes("name"))?.name ?? "id"
-  );
-
-  return `import "package:flutter/material.dart";
-import "package:supabase_flutter/supabase_flutter.dart";
-import "package:table_calendar/table_calendar.dart";
-
-import "../../../core/supabase/supabase_client.dart";
-import "../../../core/theme/app_theme.dart";
-import "../../../core/widgets/polished_widgets.dart";
-
-class ${className} extends StatefulWidget {
-  const ${className}({super.key});
-  @override
-  State<${className}> createState() => _${className}State();
-}
-
-class _${className}State extends State<${className}> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  Map<DateTime, List<Map<String, dynamic>>> _events = {};
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = DateTime.now();
-    _loadEvents();
-  }
-
-  Future<void> _loadEvents() async {
-    setState(() { _loading = true; });
-    try {
-      final client = supabaseOrNull;
-      if (client == null) { setState(() { _loading = false; }); return; }
-      final rows = await client.from("${table}").select("*").order("${dateField}", ascending: true).limit(200);
-      final items = List<Map<String, dynamic>>.from((rows as List<dynamic>?) ?? []);
-      final map = <DateTime, List<Map<String, dynamic>>>{};
-      for (final item in items) {
-        final dateStr = item["${dateField}"]?.toString() ?? "";
-        final date = DateTime.tryParse(dateStr);
-        if (date == null) continue;
-        final day = DateTime(date.year, date.month, date.day);
-        map.putIfAbsent(day, () => []).add(item);
-      }
-      setState(() { _events = map; _loading = false; });
-    } catch (_) {
-      setState(() { _loading = false; });
-    }
-  }
-
-  List<Map<String, dynamic>> _getEventsForDay(DateTime day) {
-    return _events[DateTime(day.year, day.month, day.day)] ?? [];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final selectedEvents = _selectedDay != null ? _getEventsForDay(_selectedDay!) : <Map<String, dynamic>>[];
-
-    return Scaffold(
-      appBar: AppBar(title: Text("${title}")),
-      body: _loading
-          ? const AppLoadingSkeleton()
-          : Column(children: [
-              TableCalendar(
-                firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                focusedDay: _focusedDay,
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selected, focused) => setState(() { _selectedDay = selected; _focusedDay = focused; }),
-                onPageChanged: (focused) => setState(() { _focusedDay = focused; }),
-                eventLoader: _getEventsForDay,
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: 0.4), shape: BoxShape.circle),
-                  selectedDecoration: BoxDecoration(color: theme.colorScheme.primary, shape: BoxShape.circle),
-                  markerDecoration: BoxDecoration(color: theme.colorScheme.tertiary, shape: BoxShape.circle),
-                ),
-                headerStyle: HeaderStyle(formatButtonVisible: false, titleCentered: true),
-              ),
-              const Divider(),
-              Expanded(
-                child: selectedEvents.isEmpty
-                    ? const AppEmptyState(icon: Icons.event_note, title: "这天没有安排", subtitle: "选择日期查看")
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: selectedEvents.length,
-                        itemBuilder: (_, i) {
-                          final e = selectedEvents[i];
-                          return Card(
-                            child: ListTile(
-                              leading: CircleAvatar(backgroundColor: theme.colorScheme.primaryContainer, child: Text("\${i + 1}")),
-                              title: Text(e["${titleField}"]?.toString() ?? ""),
-                              subtitle: Text(e["${dateField}"]?.toString() ?? ""),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ]),
-    );
-  }
-}
-`;
 }
