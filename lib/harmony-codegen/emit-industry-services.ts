@@ -24,31 +24,24 @@ const INDUSTRY_METHODS: Record<string, string> = {
     restFetch("workout_log?course_id=eq." + courseId + "&order=date.desc"),`,
 
   ecommerce: `
-  getCart: (): Promise<Array<Record<string, Object>> | null> => restFetch("cart_items?select=*,products(*)"),
   addToCart: (productId: string, qty: number = 1): Promise<Record<string, Object> | null> => {
     return restFetch("cart_items?product_id=eq." + productId + "&limit=1").then((items) => {
       if (items && items.length > 0) return restFetch("cart_items?id=eq." + items[0]["id"], { method: "PATCH", extraData: { qty: (Number(items[0]["qty"]) || 0) + qty } });
       return restFetch("cart_items", { method: "POST", extraData: { product_id: productId, qty } });
     });
   },
-  getOrders: (): Promise<Array<Record<string, Object>> | null> => restFetch("orders?order=created_at.desc"),
   topSelling: (limit: number = 10): Promise<Array<Record<string, Object>> | null> =>
     restFetch("products?order=sales.desc&limit=" + limit),
   createOrder: (address: string): Promise<Record<string, Object> | null> =>
     restFetch("orders", { method: "POST", extraData: { address, status: "待支付" } }),`,
 
   education: `
-  getAssignments: (courseId: string): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("assignments?course_id=eq." + courseId + "&order=deadline"),
-  getGrades: (courseId: string): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("grades?course_id=eq." + courseId + "&order=created_at.desc"),
   getTodaySchedule: (): Promise<Array<Record<string, Object>> | null> => {
     const today = new Date().getDay();
     return restFetch("courses?day_of_week=eq." + today + "&order=start_time");
   },`,
 
   social: `
-  getTopics: (): Promise<Array<Record<string, Object>> | null> => restFetch("topics?order=post_count.desc"),
   getPostsByTopic: (topicId: string, page: number = 0): Promise<Array<Record<string, Object>> | null> =>
     restFetch("posts?topic_id=eq." + topicId + "&order=created_at.desc&limit=20&offset=" + (page * 20)),
   likePost: (postId: string): Promise<Record<string, Object> | null> =>
@@ -116,8 +109,6 @@ const INDUSTRY_METHODS: Record<string, string> = {
   property: `
   submitRepair: (title: string, description: string, image?: string): Promise<Record<string, Object> | null> =>
     restFetch("repairs", { method: "POST", extraData: { title, description, image, status: "待处理" } }),
-  getMyRepairs: (): Promise<Array<Record<string, Object>> | null> => restFetch("repairs?order=created_at.desc"),
-  getNotices: (): Promise<Array<Record<string, Object>> | null> => restFetch("notices?order=created_at.desc&limit=20"),
   getImportantNotices: (): Promise<Array<Record<string, Object>> | null> =>
     restFetch("notices?importance=eq.紧急&order=created_at.desc&limit=5"),
   getPayments: (): Promise<Array<Record<string, Object>> | null> => restFetch("payments?order=period.desc"),
@@ -136,16 +127,12 @@ const INDUSTRY_METHODS: Record<string, string> = {
   getTrending: (): Promise<Array<Record<string, Object>> | null> => restFetch("videos?order=views.desc&limit=20"),
   search: (q: string): Promise<Array<Record<string, Object>> | null> =>
     restFetch("videos?or=(title.ilike.%25" + q + "%25,description.ilike.%25" + q + "%25)&order=views.desc&limit=30"),
-  getFavorites: (): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("favorites?select=*,videos(*)&order=created_at.desc"),
   addFavorite: (vId: string): Promise<Record<string, Object> | null> =>
     restFetch("favorites", { method: "POST", extraData: { video_id: vId } }),
   removeFavorite: (vId: string): Promise<object | null> =>
     restFetch("favorites?video_id=eq." + vId, { method: "DELETE" }),
   getWatchHistory: (): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("watch_history?order=watched_at.desc&limit=30"),
-  getRecommendations: (): Promise<Array<Record<string, Object>> | null> =>
-    restFetch("videos?order=rating.desc&limit=10"),`,
+    restFetch("watch_history?order=watched_at.desc&limit=30"),`,
 
   weather: `
   setCurrentCity: (cityId: string): Promise<Record<string, Object> | null> =>
@@ -168,7 +155,6 @@ const INDUSTRY_METHODS: Record<string, string> = {
   removeCity: (cityId: string): Promise<object | null> => restFetch("cities?id=eq." + cityId, { method: "DELETE" }),`,
 
   sports: `
-  getLiveMatches: (): Promise<Array<Record<string, Object>> | null> => restFetch("matches?status=eq.进行中&order=date"),
   getUpcoming: (page: number = 0): Promise<Array<Record<string, Object>> | null> => {
     const today = new Date().toISOString().substring(0, 10);
     return restFetch("matches?date=gte." + today + "&order=date&limit=20&offset=" + (page * 20));
@@ -211,15 +197,12 @@ const INDUSTRY_METHODS: Record<string, string> = {
     restFetch("user_profiles", { method: "PATCH", extraData: data }),
   swipe: (targetUserId: string, direction: string): Promise<Record<string, Object> | null> =>
     restFetch("swipes", { method: "POST", extraData: { target_user_id: targetUserId, direction } }),
-  getMatches: (): Promise<Array<Record<string, Object>> | null> => restFetch("matches?order=matched_at.desc"),
   unmatch: (matchId: string): Promise<Record<string, Object> | null> =>
     restFetch("matches?id=eq." + matchId, { method: "PATCH", extraData: { status: "已解除" } }),
-  getInterests: (): Promise<Array<Record<string, Object>> | null> => restFetch("interests?order=name"),
   updateInterests: (interestIds: string): Promise<Record<string, Object> | null> =>
     restFetch("user_profiles", { method: "PATCH", extraData: { interests: interestIds } }),`,
 
   medical: `
-  getDepartments: (): Promise<Array<Record<string, Object>> | null> => restFetch("departments?order=name"),
   getDoctorsByDept: (deptId: string, page: number = 0): Promise<Array<Record<string, Object>> | null> =>
     restFetch("doctors?department_id=eq." + deptId + "&order=rating.desc&limit=20&offset=" + (page * 20)),
   searchDoctors: (q: string): Promise<Array<Record<string, Object>> | null> =>
@@ -258,7 +241,6 @@ const INDUSTRY_METHODS: Record<string, string> = {
   getMyScores: (gameId: string): Promise<Array<Record<string, Object>> | null> =>
     restFetch("game_scores?game_id=eq." + gameId + "&order=played_at.desc&limit=30"),
   getGames: (): Promise<Array<Record<string, Object>> | null> => restFetch("games?order=player_count.desc&limit=20"),
-  getAchievements: (): Promise<Array<Record<string, Object>> | null> => restFetch("achievements?order=name"),
   unlockAchievement: (achievementId: string): Promise<Record<string, Object> | null> =>
     restFetch("user_achievements", { method: "POST", extraData: { achievement_id: achievementId } }),
   getMyAchievements: (): Promise<Array<Record<string, Object>> | null> =>

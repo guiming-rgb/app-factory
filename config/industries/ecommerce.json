@@ -19,5 +19,9 @@
     "getOrders",
     "topSelling",
     "createOrder"
+  ],
+  "harmonyMethods": [
+    { "name": "getCart", "table": "cart_items", "verb": "GET", "path": "?select=*,products(*)" },
+    { "name": "getOrders", "table": "orders", "verb": "GET", "path": "?order=created_at.desc" }
   ]
 }

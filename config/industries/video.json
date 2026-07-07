@@ -17,5 +17,9 @@
     "getRecommendations",
     "search",
     "getFavorites"
+  ],
+  "harmonyMethods": [
+    { "name": "getRecommendations", "table": "videos", "verb": "GET", "path": "?order=rating.desc&limit=10" },
+    { "name": "getFavorites", "table": "favorites", "verb": "GET", "path": "?select=*,videos(*)&order=created_at.desc" }
   ]
 }

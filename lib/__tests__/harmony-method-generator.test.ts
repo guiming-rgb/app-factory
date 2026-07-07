@@ -15,6 +15,18 @@ describe("harmony-method-generator (B3)", () => {
     expect(body).toContain('restFetch("budgets")');
   });
 
+  it("参数化 GET 应生成路径拼接", () => {
+    const body = generateSimpleHarmonyMethod({
+      name: "getAssignments",
+      table: "assignments",
+      verb: "GET",
+      path: "?course_id=eq.{{courseId}}&order=deadline",
+      params: [{ name: "courseId" }],
+    });
+    expect(body).toContain("getAssignments: (courseId: string)");
+    expect(body).toContain('"assignments?course_id=eq." + courseId + "&order=deadline"');
+  });
+
   it("finance harmonyMethods 应并入 IndustryServices", () => {
     const ets = emitHarmonyIndustryServicesEts("finance");
     expect(ets).toContain("getBudgets:");
@@ -51,5 +63,28 @@ describe("harmony-method-generator (B3)", () => {
     expect(ets).toContain("getCurrentCity:");
     expect(ets).toContain("getDaily:");
     expect(ets).toContain("getAqi:");
+  });
+
+  it("简单 GET 行业 batch 应生成 JSON 方法", () => {
+    for (const [industry, methods] of [
+      ["social", ["getTopics:", "getPostsByTopic:"]],
+      ["game", ["getAchievements:", "getLeaderboard:"]],
+      ["dating", ["getMatches:", "getInterests:", "swipe:"]],
+      ["video", ["getRecommendations:", "getFavorites:", "search:"]],
+      ["property", ["getMyRepairs:", "getNotices:", "submitRepair:"]],
+      ["medical", ["getDepartments:", "getDoctorsByDept:"]],
+      ["sports", ["getLiveMatches:", "getStandings:"]],
+      ["ecommerce", ["getCart:", "getOrders:", "addToCart:"]],
+    ] as const) {
+      const ets = emitHarmonyIndustryServicesEts(industry);
+      for (const m of methods) expect(ets).toContain(m);
+    }
+  });
+
+  it("education 参数化 harmonyMethods 应生成 getAssignments/getGrades", () => {
+    const ets = emitHarmonyIndustryServicesEts("education");
+    expect(ets).toContain("getAssignments: (courseId: string)");
+    expect(ets).toContain("getGrades: (courseId: string)");
+    expect(ets).toContain("getTodaySchedule:");
   });
 });

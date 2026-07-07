@@ -17,5 +17,8 @@
     "getTopics",
     "getPostsByTopic",
     "likePost"
+  ],
+  "harmonyMethods": [
+    { "name": "getTopics", "table": "topics", "verb": "GET", "path": "?order=post_count.desc" }
   ]
 }

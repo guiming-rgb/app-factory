@@ -17,5 +17,21 @@
     "getAssignments",
     "getGrades",
     "getTodaySchedule"
+  ],
+  "harmonyMethods": [
+    {
+      "name": "getAssignments",
+      "table": "assignments",
+      "verb": "GET",
+      "path": "?course_id=eq.{{courseId}}&order=deadline",
+      "params": [{ "name": "courseId" }]
+    },
+    {
+      "name": "getGrades",
+      "table": "grades",
+      "verb": "GET",
+      "path": "?course_id=eq.{{courseId}}&order=created_at.desc",
+      "params": [{ "name": "courseId" }]
+    }
   ]
 }

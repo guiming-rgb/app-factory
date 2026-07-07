@@ -18,5 +18,8 @@
     "getDoctorsByDept",
     "searchDoctors",
     "getDoctorSlots"
+  ],
+  "harmonyMethods": [
+    { "name": "getDepartments", "table": "departments", "verb": "GET", "path": "?order=name" }
   ]
 }

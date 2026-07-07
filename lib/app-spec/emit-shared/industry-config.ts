@@ -24,6 +24,7 @@ export type IndustryEmitConfig = {
     table: string;
     verb: "GET" | "POST" | "PATCH" | "DELETE" | "RPC";
     path?: string;
+    params?: Array<{ name: string; type?: "string" | "number" }>;
     returns?: "array" | "single" | "void";
   }>;
 };

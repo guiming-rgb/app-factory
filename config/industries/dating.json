@@ -17,5 +17,9 @@
     "getMatches",
     "swipe",
     "getInterests"
+  ],
+  "harmonyMethods": [
+    { "name": "getMatches", "table": "matches", "verb": "GET", "path": "?order=matched_at.desc" },
+    { "name": "getInterests", "table": "interests", "verb": "GET", "path": "?order=name" }
   ]
 }

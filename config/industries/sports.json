@@ -17,5 +17,8 @@
     "getLiveMatches",
     "getStandings",
     "getNews"
+  ],
+  "harmonyMethods": [
+    { "name": "getLiveMatches", "table": "matches", "verb": "GET", "path": "?status=eq.进行中&order=date" }
   ]
 }

@@ -17,5 +17,8 @@
     "getLeaderboard",
     "submitScore",
     "getAchievements"
+  ],
+  "harmonyMethods": [
+    { "name": "getAchievements", "table": "achievements", "verb": "GET", "path": "?order=name" }
   ]
 }

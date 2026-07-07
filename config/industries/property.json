@@ -17,5 +17,9 @@
     "getMyRepairs",
     "submitRepair",
     "getNotices"
+  ],
+  "harmonyMethods": [
+    { "name": "getMyRepairs", "table": "repairs", "verb": "GET", "path": "?order=created_at.desc" },
+    { "name": "getNotices", "table": "notices", "verb": "GET", "path": "?order=created_at.desc&limit=20" }
   ]
 }
